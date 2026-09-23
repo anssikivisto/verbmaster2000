@@ -186,7 +186,7 @@
     </div>
 
     <!-- MAIN MENU SCREEN -->
-    <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
+        <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
         <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
             <div class="jrpg-box p-4 sm:p-6 w-full flex flex-col gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                 <button onclick="newGame()" class="jrpg-btn jrpg-btn-primary py-3 px-4 text-sm flex items-center justify-center gap-2">
@@ -405,7 +405,7 @@
 
             <canvas id="main-canvas" class="w-full h-full flex-1 cursor-pointer block"></canvas>
 
-            <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-3 z-15">
+            <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-3 z-[15]">
                 <!-- FLASHCARDS UI -->
                 <div id="cards-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3">
                     <div id="flashcard-element" onclick="flipCard()" class="w-full h-60 perspective-1000 cursor-pointer">
