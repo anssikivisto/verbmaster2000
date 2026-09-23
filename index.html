@@ -91,20 +91,30 @@
             transition: all 0.05s ease;
         }
 
-        .jrpg-btn:hover {
-            background: #334155;
-            border-color: #94a3b8;
-            border-right-color: #1e293b;
-            border-bottom-color: #1e293b;
-            color: #fef08a;
+        /* Poistetaan hover-efektit main menun painikkeilta, jotta menu-active hoitaa yksin korostuksen */
+        #main-menu-screen .jrpg-btn:hover {
+            background: #1e293b;
+            border-color: #64748b;
+            border-right-color: #0f172a;
+            border-bottom-color: #0f172a;
+            color: #ffffff;
         }
 
-        .jrpg-btn.menu-active {
+        .jrpg-btn.menu-active, #main-menu-screen .jrpg-btn.menu-active:hover {
             background: #0369a1 !important;
             border-color: #7dd3fc !important;
             border-right-color: #0284c7 !important;
             border-bottom-color: #0284c7 !important;
             color: #fef08a !important;
+        }
+
+        /* Tavallinen hover muille pelin sisäisille painikkeille */
+        body:not(#main-menu-screen) .jrpg-btn:not(.menu-active):hover {
+            background: #334155;
+            border-color: #94a3b8;
+            border-right-color: #1e293b;
+            border-bottom-color: #1e293b;
+            color: #fef08a;
         }
 
         .jrpg-btn:active {
@@ -172,6 +182,11 @@
 </head>
 <body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
 
+    <!-- GLOBAL OVERLAY PANEL (For Options, Credits, Game Over etc.) -->
+    <div id="overlay-panel" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] flex flex-col items-center justify-center p-4 text-center hidden">
+        <div id="overlay-content" class="max-w-md w-full"></div>
+    </div>
+
     <!-- SPLASH SCREEN -->
     <div id="splash-screen" class="fixed inset-0 z-[80] flex flex-col items-center justify-end pb-24 bg-black bg-cover bg-center cursor-pointer" style="background-image: url('mainmenu.jpeg');" onclick="enterMainMenu()">
         <div class="text-white font-pixel text-2xl sm:text-3xl animate-pulse pixel-shadow tracking-widest mb-10">PRESS ENTER</div>
@@ -181,7 +196,7 @@
     <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
         <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
             <div class="jrpg-box p-4 sm:p-6 w-full flex flex-col gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-                <button onclick="newGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
+                <button onclick="newGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2 menu-active">
                     <span>NEW GAME</span>
                 </button>
                 <button onclick="continueGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
@@ -190,11 +205,11 @@
                 <button onclick="showOptionsMenu()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
                     <span>OPTIONS</span>
                 </button>
-                <button onclick="showCredits()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2 text-slate-300 hover:text-white">
+                <button onclick="showCredits()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2 text-slate-300">
                     <span>CREDITS</span>
                 </button>
             </div>
-            <p class="text-[10px] font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 VERB ACADEMY</p>
+            <p class="text-[10px] font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 ANSSI KIVISTÖ</p>
         </div>
     </div>
 
@@ -207,7 +222,7 @@
                         <i class="fa-solid fa-gem text-amber-400 text-3xl"></i>
                     </div>
                     <h2 class="text-lg sm:text-2xl font-pixel text-yellow-300 pixel-shadow">VALITSE VERBIRYHMÄ</h2>
-                    <p class="text-sm font-sans text-cyan-200 mt-2 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
+                    <p class="text-lg font-sans text-cyan-200 mt-2 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
                 </div>
 
                 <button onclick="selectStartGroup('all')" class="jrpg-btn jrpg-btn-gold py-4 px-4 text-xs sm:text-sm flex items-center justify-between group">
@@ -300,14 +315,10 @@
     <header class="bg-black border-b-4 border-white">
         <div class="max-w-6xl mx-auto px-3 py-2.5 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-900 border-2 border-yellow-400 flex items-center justify-center text-yellow-300 font-pixel text-xs sm:text-sm pixel-shadow">
-                    ⚔️
-                </div>
                 <div>
                     <h1 class="font-pixel text-xs sm:text-sm text-yellow-300 pixel-shadow flex items-center gap-2">
-                        VERBMASTER<span class="text-[10px] text-cyan-300 font-sans">16-BIT</span>
+                        VERBMASTER2000
                     </h1>
-                    <p class="text-[10px] font-pixel text-slate-400 hidden sm:block">SNES JRPG VERB ARENA</p>
                 </div>
             </div>
 
@@ -378,6 +389,7 @@
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-[9px] px-2 py-1 animate-pulse shadow-lg">
                         <span id="hud-combo">2x</span> COMBO!
                     </div>
+                    <!-- Bubble-only UI Elements -->
                     <button id="hud-diff-badge" onclick="showDifficultyModal()" class="pointer-events-auto jrpg-btn text-[9px] px-2 py-1 flex items-center gap-1">
                         <span class="text-yellow-300">LVL:</span>
                         <span id="hud-diff-name">Keskitaso</span>
@@ -396,20 +408,24 @@
             <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-3 z-[15]">
                 <!-- FLASHCARDS UI -->
                 <div id="cards-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3">
+                    <div class="flex justify-between w-full gap-2 mb-1">
+                        <button onclick="toggleCardLang()" id="card-lang-btn" class="jrpg-btn text-[9px] py-2 px-2 flex-1">NÄYTÄ ENSIN: ENGLANTI</button>
+                        <button onclick="shuffleCards()" class="jrpg-btn text-[9px] py-2 px-2 flex-1"><i class="fa-solid fa-shuffle"></i> SEKOITA KORTIT</button>
+                    </div>
                     <div id="flashcard-element" onclick="flipCard()" class="w-full h-60 perspective-1000 cursor-pointer">
                         <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d jrpg-box-gold flex flex-col justify-center items-center p-5 text-center">
                             <div id="card-front" class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-4 gap-2">
-                                <span class="text-[10px] font-pixel text-yellow-300 uppercase">1. MUOTO / PERUSMUOTO</span>
+                                <span id="card-top-label" class="text-[10px] font-pixel text-yellow-300 uppercase">1. MUOTO / PERUSMUOTO</span>
                                 <span id="card-base-text" class="text-2xl sm:text-3xl font-pixel text-white pixel-shadow">be</span>
-                                <button onclick="event.stopPropagation(); speakWord(currentCardVerb.base)" class="mt-2 jrpg-btn text-xs p-2">
+                                <button id="card-front-audio" onclick="event.stopPropagation(); speakWord(currentCardVerb.base)" class="mt-2 jrpg-btn text-xs p-2">
                                     <i class="fa-solid fa-volume-high text-yellow-300"></i> LAUSU
                                 </button>
                             </div>
                             <div id="card-back" class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-4 gap-2">
-                                <span class="text-[10px] font-pixel text-cyan-300 uppercase">2. & 3. MUOTO SEKÄ SUOMENNOS</span>
+                                <span id="card-back-top-label" class="text-[10px] font-pixel text-cyan-300 uppercase">2. & 3. MUOTO SEKÄ SUOMENNOS</span>
                                 <div id="card-past-text" class="text-lg sm:text-xl font-pixel text-yellow-300 pixel-shadow">was / were, been</div>
                                 <div id="card-fin-text" class="text-base text-cyan-200 italic font-sans">olla</div>
-                                <button onclick="event.stopPropagation(); speakWord(currentCardVerb.past + ', ' + currentCardVerb.participle)" class="mt-2 jrpg-btn text-xs p-2">
+                                <button id="card-back-audio" onclick="event.stopPropagation(); speakWord(currentCardVerb.past + ', ' + currentCardVerb.participle)" class="mt-2 jrpg-btn text-xs p-2">
                                     <i class="fa-solid fa-volume-high text-yellow-300"></i> LAUSU
                                 </button>
                             </div>
@@ -428,31 +444,31 @@
                 <!-- TYPING UI -->
                 <div id="typing-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3 jrpg-box p-4 sm:p-5">
                     <div class="text-center">
-                        <span class="text-[10px] font-pixel text-yellow-300 uppercase">KIRJOITA TAIAKSI VERBI:</span>
+                        <span class="text-[10px] font-pixel text-yellow-300 uppercase">KIRJOITA KAIKKI MUODOT:</span>
                         <div id="typing-prompt-fin" class="text-xl font-pixel text-cyan-300 mt-1 pixel-shadow">olla</div>
                     </div>
 
                     <form onsubmit="submitTypingAnswer(event)" class="w-full flex flex-col gap-2">
                         <div>
                             <label class="block text-[10px] font-pixel text-slate-300 mb-1">1. MUOTO / PERUSMUOTO</label>
-                            <input id="typing-base-input" type="text" autocomplete="off" placeholder="esim. be" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                            <input id="typing-base-input" type="text" autocomplete="off" placeholder="esim. be" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs transition-colors">
                         </div>
                         <div>
                             <label class="block text-[10px] font-pixel text-slate-300 mb-1">2. MUOTO / IMPERFEKTI</label>
-                            <input id="typing-past-input" type="text" autocomplete="off" placeholder="esim. was / were" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                            <input id="typing-past-input" type="text" autocomplete="off" placeholder="esim. was / were" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs transition-colors">
                         </div>
                         <div>
                             <label class="block text-[10px] font-pixel text-slate-300 mb-1">3. MUOTO / PERFEKTI</label>
-                            <input id="typing-part-input" type="text" autocomplete="off" placeholder="esim. been" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                            <input id="typing-part-input" type="text" autocomplete="off" placeholder="esim. been" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs transition-colors">
                         </div>
 
-                        <div id="typing-feedback" class="hidden text-xs text-center font-pixel p-2 border-2 border-red-500 bg-black text-red-400"></div>
+                        <div id="typing-feedback" class="hidden text-xs text-center font-pixel p-2 bg-black text-red-500"></div>
 
                         <div class="flex gap-2 mt-1">
                             <button id="typing-submit-btn" type="submit" class="jrpg-btn jrpg-btn-primary flex-1 text-xs py-2">
                                 <i id="typing-btn-icon" class="fa-solid fa-check mr-1"></i> TARKISTA
                             </button>
-                            <button type="button" onclick="skipTypingVerb()" class="jrpg-btn text-xs px-3 py-2">
+                            <button id="typing-skip-btn" type="button" onclick="skipTypingVerb()" class="jrpg-btn text-xs px-3 py-2">
                                 OHITA
                             </button>
                         </div>
@@ -461,9 +477,13 @@
 
                 <!-- SCRAMBLE UI -->
                 <div id="scramble-ui" class="pointer-events-auto w-full max-w-lg hidden flex-col items-center gap-3 jrpg-box p-4">
+                    <div class="flex gap-2 w-full mb-1">
+                        <button onclick="setScrambleDiff('easy')" id="scramble-diff-easy" class="jrpg-btn flex-1 text-[9px] py-1 menu-active">HELPPO</button>
+                        <button onclick="setScrambleDiff('hard')" id="scramble-diff-hard" class="jrpg-btn flex-1 text-[9px] py-1">HAASTAVA</button>
+                    </div>
                     <div class="text-center">
                         <div class="text-[10px] font-pixel text-yellow-300 uppercase" id="scramble-hint-label">MUODOSTA 2. MUOTO / IMPERFEKTI:</div>
-                        <div id="scramble-target-prompt" class="text-lg font-pixel text-white mt-1 pixel-shadow">BE (olla)</div>
+                        <div id="scramble-target-prompt" class="text-lg font-pixel text-white mt-1 pixel-shadow">OLLA</div>
                     </div>
                     <div id="scramble-answer-box" class="min-h-[48px] w-full bg-black border-2 border-yellow-400 flex items-center justify-center gap-1.5 p-2"></div>
                     <div id="scramble-letter-pool" class="flex flex-wrap justify-center gap-1.5 p-1"></div>
@@ -476,10 +496,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-
-            <div id="overlay-panel" class="absolute inset-0 bg-black/85 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-4 text-center hidden">
-                <div id="overlay-content" class="max-w-md w-full"></div>
             </div>
         </div>
 
@@ -646,38 +662,11 @@
             { group: 11, base: "write", past: "wrote", participle: "written", finnish: "kirjoittaa" }
         ];
 
-        const FREQ = {
-            'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
-            'C4': 261.63, 'D4': 293.66, 'Eb4': 277.18, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
-            'C5': 523.25, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00, 'Bb5': 932.33, 'B5': 987.77,
-            'C6': 1046.50, 'D6': 1174.66, 'E6': 1318.51, '-': 0
-        };
-
         class ChiptuneEngine {
             constructor() {
                 this.ctx = null;
                 this.sfxEnabled = true;
                 this.musicEnabled = false;
-                this.musicPlaying = false;
-                this.step = 0;
-                this.timer = null;
-
-                this.leadScore = [
-                    'C5', '-', 'G4', 'C5', 'E5', '-', 'D5', 'C5', 'D5', '-', 'G4', 'B4', 'D5', '-', 'E5', 'D5',
-                    'E5', 'F5', 'G5', 'A5', 'G5', '-', 'E5', 'C5', 'D5', 'E5', 'F5', 'G5', 'C6', '-', '-', '-'
-                ];
-
-                this.bassScore = [
-                    'C3', 'C3', 'C3', 'C3', 'G3', 'G3', 'G3', 'G3', 'A3', 'A3', 'A3', 'A3', 'F3', 'F3', 'G3', 'G3',
-                    'C3', 'C3', 'E3', 'E3', 'F3', 'F3', 'F3', 'F3', 'G3', 'G3', 'G3', 'G3', 'C3', 'G3', 'C4', '-'
-                ];
-
-                this.arpScore = [
-                    ['C4','E4','G4'], ['C4','E4','G4'], ['G3','B3','D4'], ['G3','B3','D4'],
-                    ['A3','C4','E4'], ['A3','C4','E4'], ['F3','A3','C4'], ['G3','B3','D4'],
-                    ['C4','E4','G4'], ['C4','E4','G4'], ['F3','A3','C4'], ['F3','A3','C4'],
-                    ['G3','B3','D4'], ['G3','B3','D4'], ['C4','E4','G4'], ['C4','G4','C5']
-                ];
             }
 
             init() {
@@ -696,18 +685,14 @@
                 if (!this.sfxEnabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(600, now);
                 osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
-
                 gain.gain.setValueAtTime(0.18, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
@@ -718,20 +703,15 @@
                 if (!this.sfxEnabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const notes = [659.25, 783.99, 987.77, 1318.51];
-                
                 notes.forEach((freq, idx) => {
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
-                    
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-
                     gain.gain.setValueAtTime(0.15, now + idx * 0.06);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.12);
-
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
                     osc.start(now + idx * 0.06);
@@ -743,18 +723,14 @@
                 if (!this.sfxEnabled) return;
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.linearRampToValueAtTime(60, now + 0.25);
-
                 gain.gain.setValueAtTime(0.22, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
@@ -762,84 +738,9 @@
             }
 
             toggleMusic() {
+                // Musiikkigeneraattori poistettu. Voi yhdistää myöhemmin MP3-toistoon.
                 this.musicEnabled = !this.musicEnabled;
-                if (this.musicEnabled) {
-                    this.startMusic();
-                } else {
-                    this.stopMusic();
-                }
                 return this.musicEnabled;
-            }
-
-            startMusic() {
-                this.init();
-                if (!this.ctx || this.musicPlaying) return;
-                this.musicPlaying = true;
-                this.step = 0;
-                this.timer = setInterval(() => this.tickMusic(), 112);
-            }
-
-            stopMusic() {
-                this.musicPlaying = false;
-                if (this.timer) {
-                    clearInterval(this.timer);
-                    this.timer = null;
-                }
-            }
-
-            tickMusic() {
-                if (!this.musicPlaying || !this.ctx || !this.musicEnabled) return;
-
-                const now = this.ctx.currentTime;
-                const totalSteps = this.leadScore.length;
-                const currentStep = this.step % totalSteps;
-
-                const leadNote = this.leadScore[currentStep];
-                if (leadNote !== '-') {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(FREQ[leadNote] || 0, now);
-                    gain.gain.setValueAtTime(0.08, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.2);
-                }
-
-                const bassNote = this.bassScore[currentStep];
-                if (bassNote !== '-') {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(FREQ[bassNote] || 0, now);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.15);
-                }
-
-                const arpIndex = Math.floor(currentStep / 2) % this.arpScore.length;
-                const chord = this.arpScore[arpIndex];
-                const arpNote = chord[currentStep % chord.length];
-                
-                if (arpNote) {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(FREQ[arpNote] || 0, now);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.1);
-                }
-
-                this.step++;
             }
         }
 
@@ -851,7 +752,7 @@
         let lives = 3;
         let combo = 0;
         let gameMode = 'bubble';
-        let isBubblePlaying = false; // Estää kuplien putoamisen ennen vaikeustason valintaa
+        let isBubblePlaying = false; 
         let animationFrameId = null;
         let selectedGroupForStart = null;
         let currentMenuIndex = 0;
@@ -912,22 +813,18 @@
 
         // Global Keydown Handler
         window.addEventListener('keydown', (e) => {
-            // Estä sivun rullaus nuolinäppäimillä
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
-                // Varmistetaan, ettei estetä tekstikentissä navigointia
                 if (document.activeElement.tagName !== 'INPUT') {
                     e.preventDefault();
                 }
             }
 
-            // 1. Splash screen
             const splash = document.getElementById('splash-screen');
             if (splash && !splash.classList.contains('hidden') && e.key === 'Enter') {
                 enterMainMenu();
                 return;
             }
             
-            // 2. Main Menu Navigation
             const mainMenu = document.getElementById('main-menu-screen');
             if (mainMenu && !mainMenu.classList.contains('hidden') && overlayPanel.classList.contains('hidden')) {
                 const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
@@ -945,7 +842,6 @@
                 return;
             }
 
-            // 3. Scramble logic
             if (gameMode === 'scramble' && !document.getElementById('scramble-ui').classList.contains('hidden')) {
                 if (e.key === 'Backspace') {
                     if (scrambleAnswer.length > 0) {
@@ -1016,7 +912,7 @@
                     <p class="text-cyan-300 text-[10px] font-pixel">Ohjelmointi & Grafiikka:</p>
                     <p class="text-slate-300 text-xs mb-2">AI-Apulainen</p>
                     <p class="text-cyan-300 text-[10px] font-pixel">Musiikki & Äänet:</p>
-                    <p class="text-slate-300 text-xs mb-2">Web Audio Chiptune Engine</p>
+                    <p class="text-slate-300 text-xs mb-2">Web Audio Chiptune Engine (SFX)</p>
                     <p class="text-cyan-300 text-[10px] font-pixel">Julkaisija & Konsepti:</p>
                     <p class="text-slate-300 text-xs">Verb Academy 2026</p>
                 </div>
@@ -1147,6 +1043,18 @@
             document.getElementById('scramble-ui').classList.add('hidden');
             document.getElementById('html-controls-overlay').classList.add('pointer-events-none');
             
+            if (mode === 'bubble') {
+                document.getElementById('hud-lives').classList.remove('hidden');
+                document.getElementById('hud-diff-badge').classList.remove('hidden');
+                document.getElementById('hud-lives').classList.add('flex');
+                document.getElementById('hud-diff-badge').classList.add('flex');
+            } else {
+                document.getElementById('hud-lives').classList.add('hidden');
+                document.getElementById('hud-diff-badge').classList.add('hidden');
+                document.getElementById('hud-lives').classList.remove('flex');
+                document.getElementById('hud-diff-badge').classList.remove('flex');
+            }
+
             if (mode === 'dictionary') {
                 gameCanvasWrapper.classList.add('hidden');
                 dictionarySection.classList.remove('hidden');
@@ -1293,7 +1201,7 @@
             difficulty = levels[level];
             document.getElementById('hud-diff-name').textContent = difficulty.name;
             hideOverlay();
-            resetGame();
+            resetGame(); // resetGame puts bubbles to [] and resets variables
             isBubblePlaying = true; // Aloita peli vasta vaikeustason valinnan jälkeen
         }
 
@@ -1450,7 +1358,8 @@
                 b.x += Math.sin(time * 0.005 + b.id) * 0.5;
 
                 if (b.y > canvasHeight + 30) {
-                    if (b.isCorrect) {
+                    const targetKey = ['base', 'past', 'participle'][currentBubbleTarget.formIndex];
+                    if (b.text === currentBubbleTarget.verb[targetKey]) {
                         loseLife(); 
                         createDamageText(b.x, canvasHeight - 30, "MISS!", "#ef4444");
                     }
@@ -1475,20 +1384,22 @@
             }
 
             const x = 50 + Math.random() * (canvasWidth - 100);
-            const isCorrect = Math.random() < 0.3 || bubbles.filter(b=>b.isCorrect).length === 0;
+            
+            // Oletetaan, että 30% todennäköisyydellä spammaamme tismalleen oikean vastauksen ruutuun.
+            const isTargetMatch = Math.random() < 0.3 || bubbles.length === 0;
             
             const forms = ['base', 'past', 'participle'];
             const targetFormKey = forms[currentBubbleTarget.formIndex];
             const correctText = currentBubbleTarget.verb[targetFormKey];
             
             let text = "";
-            if (isCorrect) {
+            if (isTargetMatch) {
                 text = correctText;
             } else {
                 const randV = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
                 const randF = forms[Math.floor(Math.random() * 3)];
                 text = randV[randF];
-                // Varmistetaan ettei satunnainen väärä teksti ole vahingossa oikea vastaus
+                // Estetään vahinkomatch - jos arvottu on oikein vaikkei pitänyt, vaihdetaan
                 if (text === correctText) text += " ";
             }
 
@@ -1498,7 +1409,6 @@
                 y: -50,
                 radius: 35 + (text.length * 1.5), 
                 text: text,
-                isCorrect: isCorrect,
                 speed: difficulty.minSpeed + Math.random() * (difficulty.maxSpeed - difficulty.minSpeed),
                 color: getRandomJRPGColor()
             });
@@ -1595,21 +1505,28 @@
                 const dist = Math.hypot(clickX - b.x, clickY - b.y);
                 
                 if (dist < b.radius * 1.5) { 
-                    if (b.isCorrect) {
+                    
+                    // Suora tarkistus kohdetekstin perusteella (kattaa identtiset muodot automaattisesti!)
+                    const targetKey = ['base', 'past', 'participle'][currentBubbleTarget.formIndex];
+                    if (b.text === currentBubbleTarget.verb[targetKey]) {
                         audio.playCorrect();
                         for(let p=0; p<15; p++) createParticle(b.x, b.y, '#ffd700');
                         createDamageText(b.x, b.y, "CRITICAL!", "#fef08a");
                         combo++;
                         addScore(difficulty.baseScore);
+                        
+                        // Tyhjennä kaikki kuplat onnistumisen jälkeen ja anna uusi sana
+                        bubbles = [];
                         currentBubbleTarget = null; 
+                        lastBubbleSpawn = time;
+                        break;
                     } else {
                         for(let p=0; p<10; p++) createParticle(b.x, b.y, '#94a3b8');
                         createDamageText(b.x, b.y, "BLOCK!", "#94a3b8");
                         loseLife();
+                        bubbles.splice(i, 1);
+                        break;
                     }
-                    
-                    bubbles.splice(i, 1);
-                    break; 
                 }
             }
         }
@@ -1617,6 +1534,7 @@
         let currentCardIndex = 0;
         let currentCardVerb = null;
         let isCardFlipped = false;
+        let cardFrontLang = 'en';
 
         function initFlashcards() {
             if(activeVerbs.length === 0) return;
@@ -1624,12 +1542,58 @@
             updateCardDisplay();
         }
 
+        function shuffleCards() {
+            audio.playPop();
+            for (let i = activeVerbs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [activeVerbs[i], activeVerbs[j]] = [activeVerbs[j], activeVerbs[i]];
+            }
+            currentCardIndex = 0;
+            updateCardDisplay();
+        }
+
+        function toggleCardLang() {
+            audio.playPop();
+            cardFrontLang = cardFrontLang === 'en' ? 'fi' : 'en';
+            document.getElementById('card-lang-btn').textContent = cardFrontLang === 'en' ? 'NÄYTÄ ENSIN: ENGLANTI' : 'NÄYTÄ ENSIN: SUOMI';
+            updateCardDisplay();
+        }
+
         function updateCardDisplay() {
             currentCardVerb = activeVerbs[currentCardIndex];
-            document.getElementById('card-base-text').textContent = currentCardVerb.base;
-            document.getElementById('card-past-text').textContent = currentCardVerb.past + ', ' + currentCardVerb.participle;
-            document.getElementById('card-fin-text').textContent = currentCardVerb.finnish;
             
+            const topLabel = document.getElementById('card-top-label');
+            const mainText = document.getElementById('card-base-text');
+            const frontAudioBtn = document.getElementById('card-front-audio');
+            
+            const backTopLabel = document.getElementById('card-back-top-label');
+            const backMidText = document.getElementById('card-past-text');
+            const backBotText = document.getElementById('card-fin-text');
+            const backAudioBtn = document.getElementById('card-back-audio');
+
+            if (cardFrontLang === 'en') {
+                topLabel.textContent = '1. MUOTO / PERUSMUOTO';
+                mainText.textContent = currentCardVerb.base;
+                frontAudioBtn.classList.remove('hidden');
+                frontAudioBtn.onclick = (e) => { e.stopPropagation(); speakWord(currentCardVerb.base); };
+                
+                backTopLabel.textContent = '2. & 3. MUOTO SEKÄ SUOMENNOS';
+                backMidText.textContent = currentCardVerb.past + ', ' + currentCardVerb.participle;
+                backBotText.textContent = currentCardVerb.finnish;
+                backAudioBtn.classList.remove('hidden');
+                backAudioBtn.onclick = (e) => { e.stopPropagation(); speakWord(currentCardVerb.past + ', ' + currentCardVerb.participle); };
+            } else {
+                topLabel.textContent = 'SUOMENNOS';
+                mainText.textContent = currentCardVerb.finnish;
+                frontAudioBtn.classList.add('hidden'); // Ei ääntä suomenkielelle
+                
+                backTopLabel.textContent = 'KAIKKI ENGLANNIN MUODOT';
+                backMidText.textContent = currentCardVerb.base;
+                backBotText.textContent = currentCardVerb.past + ', ' + currentCardVerb.participle;
+                backAudioBtn.classList.remove('hidden');
+                backAudioBtn.onclick = (e) => { e.stopPropagation(); speakWord(currentCardVerb.base + ', ' + currentCardVerb.past + ', ' + currentCardVerb.participle); };
+            }
+
             isCardFlipped = false;
             document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
         }
@@ -1664,14 +1628,24 @@
             typingCurrentVerb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
             
             document.getElementById('typing-prompt-fin').textContent = typingCurrentVerb.finnish;
-            document.getElementById('typing-base-input').value = '';
-            document.getElementById('typing-past-input').value = '';
-            document.getElementById('typing-part-input').value = '';
             
-            const feedback = document.getElementById('typing-feedback');
-            feedback.classList.add('hidden');
+            const baseInput = document.getElementById('typing-base-input');
+            const pastInput = document.getElementById('typing-past-input');
+            const partInput = document.getElementById('typing-part-input');
             
-            setTimeout(() => document.getElementById('typing-base-input').focus(), 100);
+            baseInput.value = '';
+            pastInput.value = '';
+            partInput.value = '';
+            
+            // Tyhjennetään mahdolliset highlight värit
+            [baseInput, pastInput, partInput].forEach(el => {
+                el.classList.remove('bg-green-900', 'border-green-500', 'text-green-300', 'bg-red-900', 'border-red-500', 'text-red-300');
+            });
+            
+            document.getElementById('typing-skip-btn').textContent = "OHITA";
+            document.getElementById('typing-feedback').classList.add('hidden');
+            
+            setTimeout(() => baseInput.focus(), 100);
         }
 
         function submitTypingAnswer(e) {
@@ -1696,14 +1670,31 @@
 
             const btn = document.getElementById('typing-submit-btn');
             const feedback = document.getElementById('typing-feedback');
+            
+            const baseInput = document.getElementById('typing-base-input');
+            const pastInput = document.getElementById('typing-past-input');
+            const partInput = document.getElementById('typing-part-input');
+            
+            [baseInput, pastInput, partInput].forEach(el => {
+                el.classList.remove('bg-green-900', 'border-green-500', 'text-green-300', 'bg-red-900', 'border-red-500', 'text-red-300');
+            });
 
-            if (baseOk && pastOk && partOk) {
+            let pts = 0;
+            if (baseOk) pts += 5;
+            if (pastOk) pts += 5;
+            if (partOk) pts += 5;
+
+            if (pts === 15) {
                 audio.playCorrect();
+                baseInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                pastInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                partInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                
                 btn.classList.add('bg-green-500', 'border-green-300');
                 btn.innerHTML = '<i class="fa-solid fa-star text-yellow-300 mr-1"></i> TÄYDELLISTÄ!';
                 
                 combo++;
-                addScore(difficulty.baseScore * 2);
+                addScore(15);
 
                 setTimeout(() => {
                     btn.classList.remove('bg-green-500', 'border-green-300');
@@ -1716,7 +1707,30 @@
                 updateHUD();
 
                 feedback.classList.remove('hidden');
-                feedback.innerHTML = `Väärin! Oikea loitsu:<br><span class="text-white">${typingCurrentVerb.base} - ${typingCurrentVerb.past} - ${typingCurrentVerb.participle}</span>`;
+                feedback.innerHTML = `Väärin!`;
+                
+                if (baseOk) {
+                    baseInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                } else {
+                    baseInput.classList.add('bg-red-900', 'border-red-500', 'text-red-300');
+                    baseInput.value = typingCurrentVerb.base;
+                }
+                
+                if (pastOk) {
+                    pastInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                } else {
+                    pastInput.classList.add('bg-red-900', 'border-red-500', 'text-red-300');
+                    pastInput.value = typingCurrentVerb.past;
+                }
+                
+                if (partOk) {
+                    partInput.classList.add('bg-green-900', 'border-green-500', 'text-green-300');
+                } else {
+                    partInput.classList.add('bg-red-900', 'border-red-500', 'text-red-300');
+                    partInput.value = typingCurrentVerb.participle;
+                }
+                
+                document.getElementById('typing-skip-btn').textContent = "SEURAAVA";
                 
                 e.target.classList.add('animate-shake');
                 setTimeout(() => e.target.classList.remove('animate-shake'), 400);
@@ -1734,13 +1748,22 @@
         let scrambleTargetWord = "";
         let scramblePool = [];
         let scrambleAnswer = [];
+        let scrambleDiff = 'easy';
+        
+        function setScrambleDiff(diff) {
+            audio.playPop();
+            scrambleDiff = diff;
+            document.getElementById('scramble-diff-easy').classList.toggle('menu-active', diff === 'easy');
+            document.getElementById('scramble-diff-hard').classList.toggle('menu-active', diff === 'hard');
+            initScramble();
+        }
 
         function initScramble() {
             if(activeVerbs.length === 0) return;
             
             scrambleCurrentVerb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
             
-            const r = Math.random();
+            const r = scrambleDiff === 'easy' ? 0 : Math.random();
             let formName = "";
             if (r < 0.33) {
                 scrambleTargetWord = scrambleCurrentVerb.base;
@@ -1754,7 +1777,7 @@
             }
             
             document.getElementById('scramble-hint-label').textContent = `MUODOSTA ${formName}:`;
-            document.getElementById('scramble-target-prompt').textContent = `${scrambleCurrentVerb.base.toUpperCase()} (${scrambleCurrentVerb.finnish})`;
+            document.getElementById('scramble-target-prompt').textContent = scrambleCurrentVerb.finnish.toUpperCase();
             
             scrambleAnswer = [];
             scramblePool = scrambleTargetWord.toUpperCase().split('');
