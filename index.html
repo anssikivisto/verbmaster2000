@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="fi" class="h-full bg-black text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VerbMaster2000 - 16-bit JRPG Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: 16-bit pixel fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        pixel: ['"Press Start 2P"', 'monospace'],
+                        sans: ['"Pixelify Sans"', '"VT323"', 'monospace'],
+                        mono: ['"VT323"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Pixelify Sans', 'VT323', monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            background-color: #050508;
+            image-rendering: pixelated;
+        }
+
+        .font-pixel {
+            font-family: 'Press Start 2P', monospace;
+            letter-spacing: -0.5px;
+        }
+
+        .pixel-shadow {
+            text-shadow: 2px 2px 0px #000000;
+        }
+
+        .pixel-shadow-sm {
+            text-shadow: 1px 1px 0px #000000;
+        }
+
+        .pixel-shadow-gold {
+            text-shadow: 3px 3px 0px #78350f, 1px 1px 0px #000000;
+        }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: relative;
+        }
+        .scanlines::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+            background-size: 100% 4px;
+            z-index: 70; /* Pidetään korkeimpana, jotta kattaa myös menun */
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* JRPG Frame Styles */
+        .jrpg-box {
+            background: linear-gradient(180deg, #000080 0%, #000033 100%);
+            border: 4px solid #ffffff;
+            outline: 2px solid #ffd700;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        .jrpg-box-dark {
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+            border: 4px solid #94a3b8;
+            outline: 2px solid #ffd700;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        .jrpg-box-gold {
+            background: linear-gradient(180deg, #3b0764 0%, #1e1b4b 100%);
+            border: 4px solid #ffd700;
+            outline: 2px solid #ffffff;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        /* Retro 3D Mechanical Buttons */
+        .jrpg-btn {
+            font-family: 'Press Start 2P', monospace;
+            background: #1e293b;
+            border: 3px solid #64748b;
+            border-right-color: #0f172a;
+            border-bottom-color: #0f172a;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000000;
+            border-radius: 0px !important;
+            box-shadow: 2px 2px 0px #000000;
+            transition: all 0.05s ease;
+        }
+
+        .jrpg-btn:hover {
+            background: #334155;
+            border-color: #94a3b8;
+            border-right-color: #1e293b;
+            border-bottom-color: #1e293b;
+            color: #fef08a;
+        }
+
+        .jrpg-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .jrpg-btn-primary {
+            background: #0284c7;
+            border: 3px solid #38bdf8;
+            border-right-color: #0369a1;
+            border-bottom-color: #0369a1;
+        }
+
+        .jrpg-btn-primary:hover {
+            background: #0369a1;
+            border-color: #7dd3fc;
+            color: #fef08a;
+        }
+
+        .jrpg-btn-gold {
+            background: #b45309;
+            border: 3px solid #fbbf24;
+            border-right-color: #78350f;
+            border-bottom-color: #78350f;
+            color: #ffffff;
+        }
+
+        .jrpg-btn-gold:hover {
+            background: #d97706;
+            border-color: #fef08a;
+        }
+
+        /* Active Tab Highlight */
+        .tab-active {
+            background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%) !important;
+            border-color: #ffd700 !important;
+            color: #ffffff !important;
+            box-shadow: inset 0 0 0 2px #000000 !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000033;
+            border: 2px solid #ffffff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border: 2px solid #000000;
+        }
+
+        /* 3D Card Flip Utility */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, Tässä on päivitetty versio `index.html` -tiedostosta. Olen lisännyt siihen pyytämäsi "PRESS ENTER" -aloitusruudun sekä muokannut päävalikon ilmettä ja toiminnallisuuksia tarkasti ohjeidesi mukaisesti.
+
+Muutokset lyhyesti:
+1. **Aloitusruutu (Splash Screen):** Näyttää pelkän taustakuvan (`mainmenu.jpeg`) ja alareunassa vilkkuvan tekstin. Siirtyy päävalikkoon Enterillä (tai klikkaamalla).
+2. **Päävalikko (Main Menu):** Poistettu tummennus ja alkuperäinen logo. Valikon painikkeet on siirretty ruudun alaosaan.
+3. **Uudet toiminnallisuudet:** `NEW GAME` (kysyy varmistuksen ja nollaa `localStorage`-muistin), `CONTINUE` (jatkaa peliä tallennetuilla tiedoilla) ja `OPTIONS` (avaa uuden asetusvalikon äänille ja CRT-suodattimelle).
+
+Voit kopioida alla olevan koodin suoraan alkuperäisen tilalle:
+
+```html
+<!DOCTYPE html>
+<html lang="fi" class="h-full bg-black text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VerbMaster2000 - 16-bit JRPG Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
+    <!-- Google Fonts: 16-bit pixel fonts -->
+    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+    <link href="[https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap](https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap)" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        pixel: ['"Press Start 2P"', 'monospace'],
+                        sans: ['"Pixelify Sans"', '"VT323"', 'monospace'],
+                        mono: ['"VT323"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Pixelify Sans', 'VT323', monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            background-color: #050508;
+            image-rendering: pixelated;
+        }
+
+        .font-pixel {
+            font-family: 'Press Start 2P', monospace;
+            letter-spacing: -0.5px;
+        }
+
+        .pixel-shadow {
+            text-shadow: 2px 2px 0px #000000;
+        }
+
+        .pixel-shadow-sm {
+            text-shadow: 1px 1px 0px #000000;
+        }
+
+        .pixel-shadow-gold {
+            text-shadow: 3px 3px 0px #78350f, 1px 1px 0px #000000;
+        }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: relative;
+        }
+        .scanlines::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+            background-size: 100% 4px;
+            z-index: 70; /* Pidetään korkeimpana, jotta kattaa myös menun */
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* JRPG Frame Styles */
+        .jrpg-box {
+            background: linear-gradient(180deg, #000080 0%, #000033 100%);
+            border: 4px solid #ffffff;
+            outline: 2px solid #ffd700;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        .jrpg-box-dark {
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+            border: 4px solid #94a3b8;
+            outline: 2px solid #ffd700;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        .jrpg-box-gold {
+            background: linear-gradient(180deg, #3b0764 0%, #1e1b4b 100%);
+            border: 4px solid #ffd700;
+            outline: 2px solid #ffffff;
+            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            border-radius: 0px !important;
+        }
+
+        /* Retro 3D Mechanical Buttons */
+        .jrpg-btn {
+            font-family: 'Press Start 2P', monospace;
+            background: #1e293b;
+            border: 3px solid #64748b;
+            border-right-color: #0f172a;
+            border-bottom-color: #0f172a;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000000;
+            border-radius: 0px !important;
+            box-shadow: 2px 2px 0px #000000;
+            transition: all 0.05s ease;
+        }
+
+        .jrpg-btn:hover {
+            background: #334155;
+            border-color: #94a3b8;
+            border-right-color: #1e293b;
+            border-bottom-color: #1e293b;
+            color: #fef08a;
+        }
+
+        .jrpg-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .jrpg-btn-primary {
+            background: #0284c7;
+            border: 3px solid #38bdf8;
+            border-right-color: #0369a1;
+            border-bottom-color: #0369a1;
+        }
+
+        .jrpg-btn-primary:hover {
+            background: #0369a1;
+            border-color: #7dd3fc;
+            color: #fef08a;
+        }
+
+        .jrpg-btn-gold {
+            background: #b45309;
+            border: 3px solid #fbbf24;
+            border-right-color: #78350f;
+            border-bottom-color: #78350f;
+            color: #ffffff;
+        }
+
+        .jrpg-btn-gold:hover {
+            background: #d97706;
+            border-color: #fef08a;
+        }
+
+        /* Active Tab Highlight */
+        .tab-active {
+            background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%) !important;
+            border-color: #ffd700 !important;
+            color: #ffffff !important;
+            box-shadow: inset 0 0 0 2px #000000 !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000033;
+            border: 2px solid #ffffff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border: 2px solid #000000;
+        }
+
+        /* 3D Card Flip Utility */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+    </style>
+</head>
+<body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100 scanlines">
+
+    <!-- SPLASH SCREEN (UUSI LISÄYS) -->
+    <div id="splash-screen" class="fixed inset-0 z-[80] flex flex-col items-center justify-end pb-24 bg-black bg-cover bg-center cursor-pointer" style="background-image: url('mainmenu.jpeg');" onclick="enterMainMenu()">
+        <div class="text-white font-pixel text-2xl sm:text-3xl animate-pulse pixel-shadow tracking-widest mb-10">PRESS ENTER</div>
+    </div>
+
+    <!-- MAIN MENU (MUOKATTU) -->
+    <div id="main-menu-screen" class="fixed inset-0 z-60 flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
+        <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
+            
+            <!-- Päävalikon painikkeet (Sijoitettu alemmas, tausta puuttuu) -->
+            <div class="jrpg-box p-4 sm:p-6 w-full flex flex-col gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <button onclick="newGame()" class="jrpg-btn jrpg-btn-primary py-3 px-4 text-sm flex items-center justify-center gap-2">
+                    <span>NEW GAME</span>
+                </button>
+                
+                <button onclick="continueGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
+                    <span>CONTINUE</span>
+                </button>
+
+                <button onclick="showOptionsMenu()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
+                    <span>OPTIONS</span>
+                </button>
+
+                <button onclick="showCredits()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2 text-slate-300 hover:text-white">
+                    <span>CREDITS</span>
+                </button>
+            </div>
+            
+            <p class="text-[10px] font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 VERB ACADEMY</p>
+        </div>
+    </div>
+
+    <!-- ALOITUSRUUTU / WELCOME SCREEN OVERLAY (Aukeaa päävalikon jälkeen) -->
+    <div id="start-screen" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
+        <div class="jrpg-box max-w-2xl w-full p-5 sm:p-7 flex flex-col gap-5 my-auto text-white">
+            
+            <!-- VAIHE 1: Ryhmän valinta -->
+            <div id="start-step-select" class="flex flex-col gap-5">
+                <div class="text-center">
+                    <div class="inline-block p-3 bg-amber-500/20 border-2 border-amber-400 mb-2">
+                        <i class="fa-solid fa-gem text-amber-400 text-3xl"></i>
+                    </div>
+                    <h2 class="text-lg sm:text-2xl font-pixel text-yellow-300 pixel-shadow">VALITSE TAIKAKIRJA</h2>
+                    <p class="text-sm font-sans text-cyan-200 mt-2 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
+                </div>
+
+                <!-- Kaikki verbit -painike -->
+                <button onclick="selectStartGroup('all')" class="jrpg-btn jrpg-btn-gold py-4 px-4 text-xs sm:text-sm flex items-center justify-between group">
+                    <span class="flex items-center gap-2">
+                        <span class="text-yellow-300">☞</span>
+                        <span>KAIKKI VERBIT (11 RYHMÄÄ)</span>
+                    </span>
+                    <i class="fa-solid fa-bolt text-yellow-300"></i>
+                </button>
+
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t-2 border-dashed border-cyan-500/50"></div>
+                    <span class="flex-shrink mx-3 text-xs font-pixel text-yellow-400 pixel-shadow-sm">TAI VALITSE RYHMÄ</span>
+                    <div class="flex-grow border-t-2 border-dashed border-cyan-500/50"></div>
+                </div>
+
+                <!-- Verbiryhmänappulat -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[240px] overflow-y-auto pr-1">
+                    <button onclick="selectStartGroup('1')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>1. be – break</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('2')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>2. bring – dive</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('3')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>3. do – feel</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('4')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>4. flee – give</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('5')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>5. go – keep</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('6')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>6. know – make</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('7')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>7. mean – say</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('8')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>8. see – shut</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('9')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>9. sing – spread</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('10')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>10. spring – tell</span><span class="text-yellow-300">☞</span>
+                    </button>
+                    <button onclick="selectStartGroup('11')" class="jrpg-btn p-2.5 text-[11px] text-left flex items-center justify-between">
+                        <span>11. think – write</span><span class="text-yellow-300">☞</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VAIHE 2: Valitun verbiryhmän esikatselu ja Jatka-painike -->
+            <div id="start-step-preview" class="hidden flex-col gap-4">
+                <div class="flex items-center justify-between border-b-2 border-cyan-400 pb-2">
+                    <div>
+                        <span class="text-[10px] font-pixel text-yellow-300 uppercase">VALITTU SEIKKAILU:</span>
+                        <h3 id="start-preview-title" class="text-sm sm:text-base font-pixel text-white pixel-shadow">1. be – break</h3>
+                    </div>
+                    <button onclick="backToStartGroupSelect()" class="jrpg-btn text-[10px] px-2.5 py-1.5">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> VAIHDA
+                    </button>
+                </div>
+
+                <p class="text-xs text-cyan-200">Taistelukirjaston verbit:</p>
+
+                <div class="max-h-[220px] overflow-y-auto border-2 border-white bg-black/80 p-2">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="text-yellow-300 font-pixel text-[10px] border-b border-cyan-500/50">
+                                <th class="p-1.5">1. BASE</th>
+                                <th class="p-1.5">2. PAST</th>
+                                <th class="p-1.5">3. PART.</th>
+                                <th class="p-1.5 text-cyan-300">SUOMI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="start-preview-list" class="divide-y divide-slate-800 font-sans text-sm">
+                            <!-- Populated dynamically via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button onclick="confirmStartGroup()" class="jrpg-btn jrpg-btn-primary py-3 px-4 text-xs sm:text-sm flex items-center justify-center gap-2">
+                    <span>ALOITA TAISTELU</span>
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- HEADER / HUD STATUS BAR -->
+    <header class="bg-black border-b-4 border-white">
+        <div class="max-w-6xl mx-auto px-3 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-900 border-2 border-yellow-400 flex items-center justify-center text-yellow-300 font-pixel text-xs sm:text-sm pixel-shadow">
+                    ⚔️
+                </div>
+                <div>
+                    <h1 class="font-pixel text-xs sm:text-sm text-yellow-300 pixel-shadow flex items-center gap-2">
+                        VERBMASTER<span class="text-[10px] text-cyan-300 font-sans">16-BIT</span>
+                    </h1>
+                    <p class="text-[10px] font-pixel text-slate-400 hidden sm:block">SNES JRPG VERB ARENA</p>
+                </div>
+            </div>
+
+            <!-- Global Highscore & Audio & CRT Toggles -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="text-right hidden sm:block border-2 border-cyan-500 bg-blue-950 px-2 py-1">
+                    <div class="text-[9px] font-pixel text-cyan-300">HI-SCORE</div>
+                    <div id="high-score-display" class="font-pixel text-xs text-yellow-300 pixel-shadow">0</div>
+                </div>
+
+                <!-- Epic Retro Music Toggle -->
+                <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn text-xs px-2.5 py-1.5 flex items-center gap-1">
+                    <i id="music-icon" class="fa-solid fa-music text-slate-500"></i>
+                    <span class="hidden md:inline text-[9px]">TEEMA</span>
+                </button>
+
+                <button id="crt-toggle" onclick="toggleCRT()" title="Kytke CRT Scanlines" class="jrpg-btn text-xs px-2.5 py-1.5">
+                    <i class="fa-solid fa-tv text-cyan-300"></i>
+                </button>
+
+                <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn text-xs px-2.5 py-1.5">
+                    <i id="audio-icon" class="fa-solid fa-volume-high text-yellow-300"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3">
+        
+        <!-- VERB GROUP SELECTOR BAR -->
+        <div class="jrpg-box p-2.5 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-yellow-300 font-pixel text-xs">
+                <span>☞ HARJOITUSRYHMÄ:</span>
+            </div>
+            <select id="group-selector" onchange="changeVerbGroup(this.value)" class="w-full sm:w-auto bg-black border-2 border-white text-yellow-300 font-pixel text-[11px] px-3 py-1.5 focus:outline-none focus:border-yellow-400 cursor-pointer">
+                <option value="all">🌟 KAIKKI VERBIT (11 RYHMÄÄ)</option>
+                <option value="1">1. be – break</option>
+                <option value="2">2. bring – dive</option>
+                <option value="3">3. do – feel</option>
+                <option value="4">4. flee – give</option>
+                <option value="5">5. go – keep</option>
+                <option value="6">6. know – make</option>
+                <option value="7">7. mean – say</option>
+                <option value="8">8. see – shut</option>
+                <option value="9">9. sing – spread</option>
+                <option value="10">10. spring – tell</option>
+                <option value="11">11. think – write</option>
+            </select>
+        </div>
+
+        <!-- MODE SELECTOR TABS -->
+        <nav class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-black border-2 border-white">
+            <button id="tab-bubble" onclick="switchMode('bubble')" class="mode-tab jrpg-btn py-2 px-1 text-[10px] sm:text-[11px] tab-active">
+                <span>KUPLAPELI</span>
+            </button>
+            <button id="tab-scramble" onclick="switchMode('scramble')" class="mode-tab jrpg-btn py-2 px-1 text-[10px] sm:text-[11px]">
+                <span>KIRJAINSOTKU</span>
+            </button>
+            <button id="tab-typing" onclick="switchMode('typing')" class="mode-tab jrpg-btn py-2 px-1 text-[10px] sm:text-[11px]">
+                <span>KIRJOITUS</span>
+            </button>
+            <button id="tab-cards" onclick="switchMode('cards')" class="mode-tab jrpg-btn py-2 px-1 text-[10px] sm:text-[11px]">
+                <span>SANAKORTIT</span>
+            </button>
+            <button id="tab-dictionary" onclick="switchMode('dictionary')" class="mode-tab jrpg-btn py-2 px-1 text-[10px] sm:text-[11px]">
+                <span>KIRJASTO</span>
+            </button>
+        </nav>
+
+        <div id="game-canvas-wrapper" class="relative flex-1 min-h-[400px] md:min-h-[480px] w-full bg-black border-4 border-white outline outline-2 outline-yellow-400 overflow-hidden shadow-2xl flex flex-col">
+            
+            <!-- CANVAS HUD / TOP STATUS BAR OVERLAY -->
+            <div id="canvas-hud" class="absolute top-0 left-0 right-0 p-2 sm:p-3 flex items-center justify-between z-10 pointer-events-none gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="jrpg-box bg-blue-950 px-2.5 py-1 flex items-center gap-1.5">
+                        <span class="text-xs text-yellow-300 font-pixel">PTS:</span>
+                        <span id="hud-score" class="font-pixel text-xs sm:text-sm text-white pixel-shadow">0</span>
+                    </div>
+                    <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-[9px] px-2 py-1 animate-pulse shadow-lg">
+                        <span id="hud-combo">2x</span> COMBO!
+                    </div>
+                    <button id="hud-diff-badge" onclick="showDifficultyModal()" class="pointer-events-auto jrpg-btn text-[9px] px-2 py-1 flex items-center gap-1">
+                        <span class="text-yellow-300">LVL:</span>
+                        <span id="hud-diff-name">Keskitaso</span>
+                    </button>
+                </div>
+
+                <!-- HP / Heart Status Bar -->
+                <div id="hud-lives" class="flex items-center gap-1 jrpg-box bg-blue-950 px-2 py-1">
+                    <span class="text-red-500 font-pixel text-xs">♥</span>
+                    <span class="text-red-500 font-pixel text-xs">♥</span>
+                    <span class="text-red-500 font-pixel text-xs">♥</span>
+                </div>
+            </div>
+
+            <!-- HTML5 CANVAS ELEMENT -->
+            <canvas id="main-canvas" class="w-full h-full flex-1 cursor-pointer block"></canvas>
+
+            <!-- HTML OVERLAY MODE CONTAINERS -->
+            <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-3 z-15">
+                
+                <!-- FLASHCARDS UI -->
+                <div id="cards-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3">
+                    <div id="flashcard-element" onclick="flipCard()" class="w-full h-60 perspective-1000 cursor-pointer">
+                        <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d jrpg-box-gold flex flex-col justify-center items-center p-5 text-center">
+                            <!-- FRONT -->
+                            <div id="card-front" class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-4 gap-2">
+                                <span class="text-[10px] font-pixel text-yellow-300 uppercase">PERUSMUOTO (INFINITIVE)</span>
+                                <span id="card-base-text" class="text-2xl sm:text-3xl font-pixel text-white pixel-shadow">be</span>
+                                <button onclick="event.stopPropagation(); speakWord(currentCardVerb.base)" class="mt-2 jrpg-btn text-xs p-2">
+                                    <i class="fa-solid fa-volume-high text-yellow-300"></i> LAUSU
+                                </button>
+                            </div>
+                            <!-- BACK -->
+                            <div id="card-back" class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-4 gap-2">
+                                <span class="text-[10px] font-pixel text-cyan-300 uppercase">TAIVUTUS & SUOMENNOS</span>
+                                <div id="card-past-text" class="text-lg sm:text-xl font-pixel text-yellow-300 pixel-shadow">was / were, been</div>
+                                <div id="card-fin-text" class="text-base text-cyan-200 italic font-sans">olla</div>
+                                <button onclick="event.stopPropagation(); speakWord(currentCardVerb.past + ', ' + currentCardVerb.participle)" class="mt-2 jrpg-btn text-xs p-2">
+                                    <i class="fa-solid fa-volume-high text-yellow-300"></i> LAUSU
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between w-full gap-2">
+                        <button onclick="prevCard()" class="jrpg-btn text-xs flex-1 py-2">
+                            <i class="fa-solid fa-chevron-left mr-1"></i> EDELLINEN
+                        </button>
+                        <button onclick="nextCard()" class="jrpg-btn jrpg-btn-primary text-xs flex-1 py-2">
+                            SEURAAVA <i class="fa-solid fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TYPING UI -->
+                <div id="typing-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3 jrpg-box p-4 sm:p-5">
+                    <div class="text-center">
+                        <span class="text-[10px] font-pixel text-yellow-300 uppercase">KIRJOITA TAIAKSI VERBI:</span>
+                        <div id="typing-prompt-fin" class="text-xl font-pixel text-cyan-300 mt-1 pixel-shadow">olla</div>
+                    </div>
+
+                    <form onsubmit="submitTypingAnswer(event)" class="w-full flex flex-col gap-2">
+                        <div>
+                            <label class="block text-[10px] font-pixel text-slate-300 mb-1">1. MUOTO (BASE)</label>
+                            <input id="typing-base-input" type="text" autocomplete="off" placeholder="esim. be" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-pixel text-slate-300 mb-1">2. MUOTO (PAST)</label>
+                            <input id="typing-past-input" type="text" autocomplete="off" placeholder="esim. was / were" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-pixel text-slate-300 mb-1">3. MUOTO (PARTICIPLE)</label>
+                            <input id="typing-part-input" type="text" autocomplete="off" placeholder="esim. been" class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1.5 focus:outline-none focus:border-yellow-400 text-xs">
+                        </div>
+
+                        <!-- Feedback message display -->
+                        <div id="typing-feedback" class="hidden text-xs text-center font-pixel p-2 border-2 border-red-500 bg-black text-red-400">
+                        </div>
+
+                        <div class="flex gap-2 mt-1">
+                            <button id="typing-submit-btn" type="submit" class="jrpg-btn jrpg-btn-primary flex-1 text-xs py-2">
+                                <i id="typing-btn-icon" class="fa-solid fa-check mr-1"></i> TARKISTA
+                            </button>
+                            <button type="button" onclick="skipTypingVerb()" class="jrpg-btn text-xs px-3 py-2">
+                                OHITA
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SCRAMBLE UI -->
+                <div id="scramble-ui" class="pointer-events-auto w-full max-w-lg hidden flex-col items-center gap-3 jrpg-box p-4">
+                    <div class="text-center">
+                        <div class="text-[10px] font-pixel text-yellow-300 uppercase" id="scramble-hint-label">MUODOSTA IMPERFEKTI (KÄYTÄ NÄPPÄIMISTÖÄ TAI KLIKKAA):</div>
+                        <div id="scramble-target-prompt" class="text-lg font-pixel text-white mt-1 pixel-shadow">BE (olla)</div>
+                    </div>
+                    <div id="scramble-answer-box" class="min-h-[48px] w-full bg-black border-2 border-yellow-400 flex items-center justify-center gap-1.5 p-2">
+                        <!-- Placed tiles go here -->
+                    </div>
+                    <div id="scramble-letter-pool" class="flex flex-wrap justify-center gap-1.5 p-1">
+                        <!-- Scrambled letter tiles -->
+                    </div>
+                    <div class="flex gap-2 w-full mt-1">
+                        <button onclick="clearScrambleAnswer()" class="jrpg-btn flex-1 text-[10px] py-1.5">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> TYHJENNÄ
+                        </button>
+                        <button onclick="checkScrambleAnswer()" class="jrpg-btn jrpg-btn-primary flex-1 text-[10px] py-1.5">
+                            <i class="fa-solid fa-check mr-1"></i> VALMIS
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CANVAS OVERLAY UI (FOR MODALS & OVERLAYS) -->
+            <div id="overlay-panel" class="absolute inset-0 bg-black/85 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-4 text-center hidden">
+                <div id="overlay-content" class="max-w-md w-full">
+                    <!-- Dynamic overlay content populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- DICTIONARY VIEW SECTION (Hidden by default) -->
+        <div id="dictionary-section" class="hidden flex-1 jrpg-box p-3 sm:p-5 overflow-hidden flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-2">
+                <h2 class="text-sm sm:text-base font-pixel text-yellow-300 flex items-center gap-2 pixel-shadow">
+                    📖 VERBIMAAGIAN KIRJASTO
+                </h2>
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="verb-search" oninput="filterVerbs()" placeholder="Etsi verbiä..." class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-3 py-1 text-xs focus:outline-none focus:border-yellow-400">
+                </div>
+            </div>
+
+            <div class="overflow-y-auto max-h-[400px] border-2 border-white bg-black">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-blue-950 text-yellow-300 font-pixel text-[10px] sticky top-0 border-b-2 border-white">
+                        <tr>
+                            <th class="p-2.5">1. BASE</th>
+                            <th class="p-2.5">2. PAST</th>
+                            <th class="p-2.5">3. PART.</th>
+                            <th class="p-2.5 text-cyan-300">SUOMI</th>
+                            <th class="p-2.5 text-center">ÄÄNI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="verb-table-body" class="divide-y divide-slate-800 font-sans text-sm">
+                        <!-- Populated dynamically via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t-2 border-white bg-black py-2 text-center text-[10px] font-pixel text-slate-400">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                ⚔️ VerbMaster2000 - 16-Bit SNES Edition
+            </div>
+            <div class="text-yellow-400">Web Audio Chiptune Engine</div>
+        </div>
+    </footer>
+
+    <script>
+        // GLOBAL CANVAS REFERENCES
+        let canvas = null;
+        let ctx = null;
+        let canvasWidth = 800;
+        let canvasHeight = 500;
+
+        // VERB DATASET WITH GROUP NUMBERS (11 Groups)
+        const VERB_DATA = [
+            // Ryhmä 1: be - break
+            { group: 1, base: "be", past: "was / were", participle: "been", finnish: "olla" },
+            { group: 1, base: "beat", past: "beat", participle: "beaten", finnish: "päihittää, lyödä" },
+            { group: 1, base: "become", past: "became", participle: "become", finnish: "tulla joksikin" },
+            { group: 1, base: "begin", past: "began", participle: "begun", finnish: "alkaa" },
+            { group: 1, base: "bend", past: "bent", participle: "bent", finnish: "taivuttaa, taipua" },
+            { group: 1, base: "bet", past: "bet", participle: "bet", finnish: "lyödä vetoa" },
+            { group: 1, base: "bite", past: "bit", participle: "bitten", finnish: "purra" },
+            { group: 1, base: "bleed", past: "bled", participle: "bled", finnish: "vuotaa verta" },
+            { group: 1, base: "blow", past: "blew", participle: "blown", finnish: "puhaltaa, tuulla" },
+            { group: 1, base: "break", past: "broke", participle: "broken", finnish: "rikkoa, särkyä, murtaa" },
+
+            // Ryhmä 2: bring - dive
+            { group: 2, base: "bring", past: "brought", participle: "brought", finnish: "tuoda" },
+            { group: 2, base: "build", past: "built", participle: "built", finnish: "rakentaa" },
+            { group: 2, base: "buy", past: "bought", participle: "bought", finnish: "ostaa" },
+            { group: 2, base: "catch", past: "caught", participle: "caught", finnish: "saada / ottaa kiinni" },
+            { group: 2, base: "choose", past: "chose", participle: "chosen", finnish: "valita" },
+            { group: 2, base: "come", past: "came", participle: "come", finnish: "tulla" },
+            { group: 2, base: "cost", past: "cost", participle: "cost", finnish: "maksaa (olla hintana)" },
+            { group: 2, base: "cut", past: "cut", participle: "cut", finnish: "leikata" },
+            { group: 2, base: "deal", past: "dealt", participle: "dealt", finnish: "jakaa" },
+            { group: 2, base: "dive", past: "dove", participle: "dived", finnish: "sukeltaa" },
+
+            // Ryhmä 3: do - feel
+            { group: 3, base: "do", past: "did", participle: "done", finnish: "tehdä" },
+            { group: 3, base: "dig", past: "dug", participle: "dug", finnish: "kaivaa" },
+            { group: 3, base: "draw", past: "drew", participle: "drawn", finnish: "vetää, piirtää" },
+            { group: 3, base: "dream", past: "dreamt/dreamed", participle: "dreamt/dreamed", finnish: "uneksia" },
+            { group: 3, base: "drink", past: "drank", participle: "drunk", finnish: "juoda" },
+            { group: 3, base: "drive", past: "drove", participle: "driven", finnish: "ajaa" },
+            { group: 3, base: "eat", past: "ate", participle: "eaten", finnish: "syödä" },
+            { group: 3, base: "fall", past: "fell", participle: "fallen", finnish: "pudota, kaatua" },
+            { group: 3, base: "feed", past: "fed", participle: "fed", finnish: "ruokkia, syöttää" },
+            { group: 3, base: "feel", past: "felt", participle: "felt", finnish: "tuntea" },
+
+            // Ryhmä 4: flee - give
+            { group: 4, base: "flee", past: "fled", participle: "fled", finnish: "paeta" },
+            { group: 4, base: "fight", past: "fought", participle: "fought", finnish: "tapella, riidellä" },
+            { group: 4, base: "find", past: "found", participle: "found", finnish: "löytää" },
+            { group: 4, base: "fly", past: "flew", participle: "flown", finnish: "lentää" },
+            { group: 4, base: "forbid", past: "forbade", participle: "forbidden", finnish: "kieltää" },
+            { group: 4, base: "forget", past: "forgot", participle: "forgotten", finnish: "unohtaa" },
+            { group: 4, base: "forgive", past: "forgave", participle: "forgiven", finnish: "antaa anteeksi" },
+            { group: 4, base: "freeze", past: "froze", participle: "frozen", finnish: "jäätyä, paleltua, palella" },
+            { group: 4, base: "get", past: "got", participle: "got/gotten", finnish: "saada" },
+            { group: 4, base: "give", past: "gave", participle: "given", finnish: "antaa" },
+
+            // Ryhmä 5: go - keep
+            { group: 5, base: "go", past: "went", participle: "gone", finnish: "mennä" },
+            { group: 5, base: "grow", past: "grew", participle: "grown", finnish: "kasvaa, kasvattaa" },
+            { group: 5, base: "hang", past: "hung", participle: "hung", finnish: "riippua, ripustaa" },
+            { group: 5, base: "have", past: "had", participle: "had", finnish: "olla, omistaa" },
+            { group: 5, base: "hear", past: "heard", participle: "heard", finnish: "kuulla" },
+            { group: 5, base: "hide", past: "hid", participle: "hidden", finnish: "piilotella, piiloutua" },
+            { group: 5, base: "hit", past: "hit", participle: "hit", finnish: "lyödä" },
+            { group: 5, base: "hold", past: "held", participle: "held", finnish: "pitää (kiinni)" },
+            { group: 5, base: "hurt", past: "hurt", participle: "hurt", finnish: "loukata, sattua, satuttaa" },
+            { group: 5, base: "keep", past: "kept", participle: "kept", finnish: "pitää, säilyttää" },
+
+            // Ryhmä 6: know - make
+            { group: 6, base: "know", past: "knew", participle: "known", finnish: "tietää, tuntea" },
+            { group: 6, base: "lay", past: "laid", participle: "laid", finnish: "laittaa, asettaa" },
+            { group: 6, base: "lead", past: "led", participle: "led", finnish: "johtaa" },
+            { group: 6, base: "lean", past: "leant/leaned", participle: "leant/leaned", finnish: "nojata" },
+            { group: 6, base: "leave", past: "left", participle: "left", finnish: "lähteä, jättää" },
+            { group: 6, base: "lend", past: "lent", participle: "lent", finnish: "lainata (jollekin)" },
+            { group: 6, base: "let", past: "let", participle: "let", finnish: "antaa, sallia" },
+            { group: 6, base: "lie", past: "lay", participle: "lain", finnish: "maata, olla, sijaita" },
+            { group: 6, base: "lose", past: "lost", participle: "lost", finnish: "kadottaa, menettää, hukata, hävitä" },
+            { group: 6, base: "make", past: "made", participle: "made", finnish: "tehdä, valmistaa" },
+
+            // Ryhmä 7: mean - say
+            { group: 7, base: "mean", past: "meant", participle: "meant", finnish: "tarkoittaa" },
+            { group: 7, base: "meet", past: "met", participle: "met", finnish: "tavata" },
+            { group: 7, base: "misunderstand", past: "misunderstood", participle: "misunderstood", finnish: "ymmärtää väärin" },
+            { group: 7, base: "pay", past: "paid", participle: "paid", finnish: "maksaa" },
+            { group: 7, base: "put", past: "put", participle: "put", finnish: "panna, laittaa" },
+            { group: 7, base: "read", past: "read", participle: "read", finnish: "lukea" },
+            { group: 7, base: "ride", past: "rode", participle: "ridden", finnish: "ratsastaa, ajaa" },
+            { group: 7, base: "ring", past: "rang", participle: "rung", finnish: "soittaa, soida" },
+            { group: 7, base: "run", past: "ran", participle: "run", finnish: "juosta" },
+            { group: 7, base: "say", past: "said", participle: "said", finnish: "sanoa" },
+
+            // Ryhmä 8: see - shut
+            { group: 8, base: "see", past: "saw", participle: "seen", finnish: "nähdä" },
+            { group: 8, base: "sell", past: "sold", participle: "sold", finnish: "myydä" },
+            { group: 8, base: "send", past: "sent", participle: "sent", finnish: "lähettää" },
+            { group: 8, base: "set", past: "set", participle: "set", finnish: "panna, asettaa" },
+            { group: 8, base: "shake", past: "shook", participle: "shaken", finnish: "ravistaa, pudistaa" },
+            { group: 8, base: "shine", past: "shone", participle: "shone", finnish: "loistaa, paistaa" },
+            { group: 8, base: "shoot", past: "shot", participle: "shot", finnish: "ampua, laukaista, ottaa kuva" },
+            { group: 8, base: "show", past: "showed", participle: "shown", finnish: "näyttää" },
+            { group: 8, base: "shrink", past: "shrank/shrunk", participle: "shrunk/shrunken", finnish: "kutistua" },
+            { group: 8, base: "shut", past: "shut", participle: "shut", finnish: "sulkea, sulkeutua" },
+
+            // Ryhmä 9: sing - spread
+            { group: 9, base: "sing", past: "sang", participle: "sung", finnish: "laulaa" },
+            { group: 9, base: "sink", past: "sank", participle: "sunk", finnish: "upota" },
+            { group: 9, base: "sit", past: "sat", participle: "sat", finnish: "istua" },
+            { group: 9, base: "sleep", past: "slept", participle: "slept", finnish: "nukkua" },
+            { group: 9, base: "slide", past: "slid", participle: "slid", finnish: "liukua" },
+            { group: 9, base: "speak", past: "spoke", participle: "spoken", finnish: "puhua" },
+            { group: 9, base: "spell", past: "spelt", participle: "spelt", finnish: "tavata (sana)" },
+            { group: 9, base: "spend", past: "spent", participle: "spent", finnish: "viettää, kuluttaa" },
+            { group: 9, base: "split", past: "split", participle: "split", finnish: "halkaista" },
+            { group: 9, base: "spread", past: "spread", participle: "spread", finnish: "levittää, levitä" },
+
+            // Ryhmä 10: spring - tell
+            { group: 10, base: "spring", past: "sprang", participle: "sprung", finnish: "hypähtää, hypätä" },
+            { group: 10, base: "stand", past: "stood", participle: "stood", finnish: "seisoa" },
+            { group: 10, base: "steal", past: "stole", participle: "stolen", finnish: "varastaa" },
+            { group: 10, base: "stick", past: "stuck", participle: "stuck", finnish: "pistää, laittaa" },
+            { group: 10, base: "swear", past: "swore", participle: "sworn", finnish: "kiroilla, countersign, officially swear" },
+            { group: 10, base: "swim", past: "swam", participle: "swum", finnish: "uida" },
+            { group: 10, base: "take", past: "took", participle: "taken", finnish: "ottaa, viedä" },
+            { group: 10, base: "teach", past: "taught", participle: "taught", finnish: "opettaa" },
+            { group: 10, base: "tear", past: "tore", participle: "torn", finnish: "repiä" },
+            { group: 10, base: "tell", past: "told", participle: "told", finnish: "kertoa, käskeä" },
+
+            // Ryhmä 11: think - write
+            { group: 11, base: "think", past: "thought", participle: "thought", finnish: "ajatella, luulla" },
+            { group: 11, base: "throw", past: "threw", participle: "thrown", finnish: "heittää" },
+            { group: 11, base: "understand", past: "understood", participle: "understood", finnish: "ymmärtää" },
+            { group: 11, base: "wake (up)", past: "woke (up)", participle: "woken (up)", finnish: "herätä" },
+            { group: 11, base: "wear", past: "wore", participle: "worn", finnish: "pitää yllään, käyttää" },
+            { group: 11, base: "weep", past: "wept", participle: "wept", finnish: "itkeä" },
+            { group: 11, base: "win", past: "won", participle: "won", finnish: "voittaa" },
+            { group: 11, base: "write", past: "wrote", participle: "written", finnish: "kirjoittaa" }
+        ];
+
+        // FREQUENCY TABLE FOR RETRO MELODY
+        const FREQ = {
+            'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
+            'C4': 261.63, 'D4': 293.66, 'Eb4': 277.18, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
+            'C5': 523.25, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00, 'Bb5': 932.33, 'B5': 987.77,
+            'C6': 1046.50, 'D6': 1174.66, 'E6': 1318.51, '-': 0
+        };
+
+        // 16-BIT CHIPTUNE SOUND & EPIC MUSIC ENGINE
+        class ChiptuneEngine {
+            constructor() {
+                this.ctx = null;
+                this.sfxEnabled = true;
+                this.musicEnabled = false;
+                this.musicPlaying = false;
+                this.step = 0;
+                this.timer = null;
+
+                // HEROIC EPIC JRPG SCORE (16 Steps per Bar, 32-step loop)
+                this.leadScore = [
+                    'C5', '-', 'G4', 'C5', 'E5', '-', 'D5', 'C5', 'D5', '-', 'G4', 'B4', 'D5', '-', 'E5', 'D5',
+                    'E5', 'F5', 'G5', 'A5', 'G5', '-', 'E5', 'C5', 'D5', 'E5', 'F5', 'G5', 'C6', '-', '-', '-'
+                ];
+
+                this.bassScore = [
+                    'C3', 'C3', 'C3', 'C3', 'G3', 'G3', 'G3', 'G3', 'A3', 'A3', 'A3', 'A3', 'F3', 'F3', 'G3', 'G3',
+                    'C3', 'C3', 'E3', 'E3', 'F3', 'F3', 'F3', 'F3', 'G3', 'G3', 'G3', 'G3', 'C3', 'G3', 'C4', '-'
+                ];
+
+                this.arpScore = [
+                    ['C4','E4','G4'], ['C4','E4','G4'], ['G3','B3','D4'], ['G3','B3','D4'],
+                    ['A3','C4','E4'], ['A3','C4','E4'], ['F3','A3','C4'], ['G3','B3','D4'],
+                    ['C4','E4','G4'], ['C4','E4','G4'], ['F3','A3','C4'], ['F3','A3','C4'],
+                    ['G3','B3','D4'], ['G3','B3','D4'], ['C4','E4','G4'], ['C4','G4','C5']
+                ];
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playPop() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+
+            playCorrect() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [659.25, 783.99, 987.77, 1318.51]; // E5, G5, B5, E6
+                
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.12);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.12);
+                });
+            }
+
+            playWrong() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            toggleMusic() {
+                this.musicEnabled = !this.musicEnabled;
+                if (this.musicEnabled) {
+                    this.startMusic();
+                } else {
+                    this.stopMusic();
+                }
+                return this.musicEnabled;
+            }
+
+            startMusic() {
+                this.init();
+                if (!this.ctx || this.musicPlaying) return;
+                this.musicPlaying = true;
+                this.step = 0;
+                this.timer = setInterval(() => this.tickMusic(), 112);
+            }
+
+            stopMusic() {
+                this.musicPlaying = false;
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
+            }
+
+            tickMusic() {
+                if (!this.musicPlaying || !this.ctx || !this.musicEnabled) return;
+
+                const now = this.ctx.currentTime;
+                const totalSteps = this.leadScore.length;
+                const currentStep = this.step % totalSteps;
+
+                const leadNote = this.leadScore[currentStep];
+                if (leadNote !== '-') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(FREQ[leadNote] || 0, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+
+                const bassNote = this.bassScore[currentStep];
+                if (bassNote !== '-') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(FREQ[bassNote] || 0, now);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                }
+
+                const arpIndex = Math.floor(currentStep / 2) % this.arpScore.length;
+                const chord = this.arpScore[arpIndex];
+                const arpNote = chord[currentStep % chord.length];
+                
+                if (arpNote) {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(FREQ[arpNote] || 0, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+
+                if (currentStep % 4 === 0) {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+                
+                if (currentStep % 8 === 4) {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(1000, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+
+                this.step++;
+            }
+        }
+
+        const audio = new ChiptuneEngine();
+
+        // JRPG GLOBALS & STATE
+        let activeVerbs = [];
+        let score = 0;
+        let lives = 3;
+        let combo = 0;
+        let gameMode = 'bubble';
+        let animationFrameId = null;
+        let selectedGroupForStart = null;
+        
+        let difficulty = {
+            id: 'medium',
+            name: 'Keskitaso',
+            speedMultiplier: 1.0,
+            spawnRate: 60,
+            baseScore: 10
+        };
+
+        // DOM ELEMENTS
+        const startScreen = document.getElementById('start-screen');
+        const hudScore = document.getElementById('hud-score');
+        const hudLives = document.getElementById('hud-lives');
+        const hudComboBadge = document.getElementById('hud-combo-badge');
+        const hudComboText = document.getElementById('hud-combo');
+        const htmlOverlay = document.getElementById('html-controls-overlay');
+        const canvasHud = document.getElementById('canvas-hud');
+        const dictionarySection = document.getElementById('dictionary-section');
+        const gameCanvasWrapper = document.getElementById('game-canvas-wrapper');
+        const overlayPanel = document.getElementById('overlay-panel');
+        const overlayContent = document.getElementById('overlay-content');
+
+        // ==========================================
+        // PÄÄVALIKON TOIMINNOT (UUDET)
+        // ==========================================
+        function enterMainMenu() {
+            document.getElementById('splash-screen').classList.add('hidden');
+            document.getElementById('main-menu-screen').classList.remove('hidden');
+            if (!audio.ctx) audio.init();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const splash = document.getElementById('splash-screen');
+                if (splash && !splash.classList.contains('hidden')) {
+                    enterMainMenu();
+                }
+            }
+        });
+
+        function startGameFromMenu() {
+            document.getElementById('main-menu-screen').classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            if (!audio.ctx) audio.init();
+        }
+
+        function newGame() {
+            if (localStorage.getItem('vm2000_highscore')) {
+                const confirmNew = confirm("Are you sure you want to start a new game? This will erase all previous data (Yes/No)");
+                if (confirmNew) {
+                    localStorage.clear(); // Poistaa kaikki aiemmat tiedot
+                    setHighScore(0);
+                    startGameFromMenu();
+                }
+            } else {
+                startGameFromMenu();
+            }
+        }
+
+        function continueGame() {
+            startGameFromMenu(); // localStorage ladataan jo automaattisesti init-vaiheessa
+        }
+
+        function showOptionsMenu() {
+            const isCrtOn = document.body.classList.contains('scanlines');
+            showOverlay(`
+                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">OPTIONS</h2>
+                <div class="flex flex-col gap-3 w-full">
+                    <button onclick="toggleAudioAndMusic(); showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
+                        <span>Äänet ja musiikki</span>
+                        <span class="${audio.sfxEnabled ? 'text-green-400' : 'text-red-400'}">${audio.sfxEnabled ? 'ON' : 'OFF'}</span>
+                    </button>
+                    <button onclick="toggleCRT(); showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
+                        <span>CRT-suodatin</span>
+                        <span class="${isCrtOn ? 'text-green-400' : 'text-red-400'}">${isCrtOn ? 'ON' : 'OFF'}</span>
+                    </button>
+                    <button onclick="hideOverlay()" class="mt-4 jrpg-btn text-xs sm:text-sm p-2 w-full text-slate-400 hover:text-white">TAKAISIN</button>
+                </div>
+            `);
+        }
+
+        function toggleAudioAndMusic() {
+            const newState = !audio.sfxEnabled;
+            audio.sfxEnabled = newState;
+            
+            // Synkronoi musiikin tila pelkkien äänien mukaan valikosta painettaessa
+            if (newState !== audio.musicEnabled) {
+                toggleMusic();
+            }
+            
+            const aIcon = document.getElementById('audio-icon');
+            if(aIcon) aIcon.className = newState ? 'fa-solid fa-volume-high text-yellow-300' : 'fa-solid fa-volume-xmark text-red-500';
+        }
+
+        function showCredits() {
+            showOverlay(`
+                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">CREDITS</h2>
+                <div class="flex flex-col gap-2 w-full text-left bg-black border-2 border-white p-4">
+                    <p class="text-white text-xs font-pixel mb-2">VERBMASTER 2000<br>16-BIT EDITION</p>
+                    <p class="text-cyan-300 text-xs">Ohjelmointi & Grafiikka:</p>
+                    <p class="text-slate-300 text-xs mb-2">AI-Apulainen</p>
+                    <p class="text-cyan-300 text-xs">Musiikki:</p>
+                    <p class="text-slate-300 text-xs mb-2">Web Audio Chiptune Engine</p>
+                    <p class="text-cyan-300 text-xs">Julkaisija:</p>
+                    <p class="text-slate-300 text-xs">Verb Academy 2026</p>
+                </div>
+                <button onclick="hideOverlay()" class="mt-4 jrpg-btn text-xs sm:text-sm p-2 w-full text-slate-400 hover:text-white">SULJE</button>
+            `);
+        }
+
+        // INIT
+        window.onload = () => {
+            canvas = document.getElementById('main-canvas');
+            ctx = canvas.getContext('2d', { alpha: false }); 
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            populateDictionary(VERB_DATA);
+            animationFrameId = requestAnimationFrame(gameLoop);
+            document.getElementById('high-score-display').textContent = getHighScore();
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            canvasWidth = rect.width;
+            canvasHeight = rect.height;
+            ctx.imageSmoothingEnabled = false; 
+        }
+
+        function toggleAudio() {
+            audio.sfxEnabled = !audio.sfxEnabled;
+            const icon = document.getElementById('audio-icon');
+            if (icon) {
+                icon.className = audio.sfxEnabled ? 'fa-solid fa-volume-high text-yellow-300' : 'fa-solid fa-volume-xmark text-red-500';
+            }
+        }
+
+        function toggleMusic() {
+            const isPlaying = audio.toggleMusic();
+            const icon = document.getElementById('music-icon');
+            icon.className = isPlaying ? 'fa-solid fa-music text-yellow-300 animate-pulse' : 'fa-solid fa-music text-slate-500';
+        }
+
+        function toggleCRT() {
+            document.body.classList.toggle('scanlines');
+        }
+
+        // ==========================================
+        // START SCREEN LOGIC
+        // ==========================================
+        function selectStartGroup(groupVal) {
+            audio.playPop();
+            selectedGroupForStart = groupVal;
+            
+            let previewVerbs = [];
+            let title = "";
+
+            if (groupVal === 'all') {
+                previewVerbs = VERB_DATA.slice(0, 15); 
+                title = "KAIKKI VERBIT (11 RYHMÄÄ)";
+            } else {
+                previewVerbs = VERB_DATA.filter(v => v.group == groupVal);
+                if (previewVerbs.length > 0) {
+                    const firstV = previewVerbs[0].base;
+                    const lastV = previewVerbs[previewVerbs.length - 1].base;
+                    title = `RYHMÄ ${groupVal}: ${firstV} – ${lastV}`;
+                }
+            }
+
+            document.getElementById('start-preview-title').textContent = title;
+            const list = document.getElementById('start-preview-list');
+            list.innerHTML = '';
+            
+            previewVerbs.forEach(v => {
+                list.innerHTML += `
+                    <tr class="hover:bg-blue-900/50">
+                        <td class="p-1.5 text-white">${v.base}</td>
+                        <td class="p-1.5 text-slate-300">${v.past}</td>
+                        <td class="p-1.5 text-slate-300">${v.participle}</td>
+                        <td class="p-1.5 text-cyan-300">${v.finnish}</td>
+                    </tr>
+                `;
+            });
+            
+            if (groupVal === 'all') {
+                list.innerHTML += `<tr><td colspan="4" class="p-2 text-center text-yellow-300 text-xs font-pixel">...JA ${VERB_DATA.length - 15} MUUTA</td></tr>`;
+            }
+
+            document.getElementById('start-step-select').classList.add('hidden');
+            document.getElementById('start-step-preview').classList.remove('hidden');
+            document.getElementById('start-step-preview').classList.add('flex');
+        }
+
+        function backToStartGroupSelect() {
+            audio.playPop();
+            document.getElementById('start-step-preview').classList.add('hidden');
+            document.getElementById('start-step-preview').classList.remove('flex');
+            document.getElementById('start-step-select').classList.remove('hidden');
+        }
+
+        function confirmStartGroup() {
+            audio.playCorrect();
+            document.getElementById('group-selector').value = selectedGroupForStart;
+            changeVerbGroup(selectedGroupForStart);
+            startScreen.classList.add('hidden');
+        }
+
+        // ==========================================
+        // GAME MODES & LOGIC
+        // ==========================================
+        function changeVerbGroup(groupVal) {
+            if (groupVal === 'all') {
+                activeVerbs = [...VERB_DATA];
+            } else {
+                activeVerbs = VERB_DATA.filter(v => v.group == groupVal);
+            }
+            resetGame();
+            if(gameMode === 'cards') initFlashcards();
+            if(gameMode === 'typing') nextTypingVerb();
+            if(gameMode === 'scramble') initScramble();
+        }
+
+        function switchMode(mode) {
+            audio.playPop();
+            gameMode = mode;
+            
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('tab-active'));
+            document.getElementById('tab-' + mode).classList.add('tab-active');
+
+            document.getElementById('cards-ui').classList.add('hidden');
+            document.getElementById('typing-ui').classList.add('hidden');
+            document.getElementById('scramble-ui').classList.add('hidden');
+            document.getElementById('html-controls-overlay').classList.add('pointer-events-none');
+            
+            if (mode === 'dictionary') {
+                gameCanvasWrapper.classList.add('hidden');
+                dictionarySection.classList.remove('hidden');
+                dictionarySection.classList.add('flex');
+            } else {
+                gameCanvasWrapper.classList.remove('hidden');
+                dictionarySection.classList.add('hidden');
+                dictionarySection.classList.remove('flex');
+                
+                if (mode === 'cards') {
+                    document.getElementById('cards-ui').classList.remove('hidden');
+                    document.getElementById('cards-ui').classList.add('flex');
+                    document.getElementById('html-controls-overlay').classList.remove('pointer-events-none');
+                    canvasHud.classList.add('hidden');
+                    initFlashcards();
+                } else if (mode === 'typing') {
+                    document.getElementById('typing-ui').classList.remove('hidden');
+                    document.getElementById('typing-ui').classList.add('flex');
+                    document.getElementById('html-controls-overlay').classList.remove('pointer-events-none');
+                    canvasHud.classList.remove('hidden');
+                    nextTypingVerb();
+                } else if (mode === 'scramble') {
+                    document.getElementById('scramble-ui').classList.remove('hidden');
+                    document.getElementById('scramble-ui').classList.add('flex');
+                    document.getElementById('html-controls-overlay').classList.remove('pointer-events-none');
+                    canvasHud.classList.remove('hidden');
+                    initScramble();
+                } else {
+                    canvasHud.classList.remove('hidden');
+                }
+            }
+            
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            combo = 0;
+            updateHUD();
+            bubbles = [];
+            particles = [];
+            damageTexts = [];
+            lastBubbleSpawn = 0;
+            hideOverlay();
+        }
+
+        function updateHUD() {
+            hudScore.textContent = score;
+            let hearts = '';
+            for(let i=0; i<3; i++) {
+                hearts += i < lives ? '<span class="text-red-500">♥</span>' : '<span class="text-slate-600">♥</span>';
+            }
+            hudLives.innerHTML = hearts;
+
+            if (combo > 1) {
+                hudComboBadge.classList.remove('hidden');
+                hudComboText.textContent = combo + 'x';
+            } else {
+                hudComboBadge.classList.add('hidden');
+            }
+            
+            if (score > getHighScore()) {
+                setHighScore(score);
+            }
+        }
+
+        function getHighScore() {
+            return parseInt(localStorage.getItem('vm2000_highscore') || '0');
+        }
+
+        function setHighScore(val) {
+            localStorage.setItem('vm2000_highscore', val);
+            document.getElementById('high-score-display').textContent = val;
+        }
+
+        function addScore(amount) {
+            score += Math.floor(amount * difficulty.speedMultiplier * (1 + (combo * 0.1)));
+            updateHUD();
+        }
+
+        function loseLife() {
+            audio.playWrong();
+            lives--;
+            combo = 0;
+            updateHUD();
+            
+            const flash = document.createElement('div');
+            flash.className = 'absolute inset-0 bg-red-600 z-50 opacity-50 transition-opacity duration-100 pointer-events-none';
+            document.body.appendChild(flash);
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 100);
+            }, 50);
+
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            showOverlay(`
+                <h2 class="text-3xl font-pixel text-red-500 pixel-shadow mb-4">GAME OVER</h2>
+                <div class="jrpg-box bg-black p-4 mb-4">
+                    <p class="text-yellow-300 font-pixel text-sm">Pisteet: ${score}</p>
+                </div>
+                <button onclick="resetGame()" class="jrpg-btn jrpg-btn-primary px-6 py-3 w-full">Yritä uudelleen</button>
+            `);
+        }
+
+        function showOverlay(htmlContent) {
+            overlayContent.innerHTML = htmlContent;
+            overlayPanel.classList.remove('hidden');
+        }
+
+        function hideOverlay() {
+            overlayPanel.classList.add('hidden');
+        }
+
+        function showDifficultyModal() {
+            showOverlay(`
+                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">VAIKEUSTASO</h2>
+                <div class="flex flex-col gap-3 w-full">
+                    <button onclick="setDifficulty('easy')" class="jrpg-btn p-3 ${difficulty.id === 'easy' ? 'border-yellow-400 text-yellow-300' : ''}">Helppo (Hidas)</button>
+                    <button onclick="setDifficulty('medium')" class="jrpg-btn p-3 ${difficulty.id === 'medium' ? 'border-yellow-400 text-yellow-300' : ''}">Keskitaso (Normaali)</button>
+                    <button onclick="setDifficulty('hard')" class="jrpg-btn p-3 ${difficulty.id === 'hard' ? 'border-yellow-400 text-yellow-300' : ''}">Vaikea (Nopea)</button>
+                    <button onclick="hideOverlay()" class="mt-2 text-xs font-pixel text-slate-400 underline hover:text-white">Peruuta</button>
+                </div>
+            `);
+        }
+
+        function setDifficulty(level) {
+            audio.playPop();
+            const levels = {
+                'easy': { id: 'easy', name: 'Helppo', speedMultiplier: 0.6, spawnRate: 90, baseScore: 5 },
+                'medium': { id: 'medium', name: 'Keskitaso', speedMultiplier: 1.0, spawnRate: 60, baseScore: 10 },
+                'hard': { id: 'hard', name: 'Vaikea', speedMultiplier: 1.5, spawnRate: 40, baseScore: 20 }
+            };
+            difficulty = levels[level];
+            document.getElementById('hud-diff-name').textContent = difficulty.name;
+            hideOverlay();
+            resetGame();
+        }
+
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-GB';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // ==========================================
+        // CANVAS RENDERING ENGINE
+        // ==========================================
+        let bubbles = [];
+        let particles = [];
+        let damageTexts = [];
+        let lastBubbleSpawn = 0;
+        let time = 0;
+
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+            grad.addColorStop(0, '#000022');
+            grad.addColorStop(0.6, '#1a103c');
+            grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            ctx.fillStyle = '#ffffff';
+            for(let i=0; i<50; i++) {
+                const x = (Math.sin(i * 123.45) * 0.5 + 0.5) * canvasWidth;
+                const y = (Math.cos(i * 67.89) * 0.5 + 0.5) * (canvasHeight * 0.6);
+                const size = Math.abs(Math.sin(time * 0.002 + i)) * 2;
+                ctx.fillRect(x, y, size, size);
+            }
+
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            const horizonY = canvasHeight * 0.65;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, horizonY);
+            ctx.lineTo(canvasWidth, horizonY);
+            ctx.stroke();
+
+            for(let i=-5; i<=5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(canvasWidth/2, horizonY);
+                ctx.lineTo(canvasWidth/2 + i * 200, canvasHeight);
+                ctx.stroke();
+            }
+            
+            for(let i=1; i<10; i++) {
+                const y = horizonY + Math.pow(i, 2) * 2;
+                if (y < canvasHeight) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvasWidth, y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function createParticle(x, y, color) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 1.0,
+                color: color
+            });
+        }
+
+        function createDamageText(x, y, text, color) {
+            damageTexts.push({
+                x: x, y: y,
+                vy: -2,
+                life: 1.0,
+                text: text,
+                color: color
+            });
+        }
+
+        function renderEffects() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, 4, 4);
+            }
+            ctx.globalAlpha = 1.0;
+
+            ctx.font = '16px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            for (let i = damageTexts.length - 1; i >= 0; i--) {
+                let dt = damageTexts[i];
+                dt.y += dt.vy;
+                dt.life -= 0.02;
+                
+                if (dt.life <= 0) {
+                    damageTexts.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.globalAlpha = dt.life;
+                ctx.fillStyle = '#000000';
+                ctx.fillText(dt.text, dt.x + 2, dt.y + 2);
+                ctx.fillStyle = dt.color;
+                ctx.fillText(dt.text, dt.x, dt.y);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function gameLoop(timestamp) {
+            time = timestamp;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            if (gameMode === 'dictionary' || !canvasWidth) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            drawBackground();
+            
+            if (gameMode === 'bubble' && lives > 0 && !overlayPanel.classList.contains('hidden') === false) {
+                runBubbleMode();
+            } else if (gameMode === 'bubble' && activeVerbs.length === 0) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.fillText("VALITSE VERBIRYHMÄ ALOITTAAKSESI", canvasWidth/2, canvasHeight/2);
+            }
+
+            renderEffects();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // ==========================================
+        // BUBBLE MODE LOGIC
+        // ==========================================
+        function runBubbleMode() {
+            if (time - lastBubbleSpawn > (1000 / 60) * difficulty.spawnRate) {
+                spawnBubble();
+                lastBubbleSpawn = time;
+            }
+
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                let b = bubbles[i];
+                b.y += b.speed;
+                b.x += Math.sin(time * 0.005 + b.id) * 0.5;
+
+                if (b.y > canvasHeight + 30) {
+                    if (b.isCorrect) {
+                        loseLife(); 
+                        createDamageText(b.x, canvasHeight - 30, "MISS!", "#ef4444");
+                    }
+                    bubbles.splice(i, 1);
+                    continue;
+                }
+
+                drawSlime(b);
+            }
+            
+            drawBubbleTargetUI();
+        }
+
+        let currentBubbleTarget = null;
+
+        function spawnBubble() {
+            if (activeVerbs.length === 0) return;
+            
+            if (!currentBubbleTarget) {
+                currentBubbleTarget = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            }
+
+            const x = 50 + Math.random() * (canvasWidth - 100);
+            const isCorrect = Math.random() < 0.3 || bubbles.filter(b=>b.isCorrect).length === 0;
+            let displayVerb = currentBubbleTarget;
+            
+            if (!isCorrect) {
+                displayVerb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            }
+            
+            const forms = [displayVerb.base, displayVerb.past, displayVerb.participle];
+            const text = forms[Math.floor(Math.random() * forms.length)];
+
+            bubbles.push({
+                id: Math.random(),
+                x: x,
+                y: -50,
+                radius: 40 + (text.length * 2), 
+                text: text,
+                isCorrect: (displayVerb === currentBubbleTarget),
+                speed: (0.8 + Math.random() * 1.2) * difficulty.speedMultiplier,
+                color: getRandomJRPGColor()
+            });
+        }
+
+        function drawBubbleTargetUI() {
+            if (!currentBubbleTarget) return;
+            
+            const text = `TUHOA VERBI: ${currentBubbleTarget.finnish.toUpperCase()}`;
+            
+            ctx.font = '14px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            
+            ctx.fillStyle = 'rgba(0, 0, 50, 0.8)';
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            
+            const w = ctx.measureText(text).width + 40;
+            const h = 40;
+            const x = canvasWidth / 2 - w / 2;
+            const y = canvasHeight - 60;
+            
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+            
+            ctx.fillStyle = '#000';
+            ctx.fillText(text, canvasWidth/2 + 2, y + 26);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(text, canvasWidth/2, y + 24);
+        }
+
+        function drawSlime(b) {
+            ctx.save();
+            ctx.translate(b.x, b.y);
+            
+            const scaleY = 1 + Math.sin(time * 0.01 + b.id) * 0.1;
+            const scaleX = 1 / scaleY;
+            ctx.scale(scaleX, scaleY);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, b.radius/2 + 10, b.radius*0.8, b.radius*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.fillStyle = b.color;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, b.radius, 0, Math.PI, false); 
+            ctx.quadraticCurveTo(-b.radius, -b.radius*1.5, 0, -b.radius*1.8); 
+            ctx.quadraticCurveTo(b.radius, -b.radius*1.5, b.radius, 0); 
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(-b.radius*0.3, -b.radius*0.5, b.radius*0.2, b.radius*0.4, Math.PI/4, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-15, -10, 6, 10);
+            ctx.fillRect(10, -10, 6, 10);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-13, -8, 2, 4);
+            ctx.fillRect(12, -8, 2, 4);
+
+            ctx.restore();
+            
+            ctx.font = '12px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000';
+            ctx.fillText(b.text, b.x+2, b.y + b.radius + 17);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(b.text, b.x, b.y + b.radius + 15);
+        }
+
+        function getRandomJRPGColor() {
+            const colors = ['#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        if(canvas) {
+            canvas.addEventListener('mousedown', (e) => {
+                if (gameMode !== 'bubble' || lives <= 0) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                for (let i = bubbles.length - 1; i >= 0; i--) {
+                    let b = bubbles[i];
+                    const dist = Math.hypot(clickX - b.x, clickY - b.y);
+                    
+                    if (dist < b.radius * 1.5) { 
+                        if (b.isCorrect) {
+                            audio.playCorrect();
+                            for(let p=0; p<15; p++) createParticle(b.x, b.y, '#ffd700');
+                            createDamageText(b.x, b.y, "CRITICAL!", "#fef08a");
+                            combo++;
+                            addScore(difficulty.baseScore);
+                            currentBubbleTarget = null; 
+                        } else {
+                            for(let p=0; p<10; p++) createParticle(b.x, b.y, '#94a3b8');
+                            createDamageText(b.x, b.y, "BLOCK!", "#94a3b8");
+                            loseLife();
+                        }
+                        
+                        bubbles.splice(i, 1);
+                        break; 
+                    }
+                }
+            });
+        }
+
+
+        // ==========================================
+        // CARDS MODE LOGIC
+        // ==========================================
+        let currentCardIndex = 0;
+        let currentCardVerb = null;
+        let isCardFlipped = false;
+
+        function initFlashcards() {
+            if(activeVerbs.length === 0) return;
+            currentCardIndex = 0;
+            updateCardDisplay();
+        }
+
+        function updateCardDisplay() {
+            currentCardVerb = activeVerbs[currentCardIndex];
+            document.getElementById('card-base-text').textContent = currentCardVerb.base;
+            document.getElementById('card-past-text').textContent = currentCardVerb.past + ', ' + currentCardVerb.participle;
+            document.getElementById('card-fin-text').textContent = currentCardVerb.finnish;
+            
+            isCardFlipped = false;
+            document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+        }
+
+        function flipCard() {
+            audio.playPop();
+            isCardFlipped = !isCardFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if (isCardFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextCard() {
+            audio.playPop();
+            currentCardIndex = (currentCardIndex + 1) % activeVerbs.length;
+            updateCardDisplay();
+        }
+
+        function prevCard() {
+            audio.playPop();
+            currentCardIndex = (currentCardIndex - 1 + activeVerbs.length) % activeVerbs.length;
+            updateCardDisplay();
+        }
+
+        // ==========================================
+        // TYPING MODE LOGIC
+        // ==========================================
+        let typingCurrentVerb = null;
+
+        function nextTypingVerb() {
+            if(activeVerbs.length === 0) return;
+            typingCurrentVerb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            
+            document.getElementById('typing-prompt-fin').textContent = typingCurrentVerb.finnish;
+            document.getElementById('typing-base-input').value = '';
+            document.getElementById('typing-past-input').value = '';
+            document.getElementById('typing-part-input').value = '';
+            
+            const feedback = document.getElementById('typing-feedback');
+            feedback.classList.add('hidden');
+            
+            setTimeout(() => document.getElementById('typing-base-input').focus(), 100);
+        }
+
+        function submitTypingAnswer(e) {
+            e.preventDefault();
+            
+            const iBase = document.getElementById('typing-base-input').value.trim().toLowerCase();
+            const iPast = document.getElementById('typing-past-input').value.trim().toLowerCase();
+            const iPart = document.getElementById('typing-part-input').value.trim().toLowerCase();
+            
+            const checkMatch = (input, expected) => {
+                if (input === expected.toLowerCase()) return true;
+                if (expected.includes('/')) {
+                    const parts = expected.split('/').map(s => s.trim().toLowerCase());
+                    if (parts.includes(input)) return true; 
+                }
+                return false;
+            };
+
+            const baseOk = checkMatch(iBase, typingCurrentVerb.base);
+            const pastOk = checkMatch(iPast, typingCurrentVerb.past);
+            const partOk = checkMatch(iPart, typingCurrentVerb.participle);
+
+            const btn = document.getElementById('typing-submit-btn');
+            const feedback = document.getElementById('typing-feedback');
+
+            if (baseOk && pastOk && partOk) {
+                audio.playCorrect();
+                btn.classList.add('bg-green-500', 'border-green-300');
+                btn.innerHTML = '<i class="fa-solid fa-star text-yellow-300 mr-1"></i> TÄYDELLISTÄ!';
+                
+                combo++;
+                addScore(difficulty.baseScore * 2);
+
+                setTimeout(() => {
+                    btn.classList.remove('bg-green-500', 'border-green-300');
+                    btn.innerHTML = '<i id="typing-btn-icon" class="fa-solid fa-check mr-1"></i> TARKISTA';
+                    nextTypingVerb();
+                }, 1000);
+            } else {
+                audio.playWrong();
+                
+                combo = 0;
+                updateHUD();
+
+                feedback.classList.remove('hidden');
+                feedback.innerHTML = `Väärin! Oikea loitsu:<br><span class="text-white">${typingCurrentVerb.base} - ${typingCurrentVerb.past} - ${typingCurrentVerb.participle}</span>`;
+                
+                e.target.classList.add('animate-shake');
+                setTimeout(() => e.target.classList.remove('animate-shake'), 400);
+            }
+        }
+
+        function skipTypingVerb() {
+            audio.playPop();
+            combo = 0;
+            updateHUD();
+            nextTypingVerb();
+        }
+
+        // ==========================================
+        // SCRAMBLE MODE LOGIC
+        // ==========================================
+        let scrambleCurrentVerb = null;
+        let scrambleTargetWord = "";
+        let scramblePool = [];
+        let scrambleAnswer = [];
+
+        function initScramble() {
+            if(activeVerbs.length === 0) return;
+            
+            scrambleCurrentVerb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            
+            const r = Math.random();
+            let formName = "";
+            if (r < 0.33) {
+                scrambleTargetWord = scrambleCurrentVerb.base;
+                formName = "PERUSMUOTO";
+            } else if (r < 0.66) {
+                scrambleTargetWord = scrambleCurrentVerb.past.split('/')[0].trim(); 
+                formName = "IMPERFEKTI";
+            } else {
+                scrambleTargetWord = scrambleCurrentVerb.participle.split('/')[0].trim();
+                formName = "PARTISIIPPI";
+            }
+            
+            document.getElementById('scramble-hint-label').textContent = `MUODOSTA ${formName}:`;
+            document.getElementById('scramble-target-prompt').textContent = `${scrambleCurrentVerb.base.toUpperCase()} (${scrambleCurrentVerb.finnish})`;
+            
+            scrambleAnswer = [];
+            scramblePool = scrambleTargetWord.toUpperCase().split('');
+            for (let i = scramblePool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [scramblePool[i], scramblePool[j]] = [scramblePool[j], scramblePool[i]];
+            }
+            if (scramblePool.join('') === scrambleTargetWord.toUpperCase() && scramblePool.length > 1) {
+                [scramblePool[0], scramblePool[1]] = [scramblePool[1], scramblePool[0]];
+            }
+
+            renderScramble();
+        }
+
+        function renderScramble() {
+            const answerBox = document.getElementById('scramble-answer-box');
+            const poolBox = document.getElementById('scramble-letter-pool');
+            
+            answerBox.innerHTML = '';
+            poolBox.innerHTML = '';
+            
+            scrambleAnswer.forEach((letter, index) => {
+                const tile = document.createElement('button');
+                tile.className = 'jrpg-btn jrpg-btn-primary w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base p-0 flex items-center justify-center';
+                tile.textContent = letter;
+                tile.onclick = () => returnScrambleLetter(index);
+                answerBox.appendChild(tile);
+            });
+            
+            scramblePool.forEach((obj, index) => {
+                if (obj === null) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'w-8 h-8 sm:w-10 sm:h-10 border-2 border-dashed border-slate-700 opacity-50';
+                    poolBox.appendChild(placeholder);
+                    return;
+                }
+                const tile = document.createElement('button');
+                tile.className = 'jrpg-btn w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base p-0 flex items-center justify-center';
+                tile.textContent = obj;
+                tile.onclick = () => selectScrambleLetter(index);
+                poolBox.appendChild(tile);
+            });
+        }
+
+        function selectScrambleLetter(index) {
+            audio.playPop();
+            const letter = scramblePool[index];
+            scramblePool[index] = null; 
+            scrambleAnswer.push(letter);
+            renderScramble();
+            
+            if (scrambleAnswer.length === scrambleTargetWord.length) {
+                setTimeout(checkScrambleAnswer, 200);
+            }
+        }
+
+        function returnScrambleLetter(index) {
+            audio.playPop();
+            const letter = scrambleAnswer.splice(index, 1)[0];
+            const emptyIdx = scramblePool.indexOf(null);
+            if (emptyIdx !== -1) {
+                scramblePool[emptyIdx] = letter;
+            } else {
+                scramblePool.push(letter);
+            }
+            renderScramble();
+        }
+
+        function clearScrambleAnswer() {
+            audio.playPop();
+            scrambleAnswer.forEach(letter => {
+                const emptyIdx = scramblePool.indexOf(null);
+                if (emptyIdx !== -1) {
+                    scramblePool[emptyIdx] = letter;
+                } else {
+                    scramblePool.push(letter);
+                }
+            });
+            scrambleAnswer = [];
+            renderScramble();
+        }
+
+        function checkScrambleAnswer() {
+            if (scrambleAnswer.length === 0) return;
+            
+            const currentWord = scrambleAnswer.join('');
+            if (currentWord === scrambleTargetWord.toUpperCase()) {
+                audio.playCorrect();
+                combo++;
+                addScore(difficulty.baseScore * 1.5);
+                
+                const box = document.getElementById('scramble-answer-box');
+                box.classList.add('bg-green-900', 'border-green-400');
+                setTimeout(() => {
+                    box.classList.remove('bg-green-900', 'border-green-400');
+                    initScramble();
+                }, 800);
+            } else {
+                audio.playWrong();
+                combo = 0;
+                updateHUD();
+                
+                const box = document.getElementById('scramble-answer-box');
+                box.classList.add('bg-red-900', 'border-red-500', 'animate-shake');
+                setTimeout(() => {
+                    box.classList.remove('bg-red-900', 'border-red-500', 'animate-shake');
+                    clearScrambleAnswer();
+                }, 500);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (gameMode !== 'scramble' || document.getElementById('scramble-ui').classList.contains('hidden')) return;
+            
+            if (e.key === 'Backspace') {
+                if (scrambleAnswer.length > 0) {
+                    returnScrambleLetter(scrambleAnswer.length - 1);
+                }
+                return;
+            }
+            
+            if (e.key === 'Enter') {
+                checkScrambleAnswer();
+                return;
+            }
+
+            const key = e.key.toUpperCase();
+            if (key.length === 1 && /[A-ZÄÖÅ]/.test(key)) {
+                const idx = scramblePool.findIndex(l => l === key);
+                if (idx !== -1) {
+                    selectScrambleLetter(idx);
+                }
+            }
+        });
+
+        // ==========================================
+        // DICTIONARY LOGIC
+        // ==========================================
+        function populateDictionary(data) {
+            const tbody = document.getElementById('verb-table-body');
+            tbody.innerHTML = '';
+            
+            data.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-900/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-2.5 border-b border-slate-800 text-white font-semibold">${v.base}</td>
+                    <td class="p-2.5 border-b border-slate-800 text-slate-300">${v.past}</td>
+                    <td class="p-2.5 border-b border-slate-800 text-slate-300">${v.participle}</td>
+                    <td class="p-2.5 border-b border-slate-800 text-cyan-300 italic">${v.finnish}</td>
+                    <td class="p-2.5 border-b border-slate-800 text-center">
+                        <button onclick="speakWord('${v.base}')" class="text-yellow-400 hover:text-white" title="Kuuntele">
+                            <i class="fa-solid fa-volume-up"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterVerbs() {
+            const term = document.getElementById('verb-search').value.toLowerCase();
+            const filtered = VERB_DATA.filter(v => 
+                v.base.toLowerCase().includes(term) || 
+                v.past.toLowerCase().includes(term) || 
+                v.participle.toLowerCase().includes(term) || 
+                v.finnish.toLowerCase().includes(term)
+            );
+            populateDictionary(filtered);
+        }
+
+    </script>
+</body>
+</html>
