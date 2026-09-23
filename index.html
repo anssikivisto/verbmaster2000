@@ -52,22 +52,6 @@
             text-shadow: 3px 3px 0px #78350f, 1px 1px 0px #000000;
         }
 
-        /* CRT Scanline Overlay */
-        .scanlines {
-            position: relative;
-        }
-        .scanlines::after {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
-            background-size: 100% 4px;
-            z-index: 70;
-            pointer-events: none;
-            opacity: 0.8;
-        }
-
         /* JRPG Frame Styles */
         .jrpg-box {
             background: linear-gradient(180deg, #000080 0%, #000033 100%);
@@ -116,10 +100,10 @@
         }
 
         .jrpg-btn.menu-active {
-            background: #334155 !important;
-            border-color: #94a3b8 !important;
-            border-right-color: #1e293b !important;
-            border-bottom-color: #1e293b !important;
+            background: #0369a1 !important;
+            border-color: #7dd3fc !important;
+            border-right-color: #0284c7 !important;
+            border-bottom-color: #0284c7 !important;
             color: #fef08a !important;
         }
 
@@ -186,7 +170,7 @@
         .animate-shake { animation: shake 0.4s ease-in-out; }
     </style>
 </head>
-<body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100 scanlines">
+<body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
 
     <!-- SPLASH SCREEN -->
     <div id="splash-screen" class="fixed inset-0 z-[80] flex flex-col items-center justify-end pb-24 bg-black bg-cover bg-center cursor-pointer" style="background-image: url('mainmenu.jpeg');" onclick="enterMainMenu()">
@@ -197,7 +181,7 @@
     <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
         <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
             <div class="jrpg-box p-4 sm:p-6 w-full flex flex-col gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-                <button onclick="newGame()" class="jrpg-btn jrpg-btn-primary py-3 px-4 text-sm flex items-center justify-center gap-2">
+                <button onclick="newGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
                     <span>NEW GAME</span>
                 </button>
                 <button onclick="continueGame()" class="jrpg-btn py-3 px-4 text-sm flex items-center justify-center gap-2">
@@ -336,10 +320,6 @@
                 <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn text-xs px-2.5 py-1.5 flex items-center gap-1">
                     <i id="music-icon" class="fa-solid fa-music text-slate-500"></i>
                     <span class="hidden md:inline text-[9px]">TEEMA</span>
-                </button>
-
-                <button id="crt-toggle" onclick="toggleCRT()" title="Kytke CRT Scanlines" class="jrpg-btn text-xs px-2.5 py-1.5">
-                    <i class="fa-solid fa-tv text-cyan-300"></i>
                 </button>
 
                 <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn text-xs px-2.5 py-1.5">
@@ -871,6 +851,7 @@
         let lives = 3;
         let combo = 0;
         let gameMode = 'bubble';
+        let isBubblePlaying = false; // Estää kuplien putoamisen ennen vaikeustason valintaa
         let animationFrameId = null;
         let selectedGroupForStart = null;
         let currentMenuIndex = 0;
@@ -911,9 +892,11 @@
         function setupMenuNavigation() {
             const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
             btns.forEach((btn, idx) => {
-                btn.addEventListener('mouseenter', () => {
-                    currentMenuIndex = idx;
-                    updateMenuSelectionVisuals();
+                btn.addEventListener('mousemove', () => {
+                    if (currentMenuIndex !== idx) {
+                        currentMenuIndex = idx;
+                        updateMenuSelectionVisuals();
+                    }
                 });
             });
             updateMenuSelectionVisuals();
@@ -929,6 +912,14 @@
 
         // Global Keydown Handler
         window.addEventListener('keydown', (e) => {
+            // Estä sivun rullaus nuolinäppäimillä
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
+                // Varmistetaan, ettei estetä tekstikentissä navigointia
+                if (document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                }
+            }
+
             // 1. Splash screen
             const splash = document.getElementById('splash-screen');
             if (splash && !splash.classList.contains('hidden') && e.key === 'Enter') {
@@ -941,17 +932,14 @@
             if (mainMenu && !mainMenu.classList.contains('hidden') && overlayPanel.classList.contains('hidden')) {
                 const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
                 if (e.key === 'ArrowDown') {
-                    e.preventDefault();
                     currentMenuIndex = (currentMenuIndex + 1) % btns.length;
                     updateMenuSelectionVisuals();
                     audio.playPop();
                 } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
                     currentMenuIndex = (currentMenuIndex - 1 + btns.length) % btns.length;
                     updateMenuSelectionVisuals();
                     audio.playPop();
                 } else if (e.key === 'Enter') {
-                    e.preventDefault();
                     btns[currentMenuIndex].click();
                 }
                 return;
@@ -1003,43 +991,33 @@
         }
 
         function showOptionsMenu() {
-            const isCrtOn = document.body.classList.contains('scanlines');
             showOverlay(`
-                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">OPTIONS</h2>
+                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">ASETUKSET</h2>
                 <div class="flex flex-col gap-3 w-full">
-                    <button onclick="toggleAudioAndMusic(); showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
-                        <span>Äänet ja musiikki</span>
-                        <span class="${audio.sfxEnabled ? 'text-green-400' : 'text-red-400'}">${audio.sfxEnabled ? 'ON' : 'OFF'}</span>
+                    <button onclick="audio.sfxEnabled = !audio.sfxEnabled; showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
+                        <span>Ääniefektit</span>
+                        <span class="${audio.sfxEnabled ? 'text-green-400' : 'text-red-400'}">${audio.sfxEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
-                    <button onclick="toggleCRT(); showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
-                        <span>CRT-suodatin</span>
-                        <span class="${isCrtOn ? 'text-green-400' : 'text-red-400'}">${isCrtOn ? 'ON' : 'OFF'}</span>
+                    <button onclick="toggleMusic(); showOptionsMenu();" class="jrpg-btn p-3 flex justify-between items-center text-xs sm:text-sm">
+                        <span>Musiikki</span>
+                        <span class="${audio.musicEnabled ? 'text-green-400' : 'text-red-400'}">${audio.musicEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
                     <button onclick="hideOverlay()" class="mt-4 jrpg-btn text-xs sm:text-sm p-2 w-full text-slate-400 hover:text-white">TAKAISIN</button>
                 </div>
             `);
         }
 
-        function toggleAudioAndMusic() {
-            const newState = !audio.sfxEnabled;
-            audio.sfxEnabled = newState;
-            if (newState !== audio.musicEnabled) {
-                toggleMusic();
-            }
-            const aIcon = document.getElementById('audio-icon');
-            if(aIcon) aIcon.className = newState ? 'fa-solid fa-volume-high text-yellow-300' : 'fa-solid fa-volume-xmark text-red-500';
-        }
-
         function showCredits() {
             showOverlay(`
-                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">CREDITS</h2>
+                <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">TEKIJÄT</h2>
                 <div class="flex flex-col gap-2 w-full text-left bg-black border-2 border-white p-4">
-                    <p class="text-white text-xs font-pixel mb-2">VERBMASTER 2000<br>16-BIT EDITION</p>
-                    <p class="text-cyan-300 text-xs">Ohjelmointi & Grafiikka:</p>
+                    <p class="text-white text-xs font-pixel mb-2 text-center">VERBMASTER 2000<br>16-BIT EDITION</p>
+                    <div class="border-b border-slate-700 my-1"></div>
+                    <p class="text-cyan-300 text-[10px] font-pixel">Ohjelmointi & Grafiikka:</p>
                     <p class="text-slate-300 text-xs mb-2">AI-Apulainen</p>
-                    <p class="text-cyan-300 text-xs">Musiikki:</p>
+                    <p class="text-cyan-300 text-[10px] font-pixel">Musiikki & Äänet:</p>
                     <p class="text-slate-300 text-xs mb-2">Web Audio Chiptune Engine</p>
-                    <p class="text-cyan-300 text-xs">Julkaisija:</p>
+                    <p class="text-cyan-300 text-[10px] font-pixel">Julkaisija & Konsepti:</p>
                     <p class="text-slate-300 text-xs">Verb Academy 2026</p>
                 </div>
                 <button onclick="hideOverlay()" class="mt-4 jrpg-btn text-xs sm:text-sm p-2 w-full text-slate-400 hover:text-white">SULJE</button>
@@ -1052,7 +1030,6 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            // Liitetty oikein kankaaseen DOM:in latauduttua, jotta klikkaukset rekisteröityvät
             canvas.addEventListener('mousedown', handleCanvasClick);
             
             populateDictionary(VERB_DATA);
@@ -1080,11 +1057,9 @@
         function toggleMusic() {
             const isPlaying = audio.toggleMusic();
             const icon = document.getElementById('music-icon');
-            icon.className = isPlaying ? 'fa-solid fa-music text-yellow-300 animate-pulse' : 'fa-solid fa-music text-slate-500';
-        }
-
-        function toggleCRT() {
-            document.body.classList.toggle('scanlines');
+            if (icon) {
+                icon.className = isPlaying ? 'fa-solid fa-music text-yellow-300 animate-pulse' : 'fa-solid fa-music text-slate-500';
+            }
         }
 
         function selectStartGroup(groupVal) {
@@ -1154,6 +1129,10 @@
             if(gameMode === 'cards') initFlashcards();
             if(gameMode === 'typing') nextTypingVerb();
             if(gameMode === 'scramble') initScramble();
+            if(gameMode === 'bubble') {
+                isBubblePlaying = false;
+                showDifficultyModal();
+            }
         }
 
         function switchMode(mode) {
@@ -1195,6 +1174,10 @@
                     document.getElementById('html-controls-overlay').classList.remove('pointer-events-none');
                     canvasHud.classList.remove('hidden');
                     initScramble();
+                } else if (mode === 'bubble') {
+                    canvasHud.classList.remove('hidden');
+                    isBubblePlaying = false;
+                    showDifficultyModal();
                 } else {
                     canvasHud.classList.remove('hidden');
                 }
@@ -1269,12 +1252,13 @@
         }
 
         function gameOver() {
+            isBubblePlaying = false;
             showOverlay(`
                 <h2 class="text-3xl font-pixel text-red-500 pixel-shadow mb-4">GAME OVER</h2>
                 <div class="jrpg-box bg-black p-4 mb-4">
                     <p class="text-yellow-300 font-pixel text-sm">Pisteet: ${score}</p>
                 </div>
-                <button onclick="resetGame()" class="jrpg-btn jrpg-btn-primary px-6 py-3 w-full">Yritä uudelleen</button>
+                <button onclick="resetGame(); if(gameMode === 'bubble') showDifficultyModal();" class="jrpg-btn jrpg-btn-primary px-6 py-3 w-full">Yritä uudelleen</button>
             `);
         }
 
@@ -1288,13 +1272,13 @@
         }
 
         function showDifficultyModal() {
+            isBubblePlaying = false; // Pysäytä kuplapeli taustalla
             showOverlay(`
                 <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-4">VAIKEUSTASO</h2>
                 <div class="flex flex-col gap-3 w-full">
                     <button onclick="setDifficulty('easy')" class="jrpg-btn p-3 ${difficulty.id === 'easy' ? 'border-yellow-400 text-yellow-300' : ''}">Helppo (Hidas)</button>
                     <button onclick="setDifficulty('medium')" class="jrpg-btn p-3 ${difficulty.id === 'medium' ? 'border-yellow-400 text-yellow-300' : ''}">Keskitaso (Normaali)</button>
                     <button onclick="setDifficulty('hard')" class="jrpg-btn p-3 ${difficulty.id === 'hard' ? 'border-yellow-400 text-yellow-300' : ''}">Vaikea (Nopea)</button>
-                    <button onclick="hideOverlay()" class="mt-2 text-xs font-pixel text-slate-400 underline hover:text-white">Peruuta</button>
                 </div>
             `);
         }
@@ -1310,6 +1294,7 @@
             document.getElementById('hud-diff-name').textContent = difficulty.name;
             hideOverlay();
             resetGame();
+            isBubblePlaying = true; // Aloita peli vasta vaikeustason valinnan jälkeen
         }
 
         function speakWord(text) {
@@ -1452,6 +1437,8 @@
         let currentBubbleTarget = null;
 
         function runBubbleMode() {
+            if (!isBubblePlaying) return;
+
             if (time - lastBubbleSpawn > (1000 / 60) * difficulty.spawnRate && bubbles.length < difficulty.maxBubbles) {
                 spawnBubble();
                 lastBubbleSpawn = time;
@@ -1520,16 +1507,18 @@
         function drawBubbleTargetUI() {
             if (!currentBubbleTarget) return;
             
-            const text1 = `POKSAUTA VERBI: ${currentBubbleTarget.verb.finnish.toUpperCase()}`;
+            const text1 = `POKSAUTA: ${currentBubbleTarget.verb.finnish.toUpperCase()}`;
             const text2 = currentBubbleTarget.formName.toUpperCase();
             
-            ctx.font = '12px "Press Start 2P"';
-            ctx.textAlign = 'center';
+            ctx.font = '14px "Press Start 2P"';
+            const w1 = ctx.measureText(text1).width;
+            ctx.font = '10px "Press Start 2P"';
+            const w2 = ctx.measureText(text2).width;
             
-            const w = Math.max(ctx.measureText(text1).width, ctx.measureText(text2).width) + 40;
-            const h = 55; 
+            const w = Math.max(w1, w2) + 40;
+            const h = 60; 
             const x = canvasWidth / 2 - w / 2;
-            const y = canvasHeight - 75;
+            const y = canvasHeight - 80;
             
             ctx.fillStyle = 'rgba(0, 0, 50, 0.8)';
             ctx.strokeStyle = '#ffd700';
@@ -1538,14 +1527,20 @@
             ctx.fillRect(x, y, w, h);
             ctx.strokeRect(x, y, w, h);
             
+            // Suuri ja syaani ylempi rivi (pyydetty verbi)
             ctx.fillStyle = '#000';
-            ctx.fillText(text1, canvasWidth/2 + 2, y + 26);
-            ctx.fillText(text2, canvasWidth/2 + 2, y + 46);
+            ctx.font = '14px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillText(text1, canvasWidth/2 + 2, y + 28);
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillText(text1, canvasWidth/2, y + 26);
             
-            ctx.fillStyle = '#fff';
-            ctx.fillText(text1, canvasWidth/2, y + 24);
+            // Pienempi ja keltainen alempi rivi (vaadittu muoto)
+            ctx.fillStyle = '#000';
+            ctx.font = '10px "Press Start 2P"';
+            ctx.fillText(text2, canvasWidth/2 + 2, y + 48);
             ctx.fillStyle = '#fef08a';
-            ctx.fillText(text2, canvasWidth/2, y + 44);
+            ctx.fillText(text2, canvasWidth/2, y + 46);
         }
 
         function drawBubble(b) {
@@ -1589,7 +1584,7 @@
         }
 
         function handleCanvasClick(e) {
-            if (gameMode !== 'bubble' || lives <= 0) return;
+            if (gameMode !== 'bubble' || lives <= 0 || !isBubblePlaying) return;
             
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
