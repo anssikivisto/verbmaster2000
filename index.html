@@ -34,6 +34,10 @@
             background-color: #050508;
             image-rendering: pixelated;
         }
+        
+        #main-canvas {
+            touch-action: none;
+        }
 
         .font-pixel {
             font-family: 'Press Start 2P', monospace;
@@ -89,7 +93,7 @@
             transition: all 0.05s ease;
         }
 
-        #main-menu-screen .jrpg-btn:hover {
+        #main-menu-screen .jrpg-btn:hover, #overlay-content .jrpg-btn:hover {
             background: #1e293b;
             border-color: #64748b;
             border-right-color: #0f172a;
@@ -97,7 +101,7 @@
             color: #ffffff;
         }
 
-        .jrpg-btn.menu-active, #main-menu-screen .jrpg-btn.menu-active:hover {
+        .jrpg-btn.menu-active, #main-menu-screen .jrpg-btn.menu-active:hover, #overlay-content .jrpg-btn.menu-active:hover {
             background: #0369a1 !important;
             border-color: #7dd3fc !important;
             border-right-color: #0284c7 !important;
@@ -409,7 +413,6 @@
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-xs px-2 py-1 animate-pulse shadow-lg">
                         <span id="hud-combo">2x</span> COMBO!
                     </div>
-                    <!-- Lisätty puuttuva vaikeustasomerkki tänne -->
                     <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-[10px] sm:text-xs px-2 py-1 shadow-lg">
                         TASO: <span id="hud-diff-name">Keskitaso</span>
                     </div>
@@ -781,6 +784,7 @@
         let animationFrameId = null;
         let selectedGroupForStart = null;
         let currentMenuIndex = 0;
+        let currentOverlayIndex = 0;
         let typingChecked = false;
         
         let difficulty = {
@@ -830,6 +834,31 @@
             updateMenuSelectionVisuals();
         }
 
+        function updateOverlaySelectionVisuals() {
+            const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
+            if (btns.length === 0) return;
+            btns.forEach((btn, idx) => {
+                if (idx === currentOverlayIndex) {
+                    btn.classList.add('menu-active');
+                } else {
+                    btn.classList.remove('menu-active');
+                }
+            });
+        }
+
+        function setupOverlayNavigation() {
+            const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
+            btns.forEach((btn, idx) => {
+                btn.addEventListener('mousemove', () => {
+                    if (currentOverlayIndex !== idx) {
+                        currentOverlayIndex = idx;
+                        updateOverlaySelectionVisuals();
+                    }
+                });
+            });
+            updateOverlaySelectionVisuals();
+        }
+
         function enterMainMenu() {
             document.getElementById('splash-screen').classList.add('hidden');
             document.getElementById('main-menu-screen').classList.remove('hidden');
@@ -847,15 +876,18 @@
 
         // Global Keydown Handler
         window.addEventListener('keydown', (e) => {
-            // Estä sivun rullaus nuolinäppäimillä
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
                 if (document.activeElement.tagName !== 'INPUT') {
                     e.preventDefault();
                 }
             }
 
-            // ESC-toiminto palauttaa valikkoon
             if (e.key === 'Escape') {
+                if (!overlayPanel.classList.contains('hidden')) {
+                    const backBtn = Array.from(document.querySelectorAll('#overlay-content .jrpg-btn')).find(b => b.textContent.includes('TAKAISIN') || b.textContent.includes('SULJE'));
+                    if (backBtn) backBtn.click();
+                    return;
+                }
                 const splash = document.getElementById('splash-screen');
                 const mainMenu = document.getElementById('main-menu-screen');
                 if (splash.classList.contains('hidden') && mainMenu.classList.contains('hidden')) {
@@ -872,8 +904,27 @@
                 return;
             }
             
+            // Yleisten overlay-ikkunoiden (Options, Credits, GameOver) navigointi
+            if (!overlayPanel.classList.contains('hidden')) {
+                const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
+                if (btns.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                        currentOverlayIndex = (currentOverlayIndex + 1) % btns.length;
+                        updateOverlaySelectionVisuals();
+                        audio.playPop();
+                    } else if (e.key === 'ArrowUp') {
+                        currentOverlayIndex = (currentOverlayIndex - 1 + btns.length) % btns.length;
+                        updateOverlaySelectionVisuals();
+                        audio.playPop();
+                    } else if (e.key === 'Enter') {
+                        btns[currentOverlayIndex].click();
+                    }
+                }
+                return;
+            }
+
             const mainMenu = document.getElementById('main-menu-screen');
-            if (mainMenu && !mainMenu.classList.contains('hidden') && overlayPanel.classList.contains('hidden')) {
+            if (mainMenu && !mainMenu.classList.contains('hidden')) {
                 const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
                 if (e.key === 'ArrowDown') {
                     currentMenuIndex = (currentMenuIndex + 1) % btns.length;
@@ -931,21 +982,30 @@
             startGameFromMenu();
         }
 
-        function toggleSfxSetting() {
+        function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
             if (audio.sfxEnabled) audio.playPop();
+            const savedIndex = currentOverlayIndex;
             showOptionsMenu();
+            setTimeout(() => { currentOverlayIndex = savedIndex; updateOverlaySelectionVisuals(); }, 15);
+        }
+
+        function toggleMusicOverlay() {
+            audio.toggleMusic();
+            const savedIndex = currentOverlayIndex;
+            showOptionsMenu();
+            setTimeout(() => { currentOverlayIndex = savedIndex; updateOverlaySelectionVisuals(); }, 15);
         }
 
         function showOptionsMenu() {
             showOverlay(`
                 <h2 class="text-2xl font-pixel text-yellow-300 pixel-shadow mb-6">ASETUKSET</h2>
                 <div class="flex flex-col gap-4 w-full">
-                    <button onclick="toggleSfxSetting()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
+                    <button onclick="toggleSfxOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
                         <span>Ääniefektit</span>
                         <span class="${audio.sfxEnabled ? 'text-green-400' : 'text-red-400'}">${audio.sfxEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
-                    <button onclick="toggleMusic(); showOptionsMenu();" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
+                    <button onclick="toggleMusicOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
                         <span>Musiikki</span>
                         <span class="${audio.musicEnabled ? 'text-green-400' : 'text-red-400'}">${audio.musicEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
@@ -978,6 +1038,10 @@
             window.addEventListener('resize', resizeCanvas);
             
             canvas.addEventListener('mousedown', handleCanvasClick);
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleCanvasClick(e);
+            }, { passive: false });
             
             populateDictionary(VERB_DATA);
             animationFrameId = requestAnimationFrame(gameLoop);
@@ -1192,7 +1256,9 @@
         }
 
         function getHighScore() {
-            return parseInt(localStorage.getItem('vm2000_highscore') || '0');
+            const stored = localStorage.getItem('vm2000_highscore');
+            const parsed = parseInt(stored);
+            return isNaN(parsed) ? 0 : parsed;
         }
 
         function setHighScore(val) {
@@ -1226,6 +1292,7 @@
 
         function gameOver() {
             isBubblePlaying = false;
+            currentOverlayIndex = 0;
             showOverlay(`
                 <h2 class="text-3xl sm:text-4xl font-pixel text-red-500 pixel-shadow mb-5">GAME OVER</h2>
                 <div class="jrpg-box bg-black p-5 mb-5">
@@ -1238,6 +1305,7 @@
         function showOverlay(htmlContent) {
             overlayContent.innerHTML = htmlContent;
             overlayPanel.classList.remove('hidden');
+            setTimeout(setupOverlayNavigation, 15);
         }
 
         function hideOverlay() {
@@ -1246,8 +1314,6 @@
 
         function showDifficultyModal() {
             isBubblePlaying = false;
-            
-            // Piilotetaan yleinen overlay, jos se on auki
             hideOverlay(); 
             
             const diffUi = document.getElementById('bubble-diff-ui');
@@ -1433,10 +1499,12 @@
                 b.x += Math.sin(time * 0.005 + b.id) * 0.5;
 
                 if (b.y > canvasHeight + 30) {
-                    const targetKey = ['base', 'past', 'participle'][currentBubbleTarget.formIndex];
-                    if (b.text === currentBubbleTarget.verb[targetKey]) {
-                        loseLife(); 
-                        createDamageText(b.x, canvasHeight - 30, "MISS!", "#ef4444");
+                    if (currentBubbleTarget) {
+                        const targetKey = ['base', 'past', 'participle'][currentBubbleTarget.formIndex];
+                        if (b.text === currentBubbleTarget.verb[targetKey]) {
+                            loseLife(); 
+                            createDamageText(b.x, canvasHeight - 30, "MISS!", "#ef4444");
+                        }
                     }
                     bubbles.splice(i, 1);
                     continue;
@@ -1464,7 +1532,6 @@
             const targetFormKey = forms[currentBubbleTarget.formIndex];
             const correctText = currentBubbleTarget.verb[targetFormKey];
             
-            // Tarkistetaan, onko oikea vastaus jo ilmassa
             const hasTarget = bubbles.some(b => b.text === correctText);
             const isTargetMatch = !hasTarget && (Math.random() < 0.3 || bubbles.length === 0);
             
@@ -1474,11 +1541,9 @@
             } else {
                 let isValidWrong = false;
                 while (!isValidWrong) {
-                    // Haetaan väärä verbi KAIKISTA verbeistä (VERB_DATA)
                     const randV = VERB_DATA[Math.floor(Math.random() * VERB_DATA.length)];
                     const randF = forms[Math.floor(Math.random() * 3)];
                     text = randV[randF];
-                    // Estetään satunnainen oikea vastaus
                     if (text !== correctText) isValidWrong = true;
                 }
             }
@@ -1500,10 +1565,23 @@
             const text1 = `POKSAUTA: ${currentBubbleTarget.verb.finnish.toUpperCase()}`;
             const text2 = currentBubbleTarget.formName.toUpperCase();
             
-            ctx.font = '16px "Press Start 2P"';
-            const w1 = ctx.measureText(text1).width;
+            let fontSize1 = 16;
+            ctx.font = fontSize1 + 'px "Press Start 2P"';
+            let w1 = ctx.measureText(text1).width;
+            
+            // Skaalataan pienemmäksi jos ei mahdu ruudulle
+            if (w1 > canvasWidth - 20) {
+                fontSize1 = 10;
+                ctx.font = fontSize1 + 'px "Press Start 2P"';
+                w1 = ctx.measureText(text1).width;
+            }
+            
             ctx.font = '12px "Press Start 2P"';
-            const w2 = ctx.measureText(text2).width;
+            let w2 = ctx.measureText(text2).width;
+            if (w2 > canvasWidth - 20) {
+                ctx.font = '9px "Press Start 2P"';
+                w2 = ctx.measureText(text2).width;
+            }
             
             const w = Math.max(w1, w2) + 50;
             const h = 70; 
@@ -1517,17 +1595,15 @@
             ctx.fillRect(x, y, w, h);
             ctx.strokeRect(x, y, w, h);
             
-            // Suuri ja syaani ylempi rivi
             ctx.fillStyle = '#000';
-            ctx.font = '16px "Press Start 2P"';
+            ctx.font = fontSize1 + 'px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.fillText(text1, canvasWidth/2 + 2, y + 32);
             ctx.fillStyle = '#22d3ee';
             ctx.fillText(text1, canvasWidth/2, y + 30);
             
-            // Pienempi ja keltainen alempi rivi
             ctx.fillStyle = '#000';
-            ctx.font = '12px "Press Start 2P"';
+            ctx.font = (w2 === ctx.measureText(text2).width && w2 < canvasWidth-20 ? '12px' : '9px') + ' "Press Start 2P"';
             ctx.fillText(text2, canvasWidth/2 + 2, y + 57);
             ctx.fillStyle = '#fef08a';
             ctx.fillText(text2, canvasWidth/2, y + 55);
@@ -1571,17 +1647,28 @@
 
         function handleCanvasClick(e) {
             if (gameMode !== 'bubble' || lives <= 0 || !isBubblePlaying) return;
+            if (!currentBubbleTarget) return; // Turvatarkistus
             
             const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+            
+            // Tuki hiirelle ja kosketusnäytölle
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            const clickX = clientX - rect.left;
+            const clickY = clientY - rect.top;
             
             for (let i = bubbles.length - 1; i >= 0; i--) {
                 let b = bubbles[i];
                 const dist = Math.hypot(clickX - b.x, clickY - b.y);
                 
                 if (dist < b.radius * 1.5) { 
-                    
                     const targetKey = ['base', 'past', 'participle'][currentBubbleTarget.formIndex];
                     if (b.text === currentBubbleTarget.verb[targetKey]) {
                         audio.playCorrect();
@@ -1967,7 +2054,6 @@
                 const box = document.getElementById('scramble-answer-box');
                 box.classList.add('bg-red-900', 'border-red-500', 'animate-shake');
                 
-                // Näytetään välittömästi oikea sana
                 box.innerHTML = '';
                 scrambleTargetWord.toUpperCase().split('').forEach(letter => {
                     const tile = document.createElement('div');
