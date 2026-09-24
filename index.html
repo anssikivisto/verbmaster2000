@@ -409,6 +409,10 @@
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-xs px-2 py-1 animate-pulse shadow-lg">
                         <span id="hud-combo">2x</span> COMBO!
                     </div>
+                    <!-- Lisätty puuttuva vaikeustasomerkki tänne -->
+                    <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-[10px] sm:text-xs px-2 py-1 shadow-lg">
+                        TASO: <span id="hud-diff-name">Keskitaso</span>
+                    </div>
                 </div>
 
                 <!-- 8-bit Heart SVG -->
@@ -1099,16 +1103,18 @@
             document.getElementById('bubble-diff-ui').classList.add('hidden');
             htmlControlsOverlay.classList.add('pointer-events-none');
             
+            const diffBadge = document.getElementById('hud-diff-badge');
+
             if (mode === 'bubble') {
                 document.getElementById('hud-lives').classList.remove('hidden');
-                document.getElementById('hud-diff-badge').classList.remove('hidden');
+                if (diffBadge) diffBadge.classList.remove('hidden');
                 document.getElementById('hud-lives').classList.add('flex');
-                document.getElementById('hud-diff-badge').classList.add('flex');
+                if (diffBadge) diffBadge.classList.add('flex');
             } else {
                 document.getElementById('hud-lives').classList.add('hidden');
-                document.getElementById('hud-diff-badge').classList.add('hidden');
+                if (diffBadge) diffBadge.classList.add('hidden');
                 document.getElementById('hud-lives').classList.remove('flex');
-                document.getElementById('hud-diff-badge').classList.remove('flex');
+                if (diffBadge) diffBadge.classList.remove('flex');
             }
 
             if (mode === 'dictionary') {
@@ -1263,7 +1269,8 @@
             };
             difficulty = levels[level];
             
-            document.getElementById('hud-diff-name').textContent = difficulty.name;
+            const diffNameEl = document.getElementById('hud-diff-name');
+            if (diffNameEl) diffNameEl.textContent = difficulty.name;
             
             const diffUi = document.getElementById('bubble-diff-ui');
             diffUi.classList.add('hidden');
