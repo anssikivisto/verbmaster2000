@@ -1193,24 +1193,20 @@
                 if (mode === 'cards') {
                     document.getElementById('cards-ui').classList.remove('hidden');
                     document.getElementById('cards-ui').classList.add('flex');
-                    htmlControlsOverlay.classList.remove('pointer-events-none');
                     canvasHud.classList.add('hidden');
                     initFlashcards();
                 } else if (mode === 'typing') {
                     document.getElementById('typing-ui').classList.remove('hidden');
                     document.getElementById('typing-ui').classList.add('flex');
-                    htmlControlsOverlay.classList.remove('pointer-events-none');
                     canvasHud.classList.remove('hidden');
                     nextTypingVerb();
                 } else if (mode === 'scramble') {
                     document.getElementById('scramble-ui').classList.remove('hidden');
                     document.getElementById('scramble-ui').classList.add('flex');
-                    htmlControlsOverlay.classList.remove('pointer-events-none');
                     canvasHud.classList.remove('hidden');
                     initScramble();
                 } else if (mode === 'bubble') {
                     canvasHud.classList.remove('hidden');
-                    htmlControlsOverlay.classList.remove('pointer-events-none');
                     isBubblePlaying = false;
                     showDifficultyModal();
                 } else {
