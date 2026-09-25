@@ -704,9 +704,11 @@
         ];
 
     const CUTSCENES = {
-        intro: {
+        // Ensimmäinen osa
+        intro_part1: {
             image: "image1.jpeg",
             music: "gh0stly-the-infinite-fall-271940.mp3",
+            nextScene: "intro_part2", // Ketjutetaan seuraavaan!
             lines: [
                 "Look at this city...",
                 "Every shadow, every street, every flickering neon light... all dancing to my tune.",
@@ -715,6 +717,14 @@
                 "Do you really think you're some kind of a hero? That you can actually beat this game?",
                 "Save us both the trouble and power off your machine. You will never see the end credits.",
                 "But be my guest... go ahead and try, if you are truly that foolish."
+            ]
+        },
+        // Toinen osa, joka latautuu lennosta
+        intro_part2: {
+            image: "image2.jpeg", 
+            // music-riviä ei tarvita, jolloin edellinen kappale jatkuu saumattomasti
+            lines: [
+                "You'll be begging for a Game Over sooner than you think."
             ]
         },
         first_milestone: {
@@ -817,8 +827,14 @@ function advanceCutscene() {
         if (currentLineIndex < currentCutscene.lines.length) {
             typeLine();
         } else {
-            // Kaikki lauseet luettu, päätetään cutscene
-            endCutscene();
+            // TÄSSÄ UUSI LOGIIKKA KETJUTUKSELLE:
+            if (currentCutscene.nextScene) {
+                // Siirrytään suoraan seuraavaan kohtaukseen katkomatta musiikkia!
+                startCutscene(currentCutscene.nextScene, cutsceneCallback);
+            } else {
+                // Kaikki lauseet luettu, eikä jatkoa ole -> päätetään cutscene
+                endCutscene();
+            }
         }
     }
 }
@@ -1152,13 +1168,13 @@ class ChiptuneEngine {
                     localStorage.clear();
                     setHighScore(0);
                     if (!audio.ctx) audio.init();
-                    // LAUKAISTAAN INTRO
-                    startCutscene('intro', startGameFromMenu);
+                    // LAUKAISTAAN INTRON ENSIMMÄINEN OSA
+                    startCutscene('intro_part1', startGameFromMenu);
                 }
             } else {
                 if (!audio.ctx) audio.init();
-                // LAUKAISTAAN INTRO    
-                startCutscene('intro', startGameFromMenu);
+                // LAUKAISTAAN INTRON ENSIMMÄINEN OSA
+                startCutscene('intro_part1', startGameFromMenu);
             }
         }
 
