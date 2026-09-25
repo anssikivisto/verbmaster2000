@@ -220,6 +220,18 @@
         </div>
     </div>
 
+    <!-- CUTSCENE SCREEN -->
+    <div id="cutscene-screen" class="fixed inset-0 z-[70] bg-black bg-cover bg-center hidden flex-col justify-end p-4 pb-8 cursor-pointer" onclick="advanceCutscene()">
+        <!-- Musta puoliläpinäkyvä kalvo, jotta teksti erottuu aina hyvin taustakuvasta -->
+        <div class="absolute inset-0 bg-black/30 pointer-events-none"></div>
+        
+        <!-- Dialogilaatikko (JRPG-tyyli) -->
+        <div class="relative z-10 jrpg-box w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+            <p id="cutscene-text" class="font-pixel text-sm sm:text-base md:text-lg text-white pixel-shadow leading-relaxed"></p>
+            <div id="cutscene-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce hidden">▼</div>
+        </div>
+    </div>
+
     <!-- START / GROUP SELECT MODAL -->
     <div id="start-screen" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
         <div class="jrpg-box max-w-2xl w-full p-5 sm:p-7 flex flex-col gap-6 my-auto text-white">
@@ -691,6 +703,141 @@
             { group: 11, base: "write", past: "wrote", participle: "written", finnish: "kirjoittaa" }
         ];
 
+    const CUTSCENES = {
+        intro: {
+            image: "image1.jpeg",
+            music: "gh0stly-the-infinite-fall-271940.mp3", // 
+            lines: [
+    "Look at this city..."
+    "Every shadow, every street, every flickering neon light... all dancing to my tune."
+    "I, Boss Katsuyoshi, own this place."
+    "And yet, you dared to come here and challenge me. How pathetic."
+    "Do you really think you're some kind of a hero? That you can actually beat this game?"
+    "Save us both the trouble and power off your machine. You will never see the end credits."
+    "But be my guest... go ahead and try, if you are truly that foolish."
+            ]
+    },
+        first_milestone: {
+            image: "milestone.jpeg",
+            music: "victory.mp3",
+            lines: [
+                "Olet ottanut ensimmäiset askeleesi...",
+                "Mutta todellinen haaste odottaa vasta edessäpäin."
+            ]
+        }
+    };
+
+// --- CUTSCENE-MUUTTUJAT ---
+let isCutsceneActive = false;
+let currentCutscene = null;
+let currentLineIndex = 0;
+let currentCharIndex = 0;
+let typewriterTimer = null;
+let cutsceneCallback = null;
+let isTyping = false;
+
+// --- OHJAAJA-FUNKTIO ---
+function startCutscene(sceneId, callback) {
+    const scene = CUTSCENES[sceneId];
+    if (!scene) {
+        console.error("Cutscenea ei löytynyt:", sceneId);
+        if (callback) callback();
+        return;
+    }
+
+    isCutsceneActive = true;
+    currentCutscene = scene;
+    currentLineIndex = 0;
+    cutsceneCallback = callback;
+
+    // Piilotetaan muut päänäkymät
+    document.getElementById('main-menu-screen').classList.add('hidden');
+    document.getElementById('game-canvas-wrapper').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden');
+    hideOverlay();
+    
+    // Valmistellaan näyttämö
+    const screen = document.getElementById('cutscene-screen');
+    // HUOM: Varmista että kuvatiedostot ovat samassa kansiossa html-tiedoston kanssa
+    screen.style.backgroundImage = `url('${scene.image}')`;
+    screen.classList.remove('hidden');
+    screen.classList.add('flex');
+    
+    document.getElementById('cutscene-text').textContent = "";
+    document.getElementById('cutscene-indicator').classList.add('hidden');
+
+    // Soitetaan MP3-musiikki
+    if (scene.music) {
+        audio.playBGM(scene.music);
+    }
+
+    // Aloitetaan lauseen kirjoittaminen ruudulle
+    typeLine();
+}
+
+function typeLine() {
+    isTyping = true;
+    currentCharIndex = 0;
+    const textEl = document.getElementById('cutscene-text');
+    textEl.textContent = "";
+    document.getElementById('cutscene-indicator').classList.add('hidden');
+    
+    const line = currentCutscene.lines[currentLineIndex];
+    
+    clearInterval(typewriterTimer);
+    typewriterTimer = setInterval(() => {
+        textEl.textContent += line.charAt(currentCharIndex);
+        currentCharIndex++;
+        
+        // Pieni JRPG-tyyppinen naputusääni joka toisella kirjaimella
+        if (currentCharIndex % 2 === 0) audio.playPop();
+
+        if (currentCharIndex >= line.length) {
+            finishTyping();
+        }
+    }, 40); // Kirjoitusnopeus (40ms per kirjain)
+}
+
+function finishTyping() {
+    clearInterval(typewriterTimer);
+    isTyping = false;
+    document.getElementById('cutscene-text').textContent = currentCutscene.lines[currentLineIndex];
+    document.getElementById('cutscene-indicator').classList.remove('hidden'); // Näytä vilkkuva nuoli
+}
+
+function advanceCutscene() {
+    if (!isCutsceneActive) return;
+
+    if (isTyping) {
+        // Jos teksti rullaa vielä ja pelaaja klikkaa, tulostetaan lause heti kokonaan
+        finishTyping();
+    } else {
+        // Jos lause on valmis, siirrytään seuraavaan
+        currentLineIndex++;
+        if (currentLineIndex < currentCutscene.lines.length) {
+            typeLine();
+        } else {
+            // Kaikki lauseet luettu, päätetään cutscene
+            endCutscene();
+        }
+    }
+}
+
+function endCutscene() {
+    isCutsceneActive = false;
+    const screen = document.getElementById('cutscene-screen');
+    screen.classList.add('hidden');
+    screen.classList.remove('flex');
+    
+    // Pysäytetään MP3
+    audio.stopBGM();
+
+    // Jatketaan peliä siitä, mihin pyydettiin
+    if (cutsceneCallback) {
+        cutsceneCallback();
+    }
+}
+        
         class ChiptuneEngine {
             constructor() {
                 this.ctx = null;
@@ -772,7 +919,113 @@
             }
         }
 
-        const audio = new ChiptuneEngine();
+ class ChiptuneEngine {
+    constructor() {
+        this.ctx = null;
+        this.sfxEnabled = true;
+        this.musicEnabled = false;
+        
+        // Uusi lisäys: MP3-soitin cutscenejä ja taustamusiikkia varten
+        this.bgmPlayer = new Audio();
+        this.bgmPlayer.loop = true;
+        this.currentTrack = null;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                this.ctx = new AudioContext();
+            }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    // --- Alkuperäiset piippaus-äänet pysyvät samoina ---
+    playPop() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+
+    playCorrect() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [659.25, 783.99, 987.77, 1318.51];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.15, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.12);
+        });
+    }
+
+    playWrong() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+    }
+
+    // --- Uudet MP3-musiikin ohjaustoiminnot ---
+    playBGM(trackUrl) {
+        if (!this.musicEnabled || !trackUrl) return;
+        if (this.currentTrack === trackUrl && !this.bgmPlayer.paused) return; // Soi jo
+        
+        this.bgmPlayer.src = trackUrl;
+        this.bgmPlayer.play().catch(e => console.warn("Selaimen autoplay-esto aktivoitui:", e));
+        this.currentTrack = trackUrl;
+    }
+
+    stopBGM() {
+        this.bgmPlayer.pause();
+        this.bgmPlayer.currentTime = 0;
+        this.currentTrack = null;
+    }
+
+    toggleMusic() {
+        this.musicEnabled = !this.musicEnabled;
+        if (!this.musicEnabled) {
+            this.stopBGM();
+        } else if (this.currentTrack) {
+            this.bgmPlayer.play().catch(e => console.warn("Autoplay estetty:", e));
+        }
+        return this.musicEnabled;
+    }
+}
 
         // GLOBALS
         let activeVerbs = [];
@@ -898,6 +1151,11 @@
                 return;
             }
 
+            if (isCutsceneActive && (e.key === 'Enter' || e.key === ' ')) {
+                    advanceCutscene();
+                    return;
+            }            
+            
             const splash = document.getElementById('splash-screen');
             if (splash && !splash.classList.contains('hidden') && e.key === 'Enter') {
                 enterMainMenu();
@@ -966,21 +1224,21 @@
         }
 
         function newGame() {
-            if (localStorage.getItem('vm2000_highscore')) {
-                const confirmNew = confirm("Haluatko varmasti aloittaa uuden pelin? Aiemmat tiedot nollataan.");
-                if (confirmNew) {
-                    localStorage.clear();
-                    setHighScore(0);
-                    startGameFromMenu();
-                }
-            } else {
-                startGameFromMenu();
+        if (localStorage.getItem('vm2000_highscore')) {
+            const confirmNew = confirm("Haluatko varmasti aloittaa uuden pelin? Aiemmat tiedot nollataan.");
+            if (confirmNew) {
+                localStorage.clear();
+                setHighScore(0);
+                if (!audio.ctx) audio.init();
+                // LAUKAISTAAN INTRO
+                startCutscene('intro', startGameFromMenu);
             }
+        } else {
+            if (!audio.ctx) audio.init();
+            // LAUKAISTAAN INTRO    
+            startCutscene('intro', startGameFromMenu);
         }
-
-        function continueGame() {
-            startGameFromMenu();
-        }
+    }
 
         function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
