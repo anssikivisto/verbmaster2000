@@ -360,12 +360,12 @@
 
             <div class="flex items-center gap-3 sm:gap-4">
                 <div class="text-right hidden sm:block border-2 border-cyan-500 bg-blue-950 px-3 py-1.5">
-                    <div class="text-[10px] font-pixel text-cyan-300">HI-SCORE</div>
-                    <div id="high-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
+                    <div class="text-[10px] font-pixel text-cyan-300">TOTAL EXP</div>
+                    <div id="total-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
                 </div>
 
                 <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn text-sm px-3 py-2 flex items-center gap-1.5">
-                    <i id="music-icon" class="fa-solid fa-music text-slate-500"></i>
+                    <i id="music-icon" class="fa-solid fa-music text-yellow-300 animate-pulse"></i>
                     <span class="hidden md:inline text-[10px]">TEEMA</span>
                 </button>
 
@@ -704,11 +704,10 @@
         ];
 
     const CUTSCENES = {
-        // Ensimmäinen osa
         intro_part1: {
             image: "image1.jpeg",
             music: "gh0stly-the-infinite-fall-271940.mp3",
-            nextScene: "intro_part2", // Ketjutetaan seuraavaan!
+            nextScene: "intro_part2",
             lines: [
                 "Look at this city...",
                 "Every shadow, every street, every flickering neon light... all dancing to my tune.",
@@ -719,20 +718,21 @@
                 "But be my guest... go ahead and try, if you are truly that foolish."
             ]
         },
-        // Toinen osa, joka latautuu lennosta
         intro_part2: {
             image: "image2.jpeg", 
-            // music-riviä ei tarvita, jolloin edellinen kappale jatkuu saumattomasti
             lines: [
                 "You'll be begging for a Game Over sooner than you think."
             ]
         },
-        first_milestone: {
-            image: "milestone.jpeg",
-            music: "victory.mp3",
+        boss1_intro: {
+            image: "image2.jpeg",
+            music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
-                "Olet ottanut ensimmäiset askeleesi...",
-                "Mutta todellinen haaste odottaa vasta edessäpäin."
+                "Well, well, well...",
+                "You've learned a few verbs, haven't you?",
+                "I am Henchman Taro. Boss Katsuyoshi sends his regards.",
+                "Your little vocabulary trip ends here!",
+                "Prepare to be schooled!"
             ]
         }
     };
@@ -760,15 +760,12 @@ function startCutscene(sceneId, callback) {
     currentLineIndex = 0;
     cutsceneCallback = callback;
 
-    // Piilotetaan muut päänäkymät
     document.getElementById('main-menu-screen').classList.add('hidden');
     document.getElementById('game-canvas-wrapper').classList.add('hidden');
     document.getElementById('start-screen').classList.add('hidden');
     hideOverlay();
     
-    // Valmistellaan näyttämö
     const screen = document.getElementById('cutscene-screen');
-    // HUOM: Varmista että kuvatiedostot ovat samassa kansiossa html-tiedoston kanssa
     screen.style.backgroundImage = `url('${scene.image}')`;
     screen.classList.remove('hidden');
     screen.classList.add('flex');
@@ -776,12 +773,10 @@ function startCutscene(sceneId, callback) {
     document.getElementById('cutscene-text').textContent = "";
     document.getElementById('cutscene-indicator').classList.add('hidden');
 
-    // Soitetaan MP3-musiikki
     if (scene.music) {
         audio.playBGM(scene.music);
     }
 
-    // Aloitetaan lauseen kirjoittaminen ruudulle
     typeLine();
 }
 
@@ -799,40 +794,35 @@ function typeLine() {
         textEl.textContent += line.charAt(currentCharIndex);
         currentCharIndex++;
         
-        // Pieni JRPG-tyyppinen naputusääni joka toisella kirjaimella
-        if (currentCharIndex % 2 === 0) audio.playPop();
+        // Huomaamattomampi naksutus ääni cutsceneen
+        if (currentCharIndex % 2 === 0) audio.playTypeTick();
 
         if (currentCharIndex >= line.length) {
             finishTyping();
         }
-    }, 40); // Kirjoitusnopeus (40ms per kirjain)
+    }, 40);
 }
 
 function finishTyping() {
     clearInterval(typewriterTimer);
     isTyping = false;
     document.getElementById('cutscene-text').textContent = currentCutscene.lines[currentLineIndex];
-    document.getElementById('cutscene-indicator').classList.remove('hidden'); // Näytä vilkkuva nuoli
+    document.getElementById('cutscene-indicator').classList.remove('hidden'); 
 }
 
 function advanceCutscene() {
     if (!isCutsceneActive) return;
 
     if (isTyping) {
-        // Jos teksti rullaa vielä ja pelaaja klikkaa, tulostetaan lause heti kokonaan
         finishTyping();
     } else {
-        // Jos lause on valmis, siirrytään seuraavaan
         currentLineIndex++;
         if (currentLineIndex < currentCutscene.lines.length) {
             typeLine();
         } else {
-            // TÄSSÄ UUSI LOGIIKKA KETJUTUKSELLE:
             if (currentCutscene.nextScene) {
-                // Siirrytään suoraan seuraavaan kohtaukseen katkomatta musiikkia!
                 startCutscene(currentCutscene.nextScene, cutsceneCallback);
             } else {
-                // Kaikki lauseet luettu, eikä jatkoa ole -> päätetään cutscene
                 endCutscene();
             }
         }
@@ -845,10 +835,8 @@ function endCutscene() {
     screen.classList.add('hidden');
     screen.classList.remove('flex');
     
-    // Pysäytetään MP3
     audio.stopBGM();
 
-    // Jatketaan peliä siitä, mihin pyydettiin
     if (cutsceneCallback) {
         cutsceneCallback();
     }
@@ -858,9 +846,8 @@ class ChiptuneEngine {
     constructor() {
         this.ctx = null;
         this.sfxEnabled = true;
-        this.musicEnabled = false;
+        this.musicEnabled = true; // Musiikki on nyt oletuksena päällä
         
-        // Uusi lisäys: MP3-soitin cutscenejä ja taustamusiikkia varten
         this.bgmPlayer = new Audio();
         this.bgmPlayer.loop = true;
         this.currentTrack = null;
@@ -878,7 +865,6 @@ class ChiptuneEngine {
         }
     }
 
-    // --- Alkuperäiset piippaus-äänet pysyvät samoina ---
     playPop() {
         if (!this.sfxEnabled) return;
         this.init();
@@ -895,6 +881,62 @@ class ChiptuneEngine {
         gain.connect(this.ctx.destination);
         osc.start(now);
         osc.stop(now + 0.05);
+    }
+
+    // UUSI: Hienovaraisempi ääni navigointiin ja hoveriin
+    playHover() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.03);
+        gain.gain.setValueAtTime(0.02, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.03);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.03);
+    }
+
+    // UUSI: Erillinen, selkeämpi ääni kun valinta tehdään
+    playSelect() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(880, now + 0.03);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    }
+
+    // UUSI: Erittäin hiljainen naksutus cutsceneen
+    playTypeTick() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1500, now);
+        gain.gain.setValueAtTime(0.01, now); 
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.02);
     }
 
     playCorrect() {
@@ -935,10 +977,9 @@ class ChiptuneEngine {
         osc.stop(now + 0.25);
     }
 
-    // --- Uudet MP3-musiikin ohjaustoiminnot ---
     playBGM(trackUrl) {
         if (!this.musicEnabled || !trackUrl) return;
-        if (this.currentTrack === trackUrl && !this.bgmPlayer.paused) return; // Soi jo
+        if (this.currentTrack === trackUrl && !this.bgmPlayer.paused) return;
         
         this.bgmPlayer.src = trackUrl;
         this.bgmPlayer.play().catch(e => console.warn("Selaimen autoplay-esto aktivoitui:", e));
@@ -962,12 +1003,11 @@ class ChiptuneEngine {
     }
 }
 
-        // LUODAAN ÄÄNIMOOTTORI-OLIO TÄSSÄ!
         const audio = new ChiptuneEngine();
 
         // GLOBALS
         let activeVerbs = [];
-        let score = 0;
+        let score = 0; 
         let lives = 3;
         let combo = 0;
         let gameMode = 'bubble';
@@ -1001,6 +1041,39 @@ class ChiptuneEngine {
         const overlayPanel = document.getElementById('overlay-panel');
         const overlayContent = document.getElementById('overlay-content');
 
+        function getTotalScore() {
+            const stored = localStorage.getItem('vm2000_totalscore');
+            return isNaN(parseInt(stored)) ? 0 : parseInt(stored);
+        }
+
+        function addTotalScore(amount) {
+            let current = getTotalScore();
+            current += amount;
+            localStorage.setItem('vm2000_totalscore', current);
+            document.getElementById('total-score-display').textContent = current;
+            
+            checkMilestones(current);
+        }
+        
+        function resetTotalScore() {
+            localStorage.setItem('vm2000_totalscore', 0);
+            document.getElementById('total-score-display').textContent = 0;
+            localStorage.removeItem('vm2000_milestone1');
+        }
+
+        function checkMilestones(currentTotal) {
+            if (currentTotal >= 500 && !localStorage.getItem('vm2000_milestone1')) {
+                localStorage.setItem('vm2000_milestone1', 'true');
+                
+                isBubblePlaying = false; 
+                
+                startCutscene('boss1_intro', () => {
+                    alert("Tästä alkaisi Boss Fight! Ominaisuus koodataan myöhemmin.");
+                    enterMainMenu();
+                });
+            }
+        }
+
         function updateMenuSelectionVisuals() {
             const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
             btns.forEach((btn, idx) => {
@@ -1018,6 +1091,7 @@ class ChiptuneEngine {
                 btn.addEventListener('mousemove', () => {
                     if (currentMenuIndex !== idx) {
                         currentMenuIndex = idx;
+                        audio.playHover();
                         updateMenuSelectionVisuals();
                     }
                 });
@@ -1043,6 +1117,7 @@ class ChiptuneEngine {
                 btn.addEventListener('mousemove', () => {
                     if (currentOverlayIndex !== idx) {
                         currentOverlayIndex = idx;
+                        audio.playHover();
                         updateOverlaySelectionVisuals();
                     }
                 });
@@ -1061,11 +1136,25 @@ class ChiptuneEngine {
             isBubblePlaying = false;
             
             if (!audio.ctx) audio.init();
+            
+            // Soitetaan main menun musiikki
+            audio.playBGM('mondamusic-retro-arcade-game-music-512837.mp3');
+            
             currentMenuIndex = 0;
             setupMenuNavigation();
         }
 
-        // Global Keydown Handler
+        // Globaali hover-ääni kaikille painikkeille
+        document.addEventListener('mouseover', (e) => {
+            const btn = e.target.closest('.jrpg-btn');
+            if (btn && !btn.disabled && btn !== window._lastHoveredBtn) {
+                audio.playHover();
+                window._lastHoveredBtn = btn;
+            } else if (!btn) {
+                window._lastHoveredBtn = null;
+            }
+        });
+
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
                 if (document.activeElement.tagName !== 'INPUT') {
@@ -1100,19 +1189,19 @@ class ChiptuneEngine {
                 return;
             }
             
-            // Yleisten overlay-ikkunoiden (Options, Credits, GameOver) navigointi
             if (!overlayPanel.classList.contains('hidden')) {
                 const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
                 if (btns.length > 0) {
                     if (e.key === 'ArrowDown') {
                         currentOverlayIndex = (currentOverlayIndex + 1) % btns.length;
                         updateOverlaySelectionVisuals();
-                        audio.playPop();
+                        audio.playHover();
                     } else if (e.key === 'ArrowUp') {
                         currentOverlayIndex = (currentOverlayIndex - 1 + btns.length) % btns.length;
                         updateOverlaySelectionVisuals();
-                        audio.playPop();
+                        audio.playHover();
                     } else if (e.key === 'Enter') {
+                        audio.playSelect();
                         btns[currentOverlayIndex].click();
                     }
                 }
@@ -1125,12 +1214,13 @@ class ChiptuneEngine {
                 if (e.key === 'ArrowDown') {
                     currentMenuIndex = (currentMenuIndex + 1) % btns.length;
                     updateMenuSelectionVisuals();
-                    audio.playPop();
+                    audio.playHover();
                 } else if (e.key === 'ArrowUp') {
                     currentMenuIndex = (currentMenuIndex - 1 + btns.length) % btns.length;
                     updateMenuSelectionVisuals();
-                    audio.playPop();
+                    audio.playHover();
                 } else if (e.key === 'Enter') {
+                    audio.playSelect();
                     btns[currentMenuIndex].click();
                 }
                 return;
@@ -1162,31 +1252,36 @@ class ChiptuneEngine {
         }
 
         function newGame() {
-            if (localStorage.getItem('vm2000_highscore')) {
-                const confirmNew = confirm("Haluatko varmasti aloittaa uuden pelin? Aiemmat tiedot nollataan.");
+            audio.playSelect();
+            if (localStorage.getItem('vm2000_totalscore')) {
+                const confirmNew = confirm("Haluatko varmasti aloittaa uuden pelin? Aiemmat pisteet ja tasot nollataan.");
                 if (confirmNew) {
                     localStorage.clear();
-                    setHighScore(0);
+                    resetTotalScore();
                     if (!audio.ctx) audio.init();
-                    // LAUKAISTAAN INTRON ENSIMMÄINEN OSA
                     startCutscene('intro_part1', startGameFromMenu);
                 }
             } else {
                 if (!audio.ctx) audio.init();
-                // LAUKAISTAAN INTRON ENSIMMÄINEN OSA
                 startCutscene('intro_part1', startGameFromMenu);
             }
+        }
+        
+        function continueGame() {
+            audio.playSelect();
+            startGameFromMenu();
         }
 
         function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
-            if (audio.sfxEnabled) audio.playPop();
+            if (audio.sfxEnabled) audio.playSelect();
             const savedIndex = currentOverlayIndex;
             showOptionsMenu();
             setTimeout(() => { currentOverlayIndex = savedIndex; updateOverlaySelectionVisuals(); }, 15);
         }
 
         function toggleMusicOverlay() {
+            audio.playSelect();
             audio.toggleMusic();
             const savedIndex = currentOverlayIndex;
             showOptionsMenu();
@@ -1194,6 +1289,7 @@ class ChiptuneEngine {
         }
 
         function showOptionsMenu() {
+            audio.playSelect();
             showOverlay(`
                 <h2 class="text-2xl font-pixel text-yellow-300 pixel-shadow mb-6">ASETUKSET</h2>
                 <div class="flex flex-col gap-4 w-full">
@@ -1211,6 +1307,7 @@ class ChiptuneEngine {
         }
 
         function showCredits() {
+            audio.playSelect();
             showOverlay(`
                 <h2 class="text-2xl font-pixel text-yellow-300 pixel-shadow mb-5">TEKIJÄT</h2>
                 <div class="flex flex-col gap-3 w-full text-left bg-black border-2 border-white p-5">
@@ -1241,7 +1338,8 @@ class ChiptuneEngine {
             
             populateDictionary(VERB_DATA);
             animationFrameId = requestAnimationFrame(gameLoop);
-            document.getElementById('high-score-display').textContent = getHighScore();
+            
+            document.getElementById('total-score-display').textContent = getTotalScore();
         };
 
         function resizeCanvas() {
@@ -1254,6 +1352,7 @@ class ChiptuneEngine {
         }
 
         function toggleAudio() {
+            audio.playSelect();
             audio.sfxEnabled = !audio.sfxEnabled;
             const icon = document.getElementById('audio-icon');
             if (icon) {
@@ -1262,6 +1361,7 @@ class ChiptuneEngine {
         }
 
         function toggleMusic() {
+            audio.playSelect();
             const isPlaying = audio.toggleMusic();
             const icon = document.getElementById('music-icon');
             if (icon) {
@@ -1270,7 +1370,7 @@ class ChiptuneEngine {
         }
 
         function selectStartGroup(groupVal) {
-            audio.playPop();
+            audio.playSelect();
             selectedGroupForStart = groupVal;
             
             let previewVerbs = [];
@@ -1313,7 +1413,7 @@ class ChiptuneEngine {
         }
 
         function backToStartGroupSelect() {
-            audio.playPop();
+            audio.playSelect();
             document.getElementById('start-step-preview').classList.add('hidden');
             document.getElementById('start-step-preview').classList.remove('flex');
             document.getElementById('start-step-select').classList.remove('hidden');
@@ -1339,7 +1439,6 @@ class ChiptuneEngine {
             } else {
                 activeVerbs = VERB_DATA.filter(v => v.group == groupVal);
             }
-            // Reset state
             if(gameMode === 'cards') initFlashcards();
             if(gameMode === 'typing') nextTypingVerb();
             if(gameMode === 'scramble') initScramble();
@@ -1350,13 +1449,12 @@ class ChiptuneEngine {
         }
 
         function switchMode(mode) {
-            audio.playPop();
+            audio.playSelect();
             gameMode = mode;
             
             document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('tab-active'));
             document.getElementById('tab-' + mode).classList.add('tab-active');
 
-            // Piilotetaan ensin kaikki UI-elementit overlayn sisältä
             document.getElementById('cards-ui').classList.add('hidden');
             document.getElementById('typing-ui').classList.add('hidden');
             document.getElementById('scramble-ui').classList.add('hidden');
@@ -1413,7 +1511,7 @@ class ChiptuneEngine {
         }
 
         function resetGame() {
-            score = 0;
+            score = 0; 
             lives = 3;
             combo = 0;
             updateHUD();
@@ -1427,7 +1525,6 @@ class ChiptuneEngine {
         function updateHUD() {
             hudScore.textContent = score;
             
-            // 8-bit Heart SVG
             const pixelHeartSvg = `<svg width="18" height="18" viewBox="0 0 8 8" fill="currentColor" style="shape-rendering: crispedges;"><path d="M1,2 h2 v-1 h2 v1 h2 v3 h-1 v1 h-1 v1 h-2 v-1 h-1 v-1 h-1 z"/></svg>`;
             let hearts = '';
             for(let i=0; i<3; i++) {
@@ -1441,26 +1538,13 @@ class ChiptuneEngine {
             } else {
                 hudComboBadge.classList.add('hidden');
             }
-            
-            if (score > getHighScore()) {
-                setHighScore(score);
-            }
-        }
-
-        function getHighScore() {
-            const stored = localStorage.getItem('vm2000_highscore');
-            const parsed = parseInt(stored);
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
-        function setHighScore(val) {
-            localStorage.setItem('vm2000_highscore', val);
-            document.getElementById('high-score-display').textContent = val;
         }
 
         function addScore(amount) {
-            score += Math.floor(amount * (1 + (combo * 0.1)));
+            const actualAmount = Math.floor(amount * (1 + (combo * 0.1)));
+            score += actualAmount;
             updateHUD();
+            addTotalScore(actualAmount); 
         }
 
         function loseLife() {
@@ -1501,12 +1585,13 @@ class ChiptuneEngine {
         }
 
         function hideOverlay() {
+            audio.playSelect();
             overlayPanel.classList.add('hidden');
         }
 
         function showDifficultyModal() {
             isBubblePlaying = false;
-            hideOverlay(); 
+            overlayPanel.classList.add('hidden'); 
             
             const diffUi = document.getElementById('bubble-diff-ui');
             diffUi.classList.remove('hidden');
@@ -1519,7 +1604,7 @@ class ChiptuneEngine {
         }
 
         function setDifficulty(level) {
-            audio.playPop();
+            audio.playSelect();
             const levels = {
                 'easy': { id: 'easy', name: 'Helppo', minSpeed: 0.5, maxSpeed: 0.8, maxBubbles: 6, spawnRate: 90, baseScore: 5 },
                 'medium': { id: 'medium', name: 'Keskitaso', minSpeed: 0.7, maxSpeed: 1.2, maxBubbles: 10, spawnRate: 60, baseScore: 10 },
@@ -1761,7 +1846,6 @@ class ChiptuneEngine {
             ctx.font = fontSize1 + 'px "Press Start 2P"';
             let w1 = ctx.measureText(text1).width;
             
-            // Skaalataan pienemmäksi jos ei mahdu ruudulle
             if (w1 > canvasWidth - 20) {
                 fontSize1 = 10;
                 ctx.font = fontSize1 + 'px "Press Start 2P"';
@@ -1839,11 +1923,10 @@ class ChiptuneEngine {
 
         function handleCanvasClick(e) {
             if (gameMode !== 'bubble' || lives <= 0 || !isBubblePlaying) return;
-            if (!currentBubbleTarget) return; // Turvatarkistus
+            if (!currentBubbleTarget) return; 
             
             const rect = canvas.getBoundingClientRect();
             
-            // Tuki hiirelle ja kosketusnäytölle
             let clientX, clientY;
             if (e.touches && e.touches.length > 0) {
                 clientX = e.touches[0].clientX;
@@ -1896,7 +1979,7 @@ class ChiptuneEngine {
         }
 
         function shuffleCards() {
-            audio.playPop();
+            audio.playSelect();
             for (let i = activeVerbs.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [activeVerbs[i], activeVerbs[j]] = [activeVerbs[j], activeVerbs[i]];
@@ -1906,7 +1989,7 @@ class ChiptuneEngine {
         }
 
         function toggleCardLang() {
-            audio.playPop();
+            audio.playSelect();
             cardFrontLang = cardFrontLang === 'en' ? 'fi' : 'en';
             document.getElementById('card-lang-btn').textContent = cardFrontLang === 'en' ? 'NÄYTÄ ENSIN: ENGLANTI' : 'NÄYTÄ ENSIN: SUOMI';
             updateCardDisplay();
@@ -1952,7 +2035,7 @@ class ChiptuneEngine {
         }
 
         function flipCard() {
-            audio.playPop();
+            audio.playSelect();
             isCardFlipped = !isCardFlipped;
             const inner = document.getElementById('flashcard-inner');
             if (isCardFlipped) {
@@ -1963,13 +2046,13 @@ class ChiptuneEngine {
         }
 
         function nextCard() {
-            audio.playPop();
+            audio.playSelect();
             currentCardIndex = (currentCardIndex + 1) % activeVerbs.length;
             updateCardDisplay();
         }
 
         function prevCard() {
-            audio.playPop();
+            audio.playSelect();
             currentCardIndex = (currentCardIndex - 1 + activeVerbs.length) % activeVerbs.length;
             updateCardDisplay();
         }
@@ -2101,7 +2184,7 @@ class ChiptuneEngine {
         }
 
         function skipTypingVerb() {
-            audio.playPop();
+            audio.playSelect();
             combo = 0;
             updateHUD();
             nextTypingVerb();
@@ -2114,7 +2197,7 @@ class ChiptuneEngine {
         let scrambleDiff = 'easy';
         
         function setScrambleDiff(diff) {
-            audio.playPop();
+            audio.playSelect();
             scrambleDiff = diff;
             document.getElementById('scramble-diff-easy').classList.toggle('menu-active', diff === 'easy');
             document.getElementById('scramble-diff-hard').classList.toggle('menu-active', diff === 'hard');
@@ -2186,7 +2269,7 @@ class ChiptuneEngine {
         }
 
         function selectScrambleLetter(index) {
-            audio.playPop();
+            audio.playHover(); // Kirjaimia naputtaessa valinta on nopea, joten hover-ääni sopii tähän paremmin
             const letter = scramblePool[index];
             scramblePool[index] = null; 
             scrambleAnswer.push(letter);
@@ -2198,7 +2281,7 @@ class ChiptuneEngine {
         }
 
         function returnScrambleLetter(index) {
-            audio.playPop();
+            audio.playHover();
             const letter = scrambleAnswer.splice(index, 1)[0];
             const emptyIdx = scramblePool.indexOf(null);
             if (emptyIdx !== -1) {
@@ -2210,7 +2293,7 @@ class ChiptuneEngine {
         }
 
         function clearScrambleAnswer() {
-            audio.playPop();
+            audio.playSelect();
             scrambleAnswer.forEach(letter => {
                 const emptyIdx = scramblePool.indexOf(null);
                 if (emptyIdx !== -1) {
