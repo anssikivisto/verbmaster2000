@@ -222,13 +222,18 @@
 
     <!-- CUTSCENE SCREEN -->
     <div id="cutscene-screen" class="fixed inset-0 z-[70] bg-black bg-cover bg-center hidden flex-col justify-end p-4 pb-8 cursor-pointer" onclick="advanceCutscene()">
-        <!-- Musta puoliläpinäkyvä kalvo, jotta teksti erottuu aina hyvin taustakuvasta -->
         <div class="absolute inset-0 bg-black/30 pointer-events-none"></div>
-        
-        <!-- Dialogilaatikko (JRPG-tyyli) -->
         <div class="relative z-10 jrpg-box w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
             <p id="cutscene-text" class="font-pixel text-sm sm:text-base md:text-lg text-white pixel-shadow leading-relaxed"></p>
             <div id="cutscene-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce hidden">▼</div>
+        </div>
+    </div>
+
+    <!-- WELCOME LORE SCREEN -->
+    <div id="welcome-screen" class="fixed inset-0 bg-black/95 z-[65] items-center justify-center p-4 hidden cursor-pointer" onclick="advanceWelcomeScreen()">
+        <div class="relative z-10 jrpg-box max-w-2xl w-full mx-auto p-6 sm:p-10 flex flex-col justify-between shadow-2xl min-h-[250px]">
+            <p id="welcome-text" class="font-pixel text-sm sm:text-base text-cyan-200 pixel-shadow leading-loose whitespace-pre-wrap text-center flex-1 flex items-center justify-center"></p>
+            <div id="welcome-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce mt-4">▼</div>
         </div>
     </div>
 
@@ -237,8 +242,15 @@
         <div class="jrpg-box max-w-2xl w-full p-5 sm:p-7 flex flex-col gap-6 my-auto text-white">
             <div id="start-step-select" class="flex flex-col gap-5">
                 <div class="text-center">
-                    <div class="inline-block p-3 bg-amber-500/20 border-2 border-amber-400 mb-2">
-                        <i class="fa-solid fa-gem text-amber-400 text-4xl"></i>
+                    <!-- UUSI 8-BIT TIMANTTI SVG -->
+                    <div class="inline-block p-4 bg-amber-500/20 border-2 border-amber-400 mb-2">
+                        <svg width="48" height="48" viewBox="0 0 16 16" class="inline-block mx-auto" style="shape-rendering: crispedges; filter: drop-shadow(2px 2px 0px #000);">
+                            <path fill="#000000" d="M7 1h2v1h2v1h2v2h1v4h-1v2h-2v2h-2v2H7v-2H5v-2H3V9H2V5h1V3h2V2h2V1z"/>
+                            <path fill="#d97706" d="M7 2h2v1h2v1h2v4h-1v2h-2v2H7v-2H5V8H4V4h2V3h1V2z"/>
+                            <path fill="#fbbf24" d="M7 3h2v1h2v4h-1v1H7v-1H5V4h1V3h1z"/>
+                            <path fill="#fef08a" d="M7 3h1v1h1v2H8V5H7V3z"/>
+                            <path fill="#ffffff" d="M8 3h1v1H8V3z"/>
+                        </svg>
                     </div>
                     <h2 class="text-xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow mt-2">VALITSE VERBIRYHMÄ</h2>
                     <p class="text-lg sm:text-xl font-sans text-cyan-200 mt-3 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
@@ -440,7 +452,7 @@
 
             <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-4 z-[15]">
                 
-                <!-- BUBBLE DIFFICULTY UI (Inside canvas overlay so navigation isn't blocked) -->
+                <!-- BUBBLE DIFFICULTY UI -->
                 <div id="bubble-diff-ui" class="pointer-events-auto w-full max-w-sm hidden flex-col items-center gap-3 jrpg-box p-5 bg-black/90">
                     <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-2 text-center">VAIKEUSTASO</h2>
                     <div class="flex flex-col gap-2 w-full">
@@ -746,6 +758,14 @@ let typewriterTimer = null;
 let cutsceneCallback = null;
 let isTyping = false;
 
+// --- WELCOME SCREEN -MUUTTUJAT ---
+let welcomeIndex = 0;
+const welcomeTexts = [
+    "Alright, let's get started!\n\nKaupungin alamaailmasta noussut Boss Katsuyoshi on johtanut Neo-Grammachia kyseenalaisin keinoin jo vuosien ajan. Vanhaa Grammachia hallitsi aikoinaan Akatemia, jonka oppilas Katsuyoshi keksi vaarallisen totuuden: se, joka hallitsee verbejä, hallitsee tekoja ja tapahtumia.",
+    "Katsuyoshi keräsi ympärilleen katujengejä ja korruptoituneita poliitikkoja, ja teki lopulta vallankaappauksen Akatemiassa. Hän nimesi kaupungin Neo-Grammachiksi ja pystytti valtavan pilvenpiirtäjänsä sen keskelle.",
+    "Hän uskoo olevansa koskematon, sillä kukaan ei ole vuosiin osannut taivuttaa verbejä tarpeeksi nopeasti ja oikein haastaakseen hänet taistelussa...\n\n...mutta ehkä sinä osaat?"
+];
+
 // --- OHJAAJA-FUNKTIO ---
 function startCutscene(sceneId, callback) {
     const scene = CUTSCENES[sceneId];
@@ -794,7 +814,6 @@ function typeLine() {
         textEl.textContent += line.charAt(currentCharIndex);
         currentCharIndex++;
         
-        // Huomaamattomampi naksutus ääni cutsceneen
         if (currentCharIndex % 2 === 0) audio.playTypeTick();
 
         if (currentCharIndex >= line.length) {
@@ -842,11 +861,47 @@ function endCutscene() {
     }
 }
 
+// --- TERVETULOA-RUUDUN LOGIIKKA ---
+function startWelcomeScreen() {
+    welcomeIndex = 0;
+    document.getElementById('main-menu-screen').classList.add('hidden');
+    document.getElementById('welcome-screen').classList.remove('hidden');
+    document.getElementById('welcome-screen').classList.add('flex');
+    
+    // Aloitetaan uusi taustamusiikki valikkosivuja varten
+    audio.playBGM('brutaldesign-climbing-569924.mp3');
+    
+    showWelcomeText();
+}
+
+function showWelcomeText() {
+    document.getElementById('welcome-text').textContent = welcomeTexts[welcomeIndex];
+}
+
+function advanceWelcomeScreen() {
+    if (document.getElementById('welcome-screen').classList.contains('hidden')) return;
+    
+    audio.playSelect();
+    welcomeIndex++;
+    
+    if (welcomeIndex < welcomeTexts.length) {
+        showWelcomeText();
+    } else {
+        // Tervetuloruutu ohitettu -> Siirrytään valitse verbiryhmä -sivulle
+        document.getElementById('welcome-screen').classList.add('hidden');
+        document.getElementById('welcome-screen').classList.remove('flex');
+        
+        // Musiikki jätetään soimaan ja näytetään startScreen
+        document.getElementById('start-screen').classList.remove('hidden');
+        if (!audio.ctx) audio.init();
+    }
+}
+
 class ChiptuneEngine {
     constructor() {
         this.ctx = null;
         this.sfxEnabled = true;
-        this.musicEnabled = true; // Musiikki on nyt oletuksena päällä
+        this.musicEnabled = true; 
         
         this.bgmPlayer = new Audio();
         this.bgmPlayer.loop = true;
@@ -883,7 +938,6 @@ class ChiptuneEngine {
         osc.stop(now + 0.05);
     }
 
-    // UUSI: Hienovaraisempi ääni navigointiin ja hoveriin
     playHover() {
         if (!this.sfxEnabled) return;
         this.init();
@@ -902,7 +956,6 @@ class ChiptuneEngine {
         osc.stop(now + 0.03);
     }
 
-    // UUSI: Erillinen, selkeämpi ääni kun valinta tehdään
     playSelect() {
         if (!this.sfxEnabled) return;
         this.init();
@@ -921,7 +974,6 @@ class ChiptuneEngine {
         osc.stop(now + 0.1);
     }
 
-    // UUSI: Erittäin hiljainen naksutus cutsceneen
     playTypeTick() {
         if (!this.sfxEnabled) return;
         this.init();
@@ -1137,14 +1189,12 @@ class ChiptuneEngine {
             
             if (!audio.ctx) audio.init();
             
-            // Soitetaan main menun musiikki
             audio.playBGM('mondamusic-retro-arcade-game-music-512837.mp3');
             
             currentMenuIndex = 0;
             setupMenuNavigation();
         }
 
-        // Globaali hover-ääni kaikille painikkeille
         document.addEventListener('mouseover', (e) => {
             const btn = e.target.closest('.jrpg-btn');
             if (btn && !btn.disabled && btn !== window._lastHoveredBtn) {
@@ -1179,9 +1229,16 @@ class ChiptuneEngine {
             }
 
             if (isCutsceneActive && (e.key === 'Enter' || e.key === ' ')) {
-                    advanceCutscene();
-                    return;
+                advanceCutscene();
+                return;
             }            
+            
+            // Tervetuloa-ruudun navigointi enterillä
+            const welcomeScreen = document.getElementById('welcome-screen');
+            if (welcomeScreen && !welcomeScreen.classList.contains('hidden') && (e.key === 'Enter' || e.key === ' ')) {
+                advanceWelcomeScreen();
+                return;
+            }
             
             const splash = document.getElementById('splash-screen');
             if (splash && !splash.classList.contains('hidden') && e.key === 'Enter') {
@@ -1259,16 +1316,18 @@ class ChiptuneEngine {
                     localStorage.clear();
                     resetTotalScore();
                     if (!audio.ctx) audio.init();
-                    startCutscene('intro_part1', startGameFromMenu);
+                    startCutscene('intro_part1', startWelcomeScreen);
                 }
             } else {
                 if (!audio.ctx) audio.init();
-                startCutscene('intro_part1', startGameFromMenu);
+                startCutscene('intro_part1', startWelcomeScreen);
             }
         }
         
         function continueGame() {
             audio.playSelect();
+            // Ladataan suoraan pelimusiikki jos ohitetaan intro
+            audio.playBGM('brutaldesign-climbing-569924.mp3');
             startGameFromMenu();
         }
 
@@ -2269,7 +2328,7 @@ class ChiptuneEngine {
         }
 
         function selectScrambleLetter(index) {
-            audio.playHover(); // Kirjaimia naputtaessa valinta on nopea, joten hover-ääni sopii tähän paremmin
+            audio.playHover();
             const letter = scramblePool[index];
             scramblePool[index] = null; 
             scrambleAnswer.push(letter);
