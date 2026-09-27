@@ -224,7 +224,7 @@
     <div id="cutscene-screen" class="fixed inset-0 z-[70] bg-black bg-cover bg-center hidden flex-col justify-end p-4 pb-8 cursor-pointer" onclick="advanceCutscene()">
         <div class="absolute inset-0 bg-black/30 pointer-events-none"></div>
         <div class="relative z-10 jrpg-box w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
-            <p id="cutscene-text" class="font-pixel text-sm sm:text-base md:text-lg text-white pixel-shadow leading-relaxed"></p>
+            <p id="cutscene-text" class="font-pixel text-sm sm:text-base md:text-lg text-white pixel-shadow leading-[2.5]"></p>
             <div id="cutscene-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce hidden">▼</div>
         </div>
     </div>
@@ -242,16 +242,6 @@
         <div class="jrpg-box max-w-2xl w-full p-5 sm:p-7 flex flex-col gap-6 my-auto text-white">
             <div id="start-step-select" class="flex flex-col gap-5">
                 <div class="text-center">
-                    <!-- UUSI 8-BIT TIMANTTI SVG -->
-                    <div class="inline-block p-4 bg-amber-500/20 border-2 border-amber-400 mb-2">
-                        <svg width="48" height="48" viewBox="0 0 16 16" class="inline-block mx-auto" style="shape-rendering: crispedges; filter: drop-shadow(2px 2px 0px #000);">
-                            <path fill="#000000" d="M7 1h2v1h2v1h2v2h1v4h-1v2h-2v2h-2v2H7v-2H5v-2H3V9H2V5h1V3h2V2h2V1z"/>
-                            <path fill="#d97706" d="M7 2h2v1h2v1h2v4h-1v2h-2v2H7v-2H5V8H4V4h2V3h1V2z"/>
-                            <path fill="#fbbf24" d="M7 3h2v1h2v4h-1v1H7v-1H5V4h1V3h1z"/>
-                            <path fill="#fef08a" d="M7 3h1v1h1v2H8V5H7V3z"/>
-                            <path fill="#ffffff" d="M8 3h1v1H8V3z"/>
-                        </svg>
-                    </div>
                     <h2 class="text-xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow mt-2">VALITSE VERBIRYHMÄ</h2>
                     <p class="text-lg sm:text-xl font-sans text-cyan-200 mt-3 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
                 </div>
@@ -378,7 +368,6 @@
 
                 <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn text-sm px-3 py-2 flex items-center gap-1.5">
                     <i id="music-icon" class="fa-solid fa-music text-yellow-300 animate-pulse"></i>
-                    <span class="hidden md:inline text-[10px]">TEEMA</span>
                 </button>
 
                 <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn text-sm px-3 py-2">
@@ -579,13 +568,6 @@
             </div>
         </div>
     </main>
-
-    <footer class="border-t-2 border-white bg-black py-3 text-center text-xs font-pixel text-slate-400">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div>⚔️ VerbMaster2000 - 16-Bit SNES Edition</div>
-            <div class="text-yellow-400">Web Audio Chiptune Engine</div>
-        </div>
-    </footer>
 
     <script>
         // GLOBAL CANVAS REFERENCES
@@ -1030,25 +1012,33 @@ class ChiptuneEngine {
     }
 
     playBGM(trackUrl) {
-        if (!this.musicEnabled || !trackUrl) return;
-        if (this.currentTrack === trackUrl && !this.bgmPlayer.paused) return;
+        if (!trackUrl) return;
+        this.currentTrack = trackUrl;
+        
+        if (!this.musicEnabled) return;
+        
+        // Estetään saman musiikin turha uudelleenlataus, jos se jo soi
+        if (this.bgmPlayer.src.endsWith(trackUrl) && !this.bgmPlayer.paused) return;
         
         this.bgmPlayer.src = trackUrl;
         this.bgmPlayer.play().catch(e => console.warn("Selaimen autoplay-esto aktivoitui:", e));
-        this.currentTrack = trackUrl;
     }
 
     stopBGM() {
         this.bgmPlayer.pause();
         this.bgmPlayer.currentTime = 0;
-        this.currentTrack = null;
+        // Poistettu currentTrackin nollaus, jotta toggleMusic muistaa mihin jäätiin
     }
 
     toggleMusic() {
         this.musicEnabled = !this.musicEnabled;
         if (!this.musicEnabled) {
-            this.stopBGM();
+            this.bgmPlayer.pause();
         } else if (this.currentTrack) {
+            // Varmistetaan, että oikea track on asetettu play-vaiheessa
+            if (!this.bgmPlayer.src.endsWith(this.currentTrack)) {
+                this.bgmPlayer.src = this.currentTrack;
+            }
             this.bgmPlayer.play().catch(e => console.warn("Autoplay estetty:", e));
         }
         return this.musicEnabled;
@@ -1511,6 +1501,16 @@ class ChiptuneEngine {
             audio.playSelect();
             gameMode = mode;
             
+            // MUSIIKIN VAIHTO PELIMOODIN MUKAAN
+            let modeBGM = "";
+            if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
+            else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
+            else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
+            else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
+            else if (mode === 'dictionary') modeBGM = "retro-bgm-chan-home-town-516297.mp3";
+            
+            if (modeBGM) audio.playBGM(modeBGM);
+
             document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('tab-active'));
             document.getElementById('tab-' + mode).classList.add('tab-active');
 
