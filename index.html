@@ -366,11 +366,11 @@
                     <div id="total-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
                 </div>
 
-                <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn text-sm px-3 py-2 flex items-center gap-1.5">
+                <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn w-10 h-10 flex items-center justify-center p-0">
                     <i id="music-icon" class="fa-solid fa-music text-yellow-300 animate-pulse"></i>
                 </button>
 
-                <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn text-sm px-3 py-2">
+                <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn w-10 h-10 flex items-center justify-center p-0">
                     <i id="audio-icon" class="fa-solid fa-volume-high text-yellow-300"></i>
                 </button>
             </div>
@@ -1065,7 +1065,7 @@ class ChiptuneEngine {
             name: 'Keskitaso',
             minSpeed: 0.7,
             maxSpeed: 1.2,
-            maxBubbles: 10,
+            maxBubbles: 11,
             spawnRate: 60,
             baseScore: 10
         };
@@ -1665,9 +1665,9 @@ class ChiptuneEngine {
         function setDifficulty(level) {
             audio.playSelect();
             const levels = {
-                'easy': { id: 'easy', name: 'Helppo', minSpeed: 0.5, maxSpeed: 0.8, maxBubbles: 6, spawnRate: 90, baseScore: 5 },
-                'medium': { id: 'medium', name: 'Keskitaso', minSpeed: 0.7, maxSpeed: 1.2, maxBubbles: 10, spawnRate: 60, baseScore: 10 },
-                'hard': { id: 'hard', name: 'Vaikea', minSpeed: 1.1, maxSpeed: 1.8, maxBubbles: 12, spawnRate: 40, baseScore: 20 }
+                'easy': { id: 'easy', name: 'Helppo', minSpeed: 0.5, maxSpeed: 0.8, maxBubbles: 7, spawnRate: 90, baseScore: 5 },
+                'medium': { id: 'medium', name: 'Keskitaso', minSpeed: 0.7, maxSpeed: 1.2, maxBubbles: 11, spawnRate: 60, baseScore: 10 },
+                'hard': { id: 'hard', name: 'Vaikea', minSpeed: 1.1, maxSpeed: 1.8, maxBubbles: 13, spawnRate: 40, baseScore: 20 }
             };
             difficulty = levels[level];
             
@@ -1680,16 +1680,25 @@ class ChiptuneEngine {
             
             resetGame();
             isBubblePlaying = true;
+            
+            // Restart music when game restarts in bubble mode
+            if (gameMode === 'bubble') {
+                audio.bgmPlayer.currentTime = 0;
+                if (audio.musicEnabled && audio.currentTrack) {
+                    audio.bgmPlayer.play().catch(e => console.warn(e));
+                }
+            }
         }
 
-        function speakWord(text) {
+        window.speakWord = function(text) {
             if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Tämä tyhjentää jumittuneen puheen
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-GB';
                 utterance.rate = 0.85;
                 window.speechSynthesis.speak(utterance);
             }
-        }
+        };
 
         let bubbles = [];
         let particles = [];
@@ -1869,18 +1878,33 @@ class ChiptuneEngine {
             const correctText = currentBubbleTarget.verb[targetFormKey];
             
             const hasTarget = bubbles.some(b => b.text === correctText);
-            const isTargetMatch = !hasTarget && (Math.random() < 0.3 || bubbles.length === 0);
+            
+            // Pakotetaan oikea kupla jos paikat alkaa loppua, mutta muutoin vapaa satunnaisuus (estetään "oikea aina ekana")
+            const forceTarget = !hasTarget && bubbles.length >= difficulty.maxBubbles - 2;
+            const isTargetMatch = forceTarget || (!hasTarget && Math.random() < 0.25);
             
             let text = "";
             if (isTargetMatch) {
                 text = correctText;
             } else {
-                let isValidWrong = false;
-                while (!isValidWrong) {
-                    const randV = VERB_DATA[Math.floor(Math.random() * VERB_DATA.length)];
-                    const randF = forms[Math.floor(Math.random() * 3)];
-                    text = randV[randF];
-                    if (text !== correctText) isValidWrong = true;
+                // 30% todennäköisyys sille, että peli harhauttaa pelaajaa saman verbin toisella muodolla
+                if (Math.random() < 0.3) {
+                    let wrongForms = forms.filter((_, i) => i !== currentBubbleTarget.formIndex);
+                    let trickText = currentBubbleTarget.verb[wrongForms[Math.floor(Math.random() * wrongForms.length)]];
+                    if (trickText !== correctText) {
+                        text = trickText;
+                    }
+                }
+                
+                // Jos ei tullut harhautusta, valitaan täysin satunnainen verbi ja muoto
+                if (!text) {
+                    let isValidWrong = false;
+                    while (!isValidWrong) {
+                        const randV = VERB_DATA[Math.floor(Math.random() * VERB_DATA.length)];
+                        const randF = forms[Math.floor(Math.random() * 3)];
+                        text = randV[randF];
+                        if (text !== correctText) isValidWrong = true;
+                    }
                 }
             }
 
