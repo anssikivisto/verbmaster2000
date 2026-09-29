@@ -93,15 +93,7 @@
             transition: all 0.05s ease;
         }
 
-        #main-menu-screen .jrpg-btn:hover, #overlay-content .jrpg-btn:hover {
-            background: #1e293b;
-            border-color: #64748b;
-            border-right-color: #0f172a;
-            border-bottom-color: #0f172a;
-            color: #ffffff;
-        }
-
-        .jrpg-btn.menu-active, #main-menu-screen .jrpg-btn.menu-active:hover, #overlay-content .jrpg-btn.menu-active:hover {
+        .jrpg-btn.menu-active, .jrpg-btn.menu-active:hover {
             background: #0369a1 !important;
             border-color: #7dd3fc !important;
             border-right-color: #0284c7 !important;
@@ -109,7 +101,7 @@
             color: #fef08a !important;
         }
 
-        body:not(#main-menu-screen) .jrpg-btn:not(.menu-active):not(:disabled):hover {
+        .jrpg-btn:hover:not(.menu-active):not(:disabled) {
             background: #334155;
             border-color: #94a3b8;
             border-right-color: #1e293b;
@@ -136,7 +128,7 @@
             border-bottom-color: #0369a1;
         }
 
-        .jrpg-btn-primary:not(:disabled):hover {
+        .jrpg-btn-primary:not(:disabled):hover:not(.menu-active) {
             background: #0369a1;
             border-color: #7dd3fc;
             color: #fef08a;
@@ -150,7 +142,7 @@
             color: #ffffff;
         }
 
-        .jrpg-btn-gold:not(:disabled):hover {
+        .jrpg-btn-gold:not(:disabled):hover:not(.menu-active) {
             background: #d97706;
             border-color: #fef08a;
         }
@@ -246,7 +238,7 @@
                     <p class="text-lg sm:text-xl font-sans text-cyan-200 mt-3 pixel-shadow-sm">Valitse harjoiteltava verbiryhmä aloittaaksesi:</p>
                 </div>
 
-                <button onclick="selectStartGroup('all')" class="jrpg-btn jrpg-btn-gold py-5 px-4 text-sm sm:text-base flex items-center justify-between group">
+                <button onclick="selectStartGroup('all')" class="jrpg-btn jrpg-btn-gold py-5 px-4 text-sm sm:text-base flex items-center justify-between group menu-active">
                     <span class="flex items-center gap-2">
                         <span class="text-yellow-300">☞</span>
                         <span>KAIKKI VERBIT (11 RYHMÄÄ)</span>
@@ -302,7 +294,7 @@
                     </table>
                 </div>
 
-                <button onclick="confirmStartGroup()" class="jrpg-btn jrpg-btn-primary py-4 px-5 text-sm sm:text-base flex items-center justify-center gap-2">
+                <button onclick="confirmStartGroup()" class="jrpg-btn jrpg-btn-primary py-4 px-5 text-sm sm:text-base flex items-center justify-center gap-2 menu-active">
                     <span>ALOITA PELI</span>
                     <i class="fa-solid fa-play"></i>
                 </button>
@@ -317,7 +309,7 @@
             <p class="text-lg text-cyan-200 font-sans">Miten haluat harjoitella?</p>
             
             <div class="flex flex-col gap-3">
-                <button onclick="launchSelectedMode('bubble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-bullseye text-blue-300"></i> KUPLAPELI</button>
+                <button onclick="launchSelectedMode('bubble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 menu-active"><i class="fa-solid fa-bullseye text-blue-300"></i> KUPLAPELI</button>
                 <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
                 <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
                 <div class="border-t-2 border-dashed border-cyan-500/50 my-2"></div>
@@ -431,7 +423,7 @@
                 <div id="bubble-diff-ui" class="pointer-events-auto w-full max-w-sm hidden flex-col items-center gap-3 jrpg-box p-5 bg-black/90">
                     <h2 class="text-xl font-pixel text-yellow-300 pixel-shadow mb-2 text-center">VAIKEUSTASO</h2>
                     <div class="flex flex-col gap-2 w-full">
-                        <button onclick="setDifficulty('easy')" id="diff-btn-easy" class="jrpg-btn p-4 text-sm w-full">Helppo (Hidas)</button>
+                        <button onclick="setDifficulty('easy')" id="diff-btn-easy" class="jrpg-btn p-4 text-sm w-full menu-active">Helppo (Hidas)</button>
                         <button onclick="setDifficulty('medium')" id="diff-btn-medium" class="jrpg-btn p-4 text-sm w-full border-yellow-400 text-yellow-300">Keskitaso (Normaali)</button>
                         <button onclick="setDifficulty('hard')" id="diff-btn-hard" class="jrpg-btn p-4 text-sm w-full">Vaikea (Nopea)</button>
                     </div>
@@ -728,15 +720,15 @@
                 "Prepare to be schooled!"
             ]
         },
-        cutscene_50: {
+        cutscene_100: {
             image: "image1.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
-                "What?! You scored 50 points?", 
+                "What?! You scored 100 points?", 
                 "Don't get cocky. My henchmen will destroy you!"
             ]
         },
-        cutscene_100: {
+        cutscene_300: {
             image: "image2.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
@@ -744,7 +736,7 @@
                 "Let's see you handle THIS!"
             ]
         },
-        cutscene_250: {
+        cutscene_600: {
             image: "image2.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
@@ -753,7 +745,7 @@
                 "You now have access to a new mode: SPACE SHOOTER!"
             ]
         },
-        cutscene_500: {
+        cutscene_1000: {
             image: "image1.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
@@ -1136,8 +1128,6 @@ class ChiptuneEngine {
         let isBubblePlaying = false; 
         let animationFrameId = null;
         let selectedGroupForStart = null;
-        let currentMenuIndex = 0;
-        let currentOverlayIndex = 0;
         let typingChecked = false;
         
         let difficulty = {
@@ -1181,10 +1171,10 @@ class ChiptuneEngine {
         function resetTotalScore() {
             localStorage.setItem('vm2000_totalscore', 0);
             document.getElementById('total-score-display').textContent = 0;
-            localStorage.removeItem('vm2000_ms_50');
             localStorage.removeItem('vm2000_ms_100');
-            localStorage.removeItem('vm2000_ms_250');
-            localStorage.removeItem('vm2000_ms_500');
+            localStorage.removeItem('vm2000_ms_300');
+            localStorage.removeItem('vm2000_ms_600');
+            localStorage.removeItem('vm2000_ms_1000');
             localStorage.removeItem('vm2000_unlocked_spaceshooter');
             checkUnlockedModes();
         }
@@ -1199,8 +1189,9 @@ class ChiptuneEngine {
             if (wasSS) ssState = 'menu';
             
             startCutscene(sceneId, () => {
-                // Tärkeää: palauta peliruutu näkyviin cutscenen jälkeen!
+                // Tärkeää: palauta peliruutu näkyviin cutscenen jälkeen ja skaalaa se takaisin
                 document.getElementById('game-canvas-wrapper').classList.remove('hidden');
+                resizeCanvas();
                 
                 if (callback) {
                     callback(prevBGM);
@@ -1220,26 +1211,26 @@ class ChiptuneEngine {
         }
 
         function checkMilestones(currentTotal) {
-            if (currentTotal >= 50 && !localStorage.getItem('vm2000_ms_50')) {
-                localStorage.setItem('vm2000_ms_50', 'true');
-                pauseGameForCutscene('cutscene_50');
-            } else if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
+            if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
                 localStorage.setItem('vm2000_ms_100', 'true');
-                pauseGameForCutscene('cutscene_100', (prevBGM) => {
+                pauseGameForCutscene('cutscene_100');
+            } else if (currentTotal >= 300 && !localStorage.getItem('vm2000_ms_300')) {
+                localStorage.setItem('vm2000_ms_300', 'true');
+                pauseGameForCutscene('cutscene_300', (prevBGM) => {
                     alert("Uusi ominaisuus avattu! Jatketaan peliä.");
                     resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
-            } else if (currentTotal >= 250 && !localStorage.getItem('vm2000_ms_250')) {
-                localStorage.setItem('vm2000_ms_250', 'true');
+            } else if (currentTotal >= 600 && !localStorage.getItem('vm2000_ms_600')) {
+                localStorage.setItem('vm2000_ms_600', 'true');
                 localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
                 checkUnlockedModes();
-                pauseGameForCutscene('cutscene_250', (prevBGM) => {
+                pauseGameForCutscene('cutscene_600', (prevBGM) => {
                     alert("UUSI PELIMOODI AVATTU: Space Shooter!\nLöydät sen nyt ylävalikosta.");
                     resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
-            } else if (currentTotal >= 500 && !localStorage.getItem('vm2000_ms_500')) {
-                localStorage.setItem('vm2000_ms_500', 'true');
-                pauseGameForCutscene('cutscene_500', (prevBGM) => {
+            } else if (currentTotal >= 1000 && !localStorage.getItem('vm2000_ms_1000')) {
+                localStorage.setItem('vm2000_ms_1000', 'true');
+                pauseGameForCutscene('cutscene_1000', (prevBGM) => {
                     alert("Lopputaistelu avattu! (Odottaa toteutusta)");
                     resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
@@ -1255,56 +1246,77 @@ class ChiptuneEngine {
             }
         }
 
-        function updateMenuSelectionVisuals() {
-            const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
-            btns.forEach((btn, idx) => {
-                if (idx === currentMenuIndex) {
-                    btn.classList.add('menu-active');
-                } else {
-                    btn.classList.remove('menu-active');
+        // ==========================================
+        // YLEINEN VALIKKONAVIGAATIO NÄPPÄIMISTÖLLE
+        // ==========================================
+        function handleGenericMenuKeyboard(e) {
+            // Etsi päällimmäisin näkyvä valikkosäiliö, joka sisältää `.jrpg-btn` nappeja
+            const containers = [
+                document.getElementById('overlay-panel'),
+                document.getElementById('mode-select-screen'),
+                document.getElementById('start-screen'),
+                document.getElementById('main-menu-screen')
+            ];
+
+            let activeContainer = null;
+            for (let container of containers) {
+                if (container && !container.classList.contains('hidden')) {
+                    activeContainer = container;
+                    break;
                 }
-            });
+            }
+
+            if (!activeContainer) return false;
+
+            // Hae kaikki näkyvät napit
+            const btns = Array.from(activeContainer.querySelectorAll('.jrpg-btn')).filter(b => b.offsetParent !== null && !b.disabled);
+            if (btns.length === 0) return false;
+
+            let currentIndex = btns.findIndex(b => b.classList.contains('menu-active'));
+            if (currentIndex === -1) currentIndex = 0;
+
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                btns.forEach(b => b.classList.remove('menu-active'));
+                currentIndex = (currentIndex + 1) % btns.length;
+                btns[currentIndex].classList.add('menu-active');
+                audio.playHover();
+                btns[currentIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                return true;
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                btns.forEach(b => b.classList.remove('menu-active'));
+                currentIndex = (currentIndex - 1 + btns.length) % btns.length;
+                btns[currentIndex].classList.add('menu-active');
+                audio.playHover();
+                btns[currentIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                return true;
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                audio.playSelect();
+                btns[currentIndex].click();
+                return true;
+            }
+
+            return false;
         }
 
-        function setupMenuNavigation() {
-            const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
-            btns.forEach((btn, idx) => {
-                btn.addEventListener('mousemove', () => {
-                    if (currentMenuIndex !== idx) {
-                        currentMenuIndex = idx;
-                        audio.playHover();
-                        updateMenuSelectionVisuals();
-                    }
-                });
-            });
-            updateMenuSelectionVisuals();
-        }
-
-        function updateOverlaySelectionVisuals() {
-            const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
-            if (btns.length === 0) return;
-            btns.forEach((btn, idx) => {
-                if (idx === currentOverlayIndex) {
-                    btn.classList.add('menu-active');
-                } else {
-                    btn.classList.remove('menu-active');
+        // Keskitetty hover-logiikka kaikille .jrpg-btn napeille
+        document.addEventListener('mousemove', (e) => {
+            const btn = e.target.closest('.jrpg-btn');
+            if (btn && !btn.disabled && btn !== window._lastHoveredBtn) {
+                // Poistetaan muilta samassa säiliössä aktiivinen tila
+                const container = btn.closest('#main-menu-screen, #overlay-content, #start-screen, #mode-select-screen');
+                if (container) {
+                     container.querySelectorAll('.jrpg-btn').forEach(b => b.classList.remove('menu-active'));
+                     btn.classList.add('menu-active');
                 }
-            });
-        }
-
-        function setupOverlayNavigation() {
-            const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
-            btns.forEach((btn, idx) => {
-                btn.addEventListener('mousemove', () => {
-                    if (currentOverlayIndex !== idx) {
-                        currentOverlayIndex = idx;
-                        audio.playHover();
-                        updateOverlaySelectionVisuals();
-                    }
-                });
-            });
-            updateOverlaySelectionVisuals();
-        }
+                audio.playHover();
+                window._lastHoveredBtn = btn;
+            } else if (!btn) {
+                window._lastHoveredBtn = null;
+            }
+        });
 
         function enterMainMenu() {
             document.getElementById('splash-screen').classList.add('hidden');
@@ -1321,20 +1333,13 @@ class ChiptuneEngine {
             
             audio.playBGM('mondamusic-retro-arcade-game-music-512837.mp3');
             
-            currentMenuIndex = 0;
-            setupMenuNavigation();
             checkUnlockedModes();
-        }
 
-        document.addEventListener('mouseover', (e) => {
-            const btn = e.target.closest('.jrpg-btn');
-            if (btn && !btn.disabled && btn !== window._lastHoveredBtn) {
-                audio.playHover();
-                window._lastHoveredBtn = btn;
-            } else if (!btn) {
-                window._lastHoveredBtn = null;
-            }
-        });
+            // Varmistetaan, että ensimmäinen nappi on aktiivinen
+            const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            if(btns.length > 0) btns[0].classList.add('menu-active');
+        }
 
         // SPACE SHOOTER GLOBAALIT
         let ssKeys = {};
@@ -1357,7 +1362,7 @@ class ChiptuneEngine {
 
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
-                if (document.activeElement.tagName !== 'INPUT') {
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     e.preventDefault();
                 }
             }
@@ -1374,14 +1379,14 @@ class ChiptuneEngine {
                     document.getElementById('total-score-display').textContent = val;
                     
                     // Avataan moodit ja kirjataan cutscenet nähdyiksi hiljaa taustalla
-                    if (val >= 50) localStorage.setItem('vm2000_ms_50', 'true');
                     if (val >= 100) localStorage.setItem('vm2000_ms_100', 'true');
-                    if (val >= 250) {
-                        localStorage.setItem('vm2000_ms_250', 'true');
+                    if (val >= 300) localStorage.setItem('vm2000_ms_300', 'true');
+                    if (val >= 600) {
+                        localStorage.setItem('vm2000_ms_600', 'true');
                         localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
                         checkUnlockedModes();
                     }
-                    if (val >= 500) localStorage.setItem('vm2000_ms_500', 'true');
+                    if (val >= 1000) localStorage.setItem('vm2000_ms_1000', 'true');
                     
                     alert(`Kokonaispisteet asetettu arvoon: ${val}\nTarvittavat pelimoodit on avattu ja cutscenet ohitettu automaattisesti.`);
                 }
@@ -1434,41 +1439,9 @@ class ChiptuneEngine {
                 return;
             }
             
-            if (!overlayPanel.classList.contains('hidden')) {
-                const btns = document.querySelectorAll('#overlay-content .jrpg-btn');
-                if (btns.length > 0) {
-                    if (e.key === 'ArrowDown') {
-                        currentOverlayIndex = (currentOverlayIndex + 1) % btns.length;
-                        updateOverlaySelectionVisuals();
-                        audio.playHover();
-                    } else if (e.key === 'ArrowUp') {
-                        currentOverlayIndex = (currentOverlayIndex - 1 + btns.length) % btns.length;
-                        updateOverlaySelectionVisuals();
-                        audio.playHover();
-                    } else if (e.key === 'Enter') {
-                        audio.playSelect();
-                        btns[currentOverlayIndex].click();
-                    }
-                }
-                return;
-            }
-
-            const mainMenu = document.getElementById('main-menu-screen');
-            if (mainMenu && !mainMenu.classList.contains('hidden')) {
-                const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
-                if (e.key === 'ArrowDown') {
-                    currentMenuIndex = (currentMenuIndex + 1) % btns.length;
-                    updateMenuSelectionVisuals();
-                    audio.playHover();
-                } else if (e.key === 'ArrowUp') {
-                    currentMenuIndex = (currentMenuIndex - 1 + btns.length) % btns.length;
-                    updateMenuSelectionVisuals();
-                    audio.playHover();
-                } else if (e.key === 'Enter') {
-                    audio.playSelect();
-                    btns[currentMenuIndex].click();
-                }
-                return;
+            // Käsittele yleinen näppäimistönavigaatio (overlayt, valikot)
+            if (handleGenericMenuKeyboard(e)) {
+                return; // Estä muu logiikka, jos valikkonavigaatio onnistui
             }
 
             if (gameMode === 'scramble' && !document.getElementById('scramble-ui').classList.contains('hidden')) {
@@ -1511,6 +1484,11 @@ class ChiptuneEngine {
             dictionarySection.classList.add('hidden');
             startScreen.classList.remove('hidden');
             if (!audio.ctx) audio.init();
+
+            // Varmistetaan että valikon ensimmäinen nappi on aktiivinen
+            const btns = document.querySelectorAll('#start-screen .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            if (btns.length > 0) btns[0].classList.add('menu-active');
         }
 
         function newGame() {
@@ -1538,17 +1516,13 @@ class ChiptuneEngine {
         function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
             if (audio.sfxEnabled) audio.playSelect();
-            const savedIndex = currentOverlayIndex;
             showOptionsMenu();
-            setTimeout(() => { currentOverlayIndex = savedIndex; updateOverlaySelectionVisuals(); }, 15);
         }
 
         function toggleMusicOverlay() {
             audio.playSelect();
             audio.toggleMusic();
-            const savedIndex = currentOverlayIndex;
             showOptionsMenu();
-            setTimeout(() => { currentOverlayIndex = savedIndex; updateOverlaySelectionVisuals(); }, 15);
         }
 
         function showOptionsMenu() {
@@ -1556,7 +1530,7 @@ class ChiptuneEngine {
             showOverlay(`
                 <h2 class="text-2xl font-pixel text-yellow-300 pixel-shadow mb-6">ASETUKSET</h2>
                 <div class="flex flex-col gap-4 w-full">
-                    <button onclick="toggleSfxOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
+                    <button onclick="toggleSfxOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base menu-active">
                         <span>Ääniefektit</span>
                         <span class="${audio.sfxEnabled ? 'text-green-400' : 'text-red-400'}">${audio.sfxEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
@@ -1583,7 +1557,7 @@ class ChiptuneEngine {
                     <p class="text-cyan-300 text-xs font-pixel">Julkaisija & Konsepti:</p>
                     <p class="text-slate-300 text-sm">Anssi Kivistö 2026</p>
                 </div>
-                <button onclick="hideOverlay()" class="mt-5 jrpg-btn text-sm sm:text-base p-3 w-full text-slate-400 hover:text-white">SULJE</button>
+                <button onclick="hideOverlay()" class="mt-5 jrpg-btn menu-active text-sm sm:text-base p-3 w-full text-slate-400 hover:text-white">SULJE</button>
             `);
         }
 
@@ -1606,12 +1580,16 @@ class ChiptuneEngine {
         };
 
         function resizeCanvas() {
+            if (!canvas) return;
             const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            canvasWidth = rect.width;
-            canvasHeight = rect.height;
-            ctx.imageSmoothingEnabled = false; 
+            // Päivitetään koko vain jos elementti on oikeasti näkyvissä ja sen koko > 0
+            if (rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                canvasWidth = rect.width;
+                canvasHeight = rect.height;
+                ctx.imageSmoothingEnabled = false;
+            }
         }
 
         function toggleAudio() {
@@ -1673,6 +1651,12 @@ class ChiptuneEngine {
             document.getElementById('start-step-select').classList.add('hidden');
             document.getElementById('start-step-preview').classList.remove('hidden');
             document.getElementById('start-step-preview').classList.add('flex');
+
+            // Kohdennetaan "Aloita Peli" painikkeeseen
+            const btns = document.querySelectorAll('#start-step-preview .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            const startBtn = Array.from(btns).find(b => b.textContent.includes('ALOITA PELI'));
+            if(startBtn) startBtn.classList.add('menu-active');
         }
 
         function backToStartGroupSelect() {
@@ -1688,6 +1672,10 @@ class ChiptuneEngine {
             changeVerbGroup(selectedGroupForStart);
             startScreen.classList.add('hidden');
             modeSelectScreen.classList.remove('hidden');
+
+            const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            if(btns.length > 0) btns[0].classList.add('menu-active');
         }
 
         function launchSelectedMode(mode) {
@@ -1763,6 +1751,9 @@ class ChiptuneEngine {
                 gameCanvasWrapper.classList.remove('hidden');
                 dictionarySection.classList.add('hidden');
                 dictionarySection.classList.remove('flex');
+                
+                // Uudelleenskaalaa canvas, kun se tuodaan esille piilotetusta tilasta
+                resizeCanvas();
                 
                 if (mode === 'spaceshooter') {
                     document.getElementById('ss-ui').classList.remove('hidden');
@@ -1856,20 +1847,18 @@ class ChiptuneEngine {
 
         function gameOver() {
             isBubblePlaying = false;
-            currentOverlayIndex = 0;
             showOverlay(`
                 <h2 class="text-3xl sm:text-4xl font-pixel text-red-500 pixel-shadow mb-5">GAME OVER</h2>
                 <div class="jrpg-box bg-black p-5 mb-5">
                     <p class="text-yellow-300 font-pixel text-base">Pisteet: ${score}</p>
                 </div>
-                <button onclick="resetGame(); if(gameMode === 'bubble') showDifficultyModal();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base">Yritä uudelleen</button>
+                <button onclick="resetGame(); if(gameMode === 'bubble') showDifficultyModal();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Yritä uudelleen</button>
             `);
         }
 
         function showOverlay(htmlContent) {
             overlayContent.innerHTML = htmlContent;
             overlayPanel.classList.remove('hidden');
-            setTimeout(setupOverlayNavigation, 15);
         }
 
         function hideOverlay() {
@@ -1887,7 +1876,9 @@ class ChiptuneEngine {
 
             ['easy', 'medium', 'hard'].forEach(d => {
                 const btn = document.getElementById('diff-btn-' + d);
-                if (btn) btn.className = 'jrpg-btn p-4 text-sm w-full ' + (difficulty.id === d ? 'border-yellow-400 text-yellow-300' : '');
+                if (btn) {
+                    btn.className = 'jrpg-btn p-4 text-sm w-full ' + (difficulty.id === d ? 'border-yellow-400 text-yellow-300 menu-active' : '');
+                }
             });
         }
 
@@ -2267,10 +2258,10 @@ class ChiptuneEngine {
                 checkUnlockedModes();
                 showOverlay(`<h2 class="text-3xl font-pixel text-green-400 mb-4">VICTORY!</h2>
                              <p class="text-white font-pixel">Captain Conjugator on lyöty!</p>
-                             <button onclick="enterMainMenu()" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>`);
+                             <button onclick="enterMainMenu()" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full menu-active">JATKA</button>`);
             } else {
                 showOverlay(`<h2 class="text-3xl font-pixel text-red-500 mb-4">GAME OVER</h2>
-                             <button onclick="initSpaceShooter(); hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">Yritä uudelleen</button>
+                             <button onclick="initSpaceShooter(); hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full menu-active">Yritä uudelleen</button>
                              <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
             }
         }
