@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VerbMaster2000 - Space Shooter Edition</title>
+    <title>VerbMaster2000 - 16-bit Edition</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome icons -->
@@ -215,11 +215,6 @@
                 <button onclick="showCredits()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 text-slate-300">
                     <span>CREDITS</span>
                 </button>
-                <!-- DEV-NAPPI ALKAA: POISTA ENNEN JULKAISUA -->
-                <button onclick="startSpaceShooterDev()" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-300 mt-4">
-                    <i class="fa-solid fa-bug"></i> DEV: TESTAA SPACE SHOOTER
-                </button>
-                <!-- DEV-NAPPI PÄÄTTYY -->
             </div>
             <p class="text-xs font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 ANSSI KIVISTÖ</p>
         </div>
@@ -266,7 +261,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
-                    <!-- VERBIRYHMÄT 1-11 TÄSSÄ -->
                     <button onclick="selectStartGroup('1')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>1. be – break</span><span class="text-yellow-300">☞</span></button>
                     <button onclick="selectStartGroup('2')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>2. bring – dive</span><span class="text-yellow-300">☞</span></button>
                     <button onclick="selectStartGroup('3')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>3. do – feel</span><span class="text-yellow-300">☞</span></button>
@@ -755,7 +749,8 @@
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
                 "Useless henchman...", 
-                "Now you face Captain Conjugator in SPACE!"
+                "I have deployed my elite guard, Captain Conjugator, to the Earth's orbit.",
+                "You now have access to a new mode: SPACE SHOOTER!"
             ]
         },
         cutscene_500: {
@@ -1080,7 +1075,6 @@ class ChiptuneEngine {
         osc.stop(now + 0.25);
     }
 
-    // Uudet äänet Space Shooteriin:
     playLaser() {
         if(!this.sfxEnabled) return; this.init(); if(!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1106,8 +1100,6 @@ class ChiptuneEngine {
         this.currentTrack = trackUrl;
         
         if (!this.musicEnabled) return;
-        
-        // Estetään saman musiikin turha uudelleenlataus, jos se jo soi
         if (this.bgmPlayer.src.endsWith(trackUrl) && !this.bgmPlayer.paused) return;
         
         this.bgmPlayer.src = trackUrl;
@@ -1124,7 +1116,6 @@ class ChiptuneEngine {
         if (!this.musicEnabled) {
             this.bgmPlayer.pause();
         } else if (this.currentTrack) {
-            // Varmistetaan, että oikea track on asetettu play-vaiheessa
             if (!this.bgmPlayer.src.endsWith(this.currentTrack)) {
                 this.bgmPlayer.src = this.currentTrack;
             }
@@ -1172,7 +1163,7 @@ class ChiptuneEngine {
         const overlayPanel = document.getElementById('overlay-panel');
         const overlayContent = document.getElementById('overlay-content');
 
-        // --- UUSI MILESTONE-JÄRJESTELMÄ ---
+        // --- UUSI MILESTONE-JÄRJESTELMÄ GLOBAALILLA PAUSELLA ---
         function getTotalScore() {
             const stored = localStorage.getItem('vm2000_totalscore');
             return isNaN(parseInt(stored)) ? 0 : parseInt(stored);
@@ -1190,7 +1181,6 @@ class ChiptuneEngine {
         function resetTotalScore() {
             localStorage.setItem('vm2000_totalscore', 0);
             document.getElementById('total-score-display').textContent = 0;
-            // Nollaa myös milestonet uutta peliä varten
             localStorage.removeItem('vm2000_ms_50');
             localStorage.removeItem('vm2000_ms_100');
             localStorage.removeItem('vm2000_ms_250');
@@ -1199,11 +1189,11 @@ class ChiptuneEngine {
             checkUnlockedModes();
         }
 
-        // --- KORJATTU CUTSCENE-PALAUTUS ---
         function pauseGameForCutscene(sceneId, callback) {
             const wasBubble = isBubblePlaying;
             const wasSS = (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss'));
-            const prevBGM = audio.currentTrack; // Tallennetaan aiempi musiikki
+            const prevMode = gameMode;
+            const prevBGM = audio.currentTrack; 
             
             isBubblePlaying = false; 
             if (wasSS) ssState = 'menu';
@@ -1215,18 +1205,18 @@ class ChiptuneEngine {
                 if (callback) {
                     callback(prevBGM);
                 } else {
-                    // Oletuspalautuslogiikka (jos ei callbackia, peli jatkuu siitä mihin jäi)
-                    if (wasSS) {
-                        ssState = 'playing';
-                        if (prevBGM) audio.playBGM(prevBGM);
-                    } else if (wasBubble) {
-                        isBubblePlaying = true;
-                        if (prevBGM) audio.playBGM(prevBGM);
-                    } else {
-                        enterMainMenu();
-                    }
+                    resumeAfterCutscene(prevMode, wasSS, wasBubble, prevBGM);
                 }
             });
+        }
+
+        function resumeAfterCutscene(prevMode, wasSS, wasBubble, prevBGM) {
+            if (prevMode === 'spaceshooter' && wasSS) {
+                ssState = 'playing';
+            } else if (prevMode === 'bubble' && wasBubble) {
+                isBubblePlaying = true;
+            }
+            if (prevBGM) audio.playBGM(prevBGM);
         }
 
         function checkMilestones(currentTotal) {
@@ -1236,21 +1226,22 @@ class ChiptuneEngine {
             } else if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
                 localStorage.setItem('vm2000_ms_100', 'true');
                 pauseGameForCutscene('cutscene_100', (prevBGM) => {
-                    alert("[TÄHÄN TULEE APURI 1 PELIMOODI] Placeholder: Jatketaan peliä.");
-                    if (gameMode === 'spaceshooter') ssState = 'playing';
-                    else if (gameMode === 'bubble') isBubblePlaying = true;
-                    if (prevBGM) audio.playBGM(prevBGM);
+                    alert("Uusi ominaisuus avattu! Jatketaan peliä.");
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
             } else if (currentTotal >= 250 && !localStorage.getItem('vm2000_ms_250')) {
                 localStorage.setItem('vm2000_ms_250', 'true');
-                pauseGameForCutscene('cutscene_250', () => {
-                    startSpaceShooterDev();
+                localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
+                checkUnlockedModes();
+                pauseGameForCutscene('cutscene_250', (prevBGM) => {
+                    alert("UUSI PELIMOODI AVATTU: Space Shooter!\nLöydät sen nyt ylävalikosta.");
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
             } else if (currentTotal >= 500 && !localStorage.getItem('vm2000_ms_500')) {
                 localStorage.setItem('vm2000_ms_500', 'true');
-                pauseGameForCutscene('cutscene_500', () => {
-                    alert("[TÄHÄN TULEE KATSUYOSHI LOPPUTAISTELU]");
-                    enterMainMenu();
+                pauseGameForCutscene('cutscene_500', (prevBGM) => {
+                    alert("Lopputaistelu avattu! (Odottaa toteutusta)");
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
                 });
             }
         }
@@ -1347,7 +1338,7 @@ class ChiptuneEngine {
 
         // SPACE SHOOTER GLOBAALIT
         let ssKeys = {};
-        let ssPlayer = { x: 50, y: 250, width: 64, height: 64, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 }; // Suurennettu pelaaja
+        let ssPlayer = { x: 50, y: 250, width: 64, height: 64, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
         let ssBullets = [];
         let ssEnemyBullets = [];
         let ssTargets = [];
@@ -1355,7 +1346,7 @@ class ChiptuneEngine {
         let ssStars = [];
         let ssHearts = [];
         let ssBoss = { active: false, x: 800, y: 200, width: 64, height: 64, hp: 70, maxHp: 70, phase: 1, timer: 0, shield: false, shieldTimer: 0, targetY: 200 };
-        let ssState = 'menu'; // menu, playing, boss, gameover, victory
+        let ssState = 'menu'; 
         let ssCorrectWords = 0;
         let ssCurrentVerb = null;
         let ssLastShot = 0;
@@ -1373,9 +1364,27 @@ class ChiptuneEngine {
 
             ssKeys[e.key] = true;
             
-            // DEV-PIKANÄPPÄIN B = Pomotaistelu
-            if (e.key === 'b' || e.key === 'B') {
-                startSpaceShooterDev();
+            // --- GLOBAALI DEVELOPER CHEAT ---
+            if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+                e.preventDefault();
+                let newScore = prompt("DEV CHEAT: Aseta uusi Total EXP (kokonaispistemäärä):", getTotalScore());
+                if (newScore !== null && !isNaN(parseInt(newScore))) {
+                    let val = parseInt(newScore);
+                    localStorage.setItem('vm2000_totalscore', val);
+                    document.getElementById('total-score-display').textContent = val;
+                    
+                    // Avataan moodit ja kirjataan cutscenet nähdyiksi hiljaa taustalla
+                    if (val >= 50) localStorage.setItem('vm2000_ms_50', 'true');
+                    if (val >= 100) localStorage.setItem('vm2000_ms_100', 'true');
+                    if (val >= 250) {
+                        localStorage.setItem('vm2000_ms_250', 'true');
+                        localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
+                        checkUnlockedModes();
+                    }
+                    if (val >= 500) localStorage.setItem('vm2000_ms_500', 'true');
+                    
+                    alert(`Kokonaispisteet asetettu arvoon: ${val}\nTarvittavat pelimoodit on avattu ja cutscenet ohitettu automaattisesti.`);
+                }
                 return;
             }
 
@@ -1413,7 +1422,6 @@ class ChiptuneEngine {
                 return;
             }            
             
-            // Tervetuloa-ruudun navigointi enterillä
             const welcomeScreen = document.getElementById('welcome-screen');
             if (welcomeScreen && !welcomeScreen.classList.contains('hidden') && (e.key === 'Enter' || e.key === ' ')) {
                 advanceWelcomeScreen();
@@ -1497,15 +1505,6 @@ class ChiptuneEngine {
             }, {passive: false});
         });
 
-        function startSpaceShooterDev() {
-            audio.playSelect();
-            document.getElementById('main-menu-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('mode-select-screen').classList.add('hidden');
-            activeVerbs = [...VERB_DATA]; // Lataa kaikki verbit testimielessä
-            switchMode('spaceshooter');
-        }
-
         function startGameFromMenu() {
             document.getElementById('main-menu-screen').classList.add('hidden');
             gameCanvasWrapper.classList.add('hidden');
@@ -1532,7 +1531,6 @@ class ChiptuneEngine {
         
         function continueGame() {
             audio.playSelect();
-            // Ladataan suoraan pelimusiikki jos ohitetaan intro
             audio.playBGM('brutaldesign-climbing-569924.mp3');
             startGameFromMenu();
         }
@@ -1717,7 +1715,6 @@ class ChiptuneEngine {
             audio.playSelect();
             gameMode = mode;
             
-            // MUSIIKIN VAIHTO PELIMOODIN MUKAAN
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
             else if (mode === 'spaceshooter') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
@@ -1913,7 +1910,6 @@ class ChiptuneEngine {
             resetGame();
             isBubblePlaying = true;
             
-            // Restart music when game restarts in bubble mode
             if (gameMode === 'bubble') {
                 audio.bgmPlayer.currentTime = 0;
                 if (audio.musicEnabled && audio.currentTrack) {
@@ -1924,7 +1920,7 @@ class ChiptuneEngine {
 
         window.speakWord = function(text) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Tämä tyhjentää jumittuneen puheen
+                window.speechSynthesis.cancel(); 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-GB';
                 utterance.rate = 0.85;
@@ -2049,7 +2045,6 @@ class ChiptuneEngine {
             document.getElementById('ss-boss-hud').classList.add('hidden');
             document.getElementById('ss-btn-shoot').classList.remove('hidden');
             
-            // Luo tähdet
             ssStars = [];
             for(let i=0; i<100; i++) {
                 ssStars.push({ x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, size: Math.random()*2+1, speed: Math.random()*3+0.5 });
@@ -2084,10 +2079,9 @@ class ChiptuneEngine {
             }
             options.sort(() => Math.random() - 0.5);
 
-            // Hajautetaan pystysuunnassa ja lisätään vaakasuuntainen hajautus (horizontalOffset)
             const lanes = [120, 250, 380];
             for (let i = 0; i < 3; i++) {
-                const horizontalOffset = Math.random() * 200; // 0 - 200 pikselin satunnainen heitto sivuille
+                const horizontalOffset = Math.random() * 200;
                 ssTargets.push({
                     x: canvasWidth + 50 + horizontalOffset,
                     y: lanes[i] + (Math.random()*40 - 20),
@@ -2102,33 +2096,27 @@ class ChiptuneEngine {
             ssTime = timestamp;
             if (ssState !== 'playing' && ssState !== 'boss') return;
 
-            // Ohjaus
             if ((ssKeys['ArrowUp'] || ssKeys['w']) && ssPlayer.y > 60) ssPlayer.y -= ssPlayer.speed;
             if ((ssKeys['ArrowDown'] || ssKeys['s']) && ssPlayer.y < canvasHeight - ssPlayer.height) ssPlayer.y += ssPlayer.speed;
             if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
             if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
 
-            // Tähdet
             ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
 
-            // Pelaajan ammukset
             for (let i = ssBullets.length - 1; i >= 0; i--) {
                 let b = ssBullets[i]; b.x += b.speed;
                 if (b.x > canvasWidth) ssBullets.splice(i, 1);
             }
 
-            // Vihollisen ammukset
             for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
                 let b = ssEnemyBullets[i]; b.x -= b.speed;
                 if (b.x < 0) { ssEnemyBullets.splice(i, 1); continue; }
-                // Törmäys pelaajaan
                 if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 25) {
                     ssEnemyBullets.splice(i, 1);
                     ssTakeDamage();
                 }
             }
 
-            // Sydämet
             if (Math.random() < 0.002 && ssTime - ssLastHeartSpawn > 5000) {
                 ssHearts.push({ x: canvasWidth, y: 100 + Math.random()*(canvasHeight-150), speed: 2, radius: 12 });
                 ssLastHeartSpawn = ssTime;
@@ -2144,7 +2132,6 @@ class ChiptuneEngine {
                 }
             }
 
-            // SANAVAIHE
             if (ssState === 'playing') {
                 if (ssTargets.length === 0 && ssTime - ssLastTargetSpawn > 1000) {
                     spawnSsTargets();
@@ -2155,7 +2142,6 @@ class ChiptuneEngine {
                     let t = ssTargets[i];
                     t.x -= t.speed;
                     if (t.x < -t.width) {
-                        // Jos oikea meni ohi, ota damage
                         const forms = ['base', 'past', 'participle'];
                         if (ssCurrentVerb && t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
                             ssTakeDamage();
@@ -2164,16 +2150,11 @@ class ChiptuneEngine {
                         continue;
                     }
 
-                    // Osuma pelaajan ammuksesta
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
                         if (b.x > t.x && b.x < t.x + t.width && b.y > t.y && b.y < t.y + t.height) {
                             const forms = ['base', 'past', 'participle'];
-                            
-                            // HUOM: Korjattu JavaScript-kaatuminen "TypeError: Cannot read properties of undefined" 
-                            // Tyhjentämällä taulukon kerralla ja keskeyttämällä looppi siististi.
                             if (t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
-                                // Oikein
                                 audio.playExplosion();
                                 addScore(15); combo++;
                                 createSsParticle(t.x, t.y, '#10b981', 15);
@@ -2184,27 +2165,24 @@ class ChiptuneEngine {
                                     ssBoss.x = canvasWidth + 100;
                                     document.getElementById('ss-boss-hud').classList.remove('hidden');
                                 }
-                                ssTargets.length = 0; // Tyhjennetään kaikki kohteet
+                                ssTargets.length = 0; 
                                 ssBullets.splice(j, 1);
-                                i = -1; // Pysäytetään koko ulompi silmukka turvallisesti
+                                i = -1; 
                                 break; 
                             } else {
-                                // Väärin
                                 audio.playExplosion();
                                 ssTakeDamage();
                                 createSsParticle(t.x, t.y, '#ef4444', 10);
                                 ssTargets.splice(i, 1);
                                 ssBullets.splice(j, 1);
-                                break; // Osuma käsitelty, jatka muihin kohteisiin
+                                break; 
                             }
                         }
                     }
                 }
             }
 
-            // POMOVAIHE
             if (ssState === 'boss' && ssBoss.active) {
-                // Pomon sisääntulo ja liike
                 if (ssBoss.x > canvasWidth - 100) ssBoss.x -= 2;
                 else {
                     let speed = ssBoss.phase === 3 ? 0.06 : 0.1;
@@ -2213,7 +2191,6 @@ class ChiptuneEngine {
                     if (ssBoss.y > canvasHeight - 100) ssBoss.y = canvasHeight - 100;
                 }
 
-                // Pomon kilpi
                 if (ssBoss.phase > 1) {
                     let cycle = ssBoss.phase === 3 ? 5000 : 7000;
                     let duration = ssBoss.phase === 3 ? 3000 : 2000;
@@ -2225,7 +2202,6 @@ class ChiptuneEngine {
                     }
                 }
 
-                // Pomon ampuminen
                 let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 600);
                 if (ssBoss.x <= canvasWidth - 100 && ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield) {
                     audio.playLaser();
@@ -2233,20 +2209,18 @@ class ChiptuneEngine {
                     ssLastEnemyShot = ssTime;
                 }
 
-                // Osumat pomoon
                 for (let j = ssBullets.length - 1; j >= 0; j--) {
                     let b = ssBullets[j];
                     if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 40) {
                         ssBullets.splice(j, 1);
                         if (ssBoss.shield) {
-                            createSsParticle(b.x, b.y, '#3b82f6', 5); // Sininen kipinä
+                            createSsParticle(b.x, b.y, '#3b82f6', 5);
                         } else {
                             audio.playHit();
                             ssBoss.hp--;
                             createSsParticle(b.x, b.y, '#f59e0b', 10);
                             document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
                             
-                            // Vaiheiden tarkistus
                             if (ssBoss.hp === 50 && ssBoss.phase === 1) endBossPhase(2);
                             else if (ssBoss.hp === 30 && ssBoss.phase === 2) endBossPhase(3);
                             else if (ssBoss.hp <= 0) {
@@ -2261,7 +2235,6 @@ class ChiptuneEngine {
                 }
             }
 
-            // Partikkelit
             for (let i = ssParticles.length - 1; i >= 0; i--) {
                 let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
                 if (p.life <= 0) ssParticles.splice(i, 1);
@@ -2271,7 +2244,7 @@ class ChiptuneEngine {
         function endBossPhase(nextPhase) {
             ssBoss.active = false;
             ssBoss.phase = nextPhase;
-            ssCorrectWords = 0; // Paluu sanavaiheeseen
+            ssCorrectWords = 0;
             ssState = 'playing';
             document.getElementById('ss-boss-hud').classList.add('hidden');
         }
@@ -2309,17 +2282,14 @@ class ChiptuneEngine {
         }
 
         function drawSpaceShooter() {
-            // Tausta
             let grad = ctx.createLinearGradient(0,0,0,canvasHeight);
             grad.addColorStop(0, '#0a0a2a'); grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad; ctx.fillRect(0,0,canvasWidth,canvasHeight);
 
-            // Tähdet
             ctx.fillStyle = '#fff';
             ssStars.forEach(s => { ctx.globalAlpha = s.size/3; ctx.fillRect(s.x, s.y, s.size, s.size); });
             ctx.globalAlpha = 1.0;
 
-            // Pelaaja
             if (ssState === 'playing' || ssState === 'boss') {
                 if (playerImg.complete && playerImg.width > 0) {
                     ctx.drawImage(playerImg, Math.round(ssPlayer.x), Math.round(ssPlayer.y), ssPlayer.width, ssPlayer.height);
@@ -2328,13 +2298,11 @@ class ChiptuneEngine {
                 }
             }
 
-            // Ammukset
             ctx.fillStyle = '#fef08a';
             ssBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
             ctx.fillStyle = '#ef4444';
             ssEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-            // Sydämet
             ctx.fillStyle = '#ef4444';
             ssHearts.forEach(h => {
                 ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2); ctx.fill();
@@ -2342,7 +2310,6 @@ class ChiptuneEngine {
                 ctx.fillStyle = '#ef4444';
             });
 
-            // Pomo
             if (ssBoss.active) {
                 if (enemyImg.complete && enemyImg.width > 0) {
                     ctx.drawImage(enemyImg, Math.round(ssBoss.x), Math.round(ssBoss.y), ssBoss.width, ssBoss.height);
@@ -2356,7 +2323,6 @@ class ChiptuneEngine {
                 }
             }
 
-            // Sanat
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ssTargets.forEach(t => {
                 ctx.fillStyle = 'rgba(15,23,42,0.8)'; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
@@ -2366,7 +2332,6 @@ class ChiptuneEngine {
                 ctx.fillText(t.text, Math.round(t.x + t.width/2), Math.round(t.y + t.height/2));
             });
 
-            // Tehtävä-HUD
             if (ssState === 'playing' && ssCurrentVerb) {
                 ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(canvasWidth/2 - 200, 10, 400, 50);
                 ctx.strokeStyle = '#ffd700'; ctx.strokeRect(canvasWidth/2 - 200, 10, 400, 50);
@@ -2376,7 +2341,6 @@ class ChiptuneEngine {
                 ctx.fillText(`${ssCurrentVerb.formName}`, canvasWidth/2, 45);
             }
 
-            // Partikkelit
             ssParticles.forEach(p => {
                 ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
                 ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4);
@@ -2385,7 +2349,7 @@ class ChiptuneEngine {
         }
 
         // ==========================================
-        // PÄÄPELISILMUKKA TÄYDENNETTYNÄ
+        // PÄÄPELISILMUKKA
         // ==========================================
         function gameLoop(timestamp) {
             if (gameMode === 'spaceshooter') {
@@ -2395,14 +2359,14 @@ class ChiptuneEngine {
                 time = timestamp;
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 if (gameMode !== 'dictionary' && canvasWidth) {
-                    drawBackground(); // Kuplapelin tausta
+                    drawBackground();
                     if (gameMode === 'bubble' && lives > 0 && isBubblePlaying) {
                         runBubbleMode();
                     } else if (gameMode === 'bubble' && activeVerbs.length === 0 && !document.getElementById('start-screen').classList.contains('hidden') === false) {
                         ctx.fillStyle = '#fff'; ctx.font = '16px "Press Start 2P"'; ctx.textAlign = 'center';
                         ctx.fillText("VALITSE VERBIRYHMÄ ALOITTAAKSESI", canvasWidth/2, canvasHeight/2);
                     }
-                    renderEffects(); // Kuplapelin efektit
+                    renderEffects(); 
                 }
             }
             animationFrameId = requestAnimationFrame(gameLoop);
