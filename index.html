@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VerbMaster2000 - 16-bit JRPG Edition</title>
+    <title>VerbMaster2000 - Space Shooter Edition</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome icons -->
@@ -215,6 +215,11 @@
                 <button onclick="showCredits()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 text-slate-300">
                     <span>CREDITS</span>
                 </button>
+                <!-- DEV-NAPPI ALKAA: POISTA ENNEN JULKAISUA -->
+                <button onclick="startSpaceShooterDev()" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-300 mt-4">
+                    <i class="fa-solid fa-bug"></i> DEV: TESTAA SPACE SHOOTER
+                </button>
+                <!-- DEV-NAPPI PÄÄTTYY -->
             </div>
             <p class="text-xs font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 ANSSI KIVISTÖ</p>
         </div>
@@ -378,6 +383,7 @@
     </header>
 
     <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+        <!-- TOP NAV / OPTIONS -->
         <div class="jrpg-box p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-yellow-300 font-pixel text-xs sm:text-sm">
                 <span>☞ HARJOITUSRYHMÄ:</span>
@@ -398,7 +404,7 @@
             </select>
         </div>
 
-        <nav class="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 bg-black border-2 border-white">
+        <nav class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 gap-2 p-1.5 bg-black border-2 border-white">
             <button id="tab-bubble" onclick="switchMode('bubble')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm tab-active">
                 <span>KUPLAPELI</span>
             </button>
@@ -414,13 +420,17 @@
             <button id="tab-dictionary" onclick="switchMode('dictionary')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm">
                 <span>KIRJASTO</span>
             </button>
+            <!-- UNLOCKABLE TABS -->
+            <button id="tab-spaceshooter" onclick="switchMode('spaceshooter')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm hidden border-red-500 text-red-200">
+                <span>SPACE SHOOTER</span>
+            </button>
         </nav>
 
         <div id="game-canvas-wrapper" class="relative flex-1 min-h-[440px] md:min-h-[500px] w-full bg-black border-4 border-white outline outline-2 outline-yellow-400 overflow-hidden shadow-2xl flex flex-col">
             <div id="canvas-hud" class="absolute top-0 left-0 right-0 p-3 flex items-center justify-between z-10 pointer-events-none gap-2">
                 <div class="flex items-center gap-3">
                     <div class="jrpg-box bg-blue-950 px-3 py-2 flex items-center gap-2">
-                        <span class="text-xs sm:text-sm text-yellow-300 font-pixel">PTS:</span>
+                        <span class="text-xs sm:text-sm text-yellow-300 font-pixel">SCORE:</span>
                         <span id="hud-score" class="font-pixel text-sm sm:text-base text-white pixel-shadow">0</span>
                     </div>
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-xs px-2 py-1 animate-pulse shadow-lg">
@@ -432,8 +442,11 @@
                 </div>
 
                 <!-- 8-bit Heart SVG -->
-                <div id="hud-lives" class="flex items-center gap-1.5 jrpg-box bg-blue-950 px-3 py-2">
-                    <!-- Hearts dynamically injected here -->
+                <div id="hud-lives-container" class="flex items-center gap-2 jrpg-box bg-blue-950 px-3 py-2">
+                    <span class="text-[10px] sm:text-xs text-yellow-300 font-pixel">HEALTH:</span>
+                    <div id="hud-lives" class="flex gap-1.5">
+                        <!-- Hearts dynamically injected here -->
+                    </div>
                 </div>
             </div>
 
@@ -449,6 +462,19 @@
                         <button onclick="setDifficulty('medium')" id="diff-btn-medium" class="jrpg-btn p-4 text-sm w-full border-yellow-400 text-yellow-300">Keskitaso (Normaali)</button>
                         <button onclick="setDifficulty('hard')" id="diff-btn-hard" class="jrpg-btn p-4 text-sm w-full">Vaikea (Nopea)</button>
                     </div>
+                </div>
+
+                <!-- SPACE SHOOTER UI -->
+                <div id="ss-ui" class="pointer-events-none w-full h-full relative hidden">
+                    <div id="ss-boss-hud" class="absolute top-12 sm:top-2 left-1/2 transform -translate-x-1/2 w-64 hidden flex-col gap-1 bg-black/80 border-2 border-red-500 p-2 text-center">
+                        <div class="text-red-500 font-pixel text-[10px]">CAPTAIN CONJUGATOR</div>
+                        <div class="w-full bg-slate-800 h-4 border border-white">
+                            <div id="ss-boss-hp-bar" class="bg-red-500 h-full w-full transition-all"></div>
+                        </div>
+                    </div>
+                    <button id="ss-btn-shoot" onpointerdown="ssShoot()" onmousedown="ssShoot()" class="pointer-events-auto absolute bottom-8 right-8 w-16 h-16 rounded-full bg-red-600 border-4 border-red-400 text-white font-pixel text-[10px] shadow-[0_0_15px_rgba(220,38,38,0.8)] active:scale-95 hidden sm:hidden flex items-center justify-center">
+                        AMMU
+                    </button>
                 </div>
 
                 <!-- FLASHCARDS UI -->
@@ -728,6 +754,46 @@
                 "Your little vocabulary trip ends here!",
                 "Prepare to be schooled!"
             ]
+        },
+        cutscene_50: {
+            image: "image1.jpeg", 
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "What?! You scored 50 points?", 
+                "Don't get cocky. My henchmen will destroy you!"
+            ]
+        },
+        cutscene_100: {
+            image: "image2.jpeg", 
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "Here comes my first Henchman!", 
+                "Let's see you handle THIS!"
+            ]
+        },
+        cutscene_250: {
+            image: "image2.jpeg", 
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "Useless henchman...", 
+                "Now you face Captain Conjugator in SPACE!"
+            ]
+        },
+        cutscene_500: {
+            image: "image1.jpeg", 
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "Enough games!", 
+                "I, Boss Katsuyoshi, will finish you personally!"
+            ]
+        },
+        cutscene_win: {
+            image: "image1.jpeg", 
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "Impossible...", 
+                "You... you have mastered all the verbs!"
+            ]
         }
     };
 
@@ -739,6 +805,12 @@ let currentCharIndex = 0;
 let typewriterTimer = null;
 let cutsceneCallback = null;
 let isTyping = false;
+
+// KUVAT AVARUUSALUKSILLE
+const playerImg = new Image();
+playerImg.src = 'shipnobg.png';
+const enemyImg = new Image();
+enemyImg.src = 'enemynobg.png';
 
 // --- WELCOME SCREEN -MUUTTUJAT ---
 let welcomeIndex = 0;
@@ -993,6 +1065,24 @@ class ChiptuneEngine {
         });
     }
 
+    playHit() {
+        if (!this.sfxEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+
     playWrong() {
         if (!this.sfxEnabled) return;
         this.init();
@@ -1011,6 +1101,27 @@ class ChiptuneEngine {
         osc.stop(now + 0.25);
     }
 
+    // Uudet äänet Space Shooteriin:
+    playLaser() {
+        if(!this.sfxEnabled) return; this.init(); if(!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.1);
+    }
+    
+    playExplosion() {
+        if(!this.sfxEnabled) return; this.init(); if(!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(20, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.3);
+    }
+
     playBGM(trackUrl) {
         if (!trackUrl) return;
         this.currentTrack = trackUrl;
@@ -1027,7 +1138,6 @@ class ChiptuneEngine {
     stopBGM() {
         this.bgmPlayer.pause();
         this.bgmPlayer.currentTime = 0;
-        // Poistettu currentTrackin nollaus, jotta toggleMusic muistaa mihin jäätiin
     }
 
     toggleMusic() {
@@ -1083,6 +1193,7 @@ class ChiptuneEngine {
         const overlayPanel = document.getElementById('overlay-panel');
         const overlayContent = document.getElementById('overlay-content');
 
+        // --- UUSI MILESTONE-JÄRJESTELMÄ ---
         function getTotalScore() {
             const stored = localStorage.getItem('vm2000_totalscore');
             return isNaN(parseInt(stored)) ? 0 : parseInt(stored);
@@ -1100,19 +1211,56 @@ class ChiptuneEngine {
         function resetTotalScore() {
             localStorage.setItem('vm2000_totalscore', 0);
             document.getElementById('total-score-display').textContent = 0;
-            localStorage.removeItem('vm2000_milestone1');
+            // Nollaa myös milestonet uutta peliä varten
+            localStorage.removeItem('vm2000_ms_50');
+            localStorage.removeItem('vm2000_ms_100');
+            localStorage.removeItem('vm2000_ms_250');
+            localStorage.removeItem('vm2000_ms_500');
+            localStorage.removeItem('vm2000_unlocked_spaceshooter');
+            checkUnlockedModes();
         }
 
         function checkMilestones(currentTotal) {
-            if (currentTotal >= 500 && !localStorage.getItem('vm2000_milestone1')) {
-                localStorage.setItem('vm2000_milestone1', 'true');
-                
-                isBubblePlaying = false; 
-                
-                startCutscene('boss1_intro', () => {
-                    alert("Tästä alkaisi Boss Fight! Ominaisuus koodataan myöhemmin.");
+            if (currentTotal >= 50 && !localStorage.getItem('vm2000_ms_50')) {
+                localStorage.setItem('vm2000_ms_50', 'true');
+                pauseGameForCutscene('cutscene_50');
+            } else if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
+                localStorage.setItem('vm2000_ms_100', 'true');
+                pauseGameForCutscene('cutscene_100', () => {
+                    alert("[TÄHÄN TULEE APURI 1 PELIMOODI] Placeholder: Jatketaan peliä.");
                     enterMainMenu();
                 });
+            } else if (currentTotal >= 250 && !localStorage.getItem('vm2000_ms_250')) {
+                localStorage.setItem('vm2000_ms_250', 'true');
+                pauseGameForCutscene('cutscene_250', () => {
+                    startSpaceShooterDev();
+                });
+            } else if (currentTotal >= 500 && !localStorage.getItem('vm2000_ms_500')) {
+                localStorage.setItem('vm2000_ms_500', 'true');
+                pauseGameForCutscene('cutscene_500', () => {
+                    alert("[TÄHÄN TULEE KATSUYOSHI LOPPUTAISTELU]");
+                    enterMainMenu();
+                });
+            }
+        }
+
+        function pauseGameForCutscene(sceneId, callback) {
+            // Pysäytä mahdollinen pelimoodi väliaikaisesti
+            isBubblePlaying = false; 
+            ssState = 'menu'; // Pysäyttää SS:n jos se olisi käynnissä
+            
+            startCutscene(sceneId, () => {
+                if (callback) callback();
+                else enterMainMenu();
+            });
+        }
+
+        function checkUnlockedModes() {
+            const tabSs = document.getElementById('tab-spaceshooter');
+            if (localStorage.getItem('vm2000_unlocked_spaceshooter') === 'true') {
+                tabSs.classList.remove('hidden');
+            } else {
+                tabSs.classList.add('hidden');
             }
         }
 
@@ -1176,6 +1324,7 @@ class ChiptuneEngine {
             dictionarySection.classList.add('hidden');
             hideOverlay();
             isBubblePlaying = false;
+            ssState = 'menu';
             
             if (!audio.ctx) audio.init();
             
@@ -1183,6 +1332,7 @@ class ChiptuneEngine {
             
             currentMenuIndex = 0;
             setupMenuNavigation();
+            checkUnlockedModes();
         }
 
         document.addEventListener('mouseover', (e) => {
@@ -1195,6 +1345,25 @@ class ChiptuneEngine {
             }
         });
 
+        // SPACE SHOOTER GLOBAALIT
+        let ssKeys = {};
+        let ssPlayer = { x: 50, y: 250, width: 48, height: 48, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
+        let ssBullets = [];
+        let ssEnemyBullets = [];
+        let ssTargets = [];
+        let ssParticles = [];
+        let ssStars = [];
+        let ssHearts = [];
+        let ssBoss = { active: false, x: 800, y: 200, width: 64, height: 64, hp: 70, maxHp: 70, phase: 1, timer: 0, shield: false, shieldTimer: 0, targetY: 200 };
+        let ssState = 'menu'; // menu, playing, boss, gameover, victory
+        let ssCorrectWords = 0;
+        let ssCurrentVerb = null;
+        let ssLastShot = 0;
+        let ssLastTargetSpawn = 0;
+        let ssLastEnemyShot = 0;
+        let ssLastHeartSpawn = 0;
+        let ssTime = 0;
+
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
                 if (document.activeElement.tagName !== 'INPUT') {
@@ -1202,7 +1371,28 @@ class ChiptuneEngine {
                 }
             }
 
+            ssKeys[e.key] = true;
+            
+            // DEV-PIKANÄPPÄIN B = Pomotaistelu
+            if (e.key === 'b' || e.key === 'B') {
+                startSpaceShooterDev();
+                return;
+            }
+
+            if (e.key === ' ' && gameMode === 'spaceshooter') {
+                e.preventDefault();
+                ssShoot();
+            }
+
             if (e.key === 'Escape') {
+                if (ssState === 'playing' || ssState === 'boss') {
+                    ssState = 'menu'; // Pause
+                    showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
+                                 <button onclick="ssState='playing'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
+                                 <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
+                    return;
+                }
+
                 if (!overlayPanel.classList.contains('hidden')) {
                     const backBtn = Array.from(document.querySelectorAll('#overlay-content .jrpg-btn')).find(b => b.textContent.includes('TAKAISIN') || b.textContent.includes('SULJE'));
                     if (backBtn) backBtn.click();
@@ -1289,6 +1479,32 @@ class ChiptuneEngine {
                 }
             }
         });
+        
+        window.addEventListener('keyup', (e) => { 
+            ssKeys[e.key] = false; 
+        });
+
+        // MOBIILIOHJAUS SPACE SHOOTERILLE
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('main-canvas');
+            canvas.addEventListener('touchmove', (e) => {
+                if (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss')) {
+                    e.preventDefault();
+                    const rect = canvas.getBoundingClientRect();
+                    ssPlayer.x = e.touches[0].clientX - rect.left - ssPlayer.width/2;
+                    ssPlayer.y = e.touches[0].clientY - rect.top - ssPlayer.height/2;
+                }
+            }, {passive: false});
+        });
+
+        function startSpaceShooterDev() {
+            audio.playSelect();
+            document.getElementById('main-menu-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('mode-select-screen').classList.add('hidden');
+            activeVerbs = [...VERB_DATA]; // Lataa kaikki verbit testimielessä
+            switchMode('spaceshooter');
+        }
 
         function startGameFromMenu() {
             document.getElementById('main-menu-screen').classList.add('hidden');
@@ -1504,7 +1720,8 @@ class ChiptuneEngine {
             // MUSIIKIN VAIHTO PELIMOODIN MUKAAN
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
-            else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
+            else if (mode === 'spaceshooter') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
+            else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; // Oletuksena sama vauhdikas
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
             else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
             else if (mode === 'dictionary') modeBGM = "retro-bgm-chan-home-town-516297.mp3";
@@ -1512,25 +1729,32 @@ class ChiptuneEngine {
             if (modeBGM) audio.playBGM(modeBGM);
 
             document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('tab-active'));
-            document.getElementById('tab-' + mode).classList.add('tab-active');
+            const activeTab = document.getElementById('tab-' + mode);
+            if(activeTab) activeTab.classList.add('tab-active');
 
             document.getElementById('cards-ui').classList.add('hidden');
             document.getElementById('typing-ui').classList.add('hidden');
             document.getElementById('scramble-ui').classList.add('hidden');
             document.getElementById('bubble-diff-ui').classList.add('hidden');
+            document.getElementById('ss-ui').classList.add('hidden');
             htmlControlsOverlay.classList.add('pointer-events-none');
             
             const diffBadge = document.getElementById('hud-diff-badge');
 
             if (mode === 'bubble') {
-                document.getElementById('hud-lives').classList.remove('hidden');
+                document.getElementById('hud-lives-container').classList.remove('hidden');
                 if (diffBadge) diffBadge.classList.remove('hidden');
-                document.getElementById('hud-lives').classList.add('flex');
+                document.getElementById('hud-lives-container').classList.add('flex');
                 if (diffBadge) diffBadge.classList.add('flex');
-            } else {
-                document.getElementById('hud-lives').classList.add('hidden');
+            } else if (mode === 'spaceshooter') {
+                document.getElementById('hud-lives-container').classList.remove('hidden');
                 if (diffBadge) diffBadge.classList.add('hidden');
-                document.getElementById('hud-lives').classList.remove('flex');
+                document.getElementById('hud-lives-container').classList.add('flex');
+                if (diffBadge) diffBadge.classList.remove('flex');
+            } else {
+                document.getElementById('hud-lives-container').classList.add('hidden');
+                if (diffBadge) diffBadge.classList.add('hidden');
+                document.getElementById('hud-lives-container').classList.remove('flex');
                 if (diffBadge) diffBadge.classList.remove('flex');
             }
 
@@ -1543,7 +1767,12 @@ class ChiptuneEngine {
                 dictionarySection.classList.add('hidden');
                 dictionarySection.classList.remove('flex');
                 
-                if (mode === 'cards') {
+                if (mode === 'spaceshooter') {
+                    document.getElementById('ss-ui').classList.remove('hidden');
+                    htmlControlsOverlay.classList.remove('pointer-events-none');
+                    canvasHud.classList.remove('hidden');
+                    initSpaceShooter();
+                } else if (mode === 'cards') {
                     document.getElementById('cards-ui').classList.remove('hidden');
                     document.getElementById('cards-ui').classList.add('flex');
                     canvasHud.classList.add('hidden');
@@ -1566,7 +1795,7 @@ class ChiptuneEngine {
                     canvasHud.classList.remove('hidden');
                 }
             }
-            resetGame();
+            if(mode !== 'spaceshooter') resetGame();
         }
 
         function resetGame() {
@@ -1586,10 +1815,13 @@ class ChiptuneEngine {
             
             const pixelHeartSvg = `<svg width="18" height="18" viewBox="0 0 8 8" fill="currentColor" style="shape-rendering: crispedges;"><path d="M1,2 h2 v-1 h2 v1 h2 v3 h-1 v1 h-1 v1 h-2 v-1 h-1 v-1 h-1 z"/></svg>`;
             let hearts = '';
-            for(let i=0; i<3; i++) {
-                hearts += i < lives ? `<span class="text-red-500 drop-shadow-md">${pixelHeartSvg}</span>` : `<span class="text-slate-800 drop-shadow-none">${pixelHeartSvg}</span>`;
+            let maxH = (gameMode === 'spaceshooter') ? ssPlayer.maxHp : 3;
+            let curH = (gameMode === 'spaceshooter') ? ssPlayer.hp : lives;
+            for(let i=0; i<maxH; i++) {
+                let active = i < curH;
+                hearts += active ? `<span class="text-red-500 drop-shadow-md">${pixelHeartSvg}</span>` : `<span class="text-slate-800 drop-shadow-none">${pixelHeartSvg}</span>`;
             }
-            hudLives.innerHTML = hearts;
+            document.getElementById('hud-lives').innerHTML = hearts;
 
             if (combo > 1) {
                 hudComboBadge.classList.remove('hidden');
@@ -1804,27 +2036,368 @@ class ChiptuneEngine {
             ctx.globalAlpha = 1.0;
         }
 
+        // ==========================================
+        // SPACE SHOOTER PELILOGIIKKA
+        // ==========================================
+        function initSpaceShooter() {
+            ssPlayer.hp = 3; 
+            score = 0; 
+            ssCorrectWords = 0;
+            ssBullets = []; ssEnemyBullets = []; ssTargets = []; ssParticles = []; ssHearts = [];
+            ssBoss.active = false; ssBoss.hp = ssBoss.maxHp; ssBoss.phase = 1;
+            ssState = 'playing';
+            document.getElementById('ss-boss-hud').classList.add('hidden');
+            document.getElementById('ss-btn-shoot').classList.remove('hidden');
+            
+            // Luo tähdet
+            ssStars = [];
+            for(let i=0; i<100; i++) {
+                ssStars.push({ x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, size: Math.random()*2+1, speed: Math.random()*3+0.5 });
+            }
+            updateHUD();
+        }
+
+        function ssShoot() {
+            if (ssState !== 'playing' && ssState !== 'boss') return;
+            if (ssTime - ssLastShot > 300) {
+                audio.playLaser();
+                ssBullets.push({ x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 - 2, speed: 10, width: 15, height: 4 });
+                ssLastShot = ssTime;
+            }
+        }
+
+        function spawnSsTargets() {
+            if (activeVerbs.length === 0) return;
+            const v = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            const forms = ['base', 'past', 'participle'];
+            const fIdx = Math.floor(Math.random() * 3);
+            const names = ['1. MUOTO (PERUS)', '2. MUOTO (IMPERFEKTI)', '3. MUOTO (PERFEKTI)'];
+            ssCurrentVerb = { verb: v, formIndex: fIdx, formName: names[fIdx] };
+
+            const correctText = v[forms[fIdx]];
+            let options = [correctText];
+            
+            while(options.length < 3) {
+                const randV = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+                const randText = randV[forms[Math.floor(Math.random() * 3)]];
+                if (!options.includes(randText)) options.push(randText);
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            // Hajautetaan pystysuunnassa
+            const lanes = [120, 250, 380];
+            for (let i = 0; i < 3; i++) {
+                ssTargets.push({
+                    x: canvasWidth + 50,
+                    y: lanes[i] + (Math.random()*40 - 20),
+                    text: options[i],
+                    speed: 2.5 + (ssCorrectWords * 0.1),
+                    width: 100, height: 40
+                });
+            }
+        }
+
+        function updateSpaceShooter(timestamp) {
+            ssTime = timestamp;
+            if (ssState !== 'playing' && ssState !== 'boss') return;
+
+            // Ohjaus
+            if ((ssKeys['ArrowUp'] || ssKeys['w']) && ssPlayer.y > 60) ssPlayer.y -= ssPlayer.speed;
+            if ((ssKeys['ArrowDown'] || ssKeys['s']) && ssPlayer.y < canvasHeight - ssPlayer.height) ssPlayer.y += ssPlayer.speed;
+            if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
+            if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
+
+            // Tähdet
+            ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
+
+            // Pelaajan ammukset
+            for (let i = ssBullets.length - 1; i >= 0; i--) {
+                let b = ssBullets[i]; b.x += b.speed;
+                if (b.x > canvasWidth) ssBullets.splice(i, 1);
+            }
+
+            // Vihollisen ammukset
+            for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
+                let b = ssEnemyBullets[i]; b.x -= b.speed;
+                if (b.x < 0) { ssEnemyBullets.splice(i, 1); continue; }
+                // Törmäys pelaajaan
+                if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 20) {
+                    ssEnemyBullets.splice(i, 1);
+                    ssTakeDamage();
+                }
+            }
+
+            // Sydämet
+            if (Math.random() < 0.002 && ssTime - ssLastHeartSpawn > 5000) {
+                ssHearts.push({ x: canvasWidth, y: 100 + Math.random()*(canvasHeight-150), speed: 2, radius: 12 });
+                ssLastHeartSpawn = ssTime;
+            }
+            for (let i = ssHearts.length - 1; i >= 0; i--) {
+                let h = ssHearts[i]; h.x -= h.speed;
+                if (h.x < 0) { ssHearts.splice(i, 1); continue; }
+                if (Math.hypot(h.x - (ssPlayer.x+ssPlayer.width/2), h.y - (ssPlayer.y+ssPlayer.height/2)) < 30) {
+                    audio.playCorrect();
+                    if (ssPlayer.hp < ssPlayer.maxHp) ssPlayer.hp++;
+                    updateHUD();
+                    ssHearts.splice(i, 1);
+                }
+            }
+
+            // SANAVAIHE
+            if (ssState === 'playing') {
+                if (ssTargets.length === 0 && ssTime - ssLastTargetSpawn > 1000) {
+                    spawnSsTargets();
+                    ssLastTargetSpawn = ssTime;
+                }
+
+                for (let i = ssTargets.length - 1; i >= 0; i--) {
+                    let t = ssTargets[i];
+                    t.x -= t.speed;
+                    if (t.x < -t.width) {
+                        // Jos oikea meni ohi, ota damage
+                        const forms = ['base', 'past', 'participle'];
+                        if (ssCurrentVerb && t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
+                            ssTakeDamage();
+                        }
+                        ssTargets.splice(i, 1);
+                        continue;
+                    }
+
+                    // Osuma pelaajan ammuksesta
+                    for (let j = ssBullets.length - 1; j >= 0; j--) {
+                        let b = ssBullets[j];
+                        if (b.x > t.x && b.x < t.x + t.width && b.y > t.y && b.y < t.y + t.height) {
+                            const forms = ['base', 'past', 'participle'];
+                            if (t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
+                                // Oikein
+                                audio.playExplosion();
+                                addScore(15); combo++;
+                                createSsParticle(t.x, t.y, '#10b981', 15);
+                                ssTargets = []; // Poista loput
+                                ssCorrectWords++;
+                                if (ssCorrectWords >= 10) {
+                                    ssState = 'boss';
+                                    ssBoss.active = true;
+                                    ssBoss.x = canvasWidth + 100;
+                                    document.getElementById('ss-boss-hud').classList.remove('hidden');
+                                }
+                            } else {
+                                // Väärin
+                                audio.playExplosion();
+                                ssTakeDamage();
+                                createSsParticle(t.x, t.y, '#ef4444', 10);
+                                ssTargets.splice(i, 1);
+                            }
+                            ssBullets.splice(j, 1);
+                            break; // Osuma käsitelty
+                        }
+                    }
+                }
+            }
+
+            // POMOVAIHE
+            if (ssState === 'boss' && ssBoss.active) {
+                // Pomon sisääntulo ja liike
+                if (ssBoss.x > canvasWidth - 100) ssBoss.x -= 2;
+                else {
+                    let speed = ssBoss.phase === 3 ? 0.06 : 0.1;
+                    ssBoss.y += Math.sin(ssTime * speed) * 3;
+                    if (ssBoss.y < 60) ssBoss.y = 60;
+                    if (ssBoss.y > canvasHeight - 100) ssBoss.y = canvasHeight - 100;
+                }
+
+                // Pomon kilpi
+                if (ssBoss.phase > 1) {
+                    let cycle = ssBoss.phase === 3 ? 5000 : 7000;
+                    let duration = ssBoss.phase === 3 ? 3000 : 2000;
+                    if (ssTime - ssBoss.shieldTimer > cycle) {
+                        ssBoss.shield = true;
+                        if (ssTime - ssBoss.shieldTimer > cycle + duration) {
+                            ssBoss.shield = false; ssBoss.shieldTimer = ssTime;
+                        }
+                    }
+                }
+
+                // Pomon ampuminen
+                let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 600);
+                if (ssBoss.x <= canvasWidth - 100 && ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield) {
+                    audio.playLaser();
+                    ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*20-10), speed: 7, width: 20, height: 4 });
+                    ssLastEnemyShot = ssTime;
+                }
+
+                // Osumat pomoon
+                for (let j = ssBullets.length - 1; j >= 0; j--) {
+                    let b = ssBullets[j];
+                    if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 40) {
+                        ssBullets.splice(j, 1);
+                        if (ssBoss.shield) {
+                            createSsParticle(b.x, b.y, '#3b82f6', 5); // Sininen kipinä
+                        } else {
+                            audio.playHit();
+                            ssBoss.hp--;
+                            createSsParticle(b.x, b.y, '#f59e0b', 10);
+                            document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                            
+                            // Vaiheiden tarkistus
+                            if (ssBoss.hp === 50 && ssBoss.phase === 1) endBossPhase(2);
+                            else if (ssBoss.hp === 30 && ssBoss.phase === 2) endBossPhase(3);
+                            else if (ssBoss.hp <= 0) {
+                                ssBoss.active = false;
+                                audio.playExplosion();
+                                createSsParticle(ssBoss.x, ssBoss.y, '#ef4444', 50);
+                                document.getElementById('ss-boss-hud').classList.add('hidden');
+                                ssGameOver(true);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Partikkelit
+            for (let i = ssParticles.length - 1; i >= 0; i--) {
+                let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if (p.life <= 0) ssParticles.splice(i, 1);
+            }
+        }
+
+        function endBossPhase(nextPhase) {
+            ssBoss.active = false;
+            ssBoss.phase = nextPhase;
+            ssCorrectWords = 0; // Paluu sanavaiheeseen
+            ssState = 'playing';
+            document.getElementById('ss-boss-hud').classList.add('hidden');
+        }
+
+        function ssTakeDamage() {
+            audio.playWrong();
+            combo = 0; ssPlayer.hp--; updateHUD();
+            const flash = document.createElement('div');
+            flash.className = 'absolute inset-0 bg-red-600 z-50 opacity-50 transition-opacity pointer-events-none duration-100';
+            document.body.appendChild(flash);
+            setTimeout(() => { flash.style.opacity='0'; setTimeout(()=>flash.remove(),100); }, 50);
+            if (ssPlayer.hp <= 0) ssGameOver(false);
+        }
+
+        function ssGameOver(isVictory) {
+            ssState = isVictory ? 'victory' : 'gameover';
+            document.getElementById('ss-btn-shoot').classList.add('hidden');
+            if (isVictory) {
+                localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
+                checkUnlockedModes();
+                showOverlay(`<h2 class="text-3xl font-pixel text-green-400 mb-4">VICTORY!</h2>
+                             <p class="text-white font-pixel">Captain Conjugator on lyöty!</p>
+                             <button onclick="enterMainMenu()" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>`);
+            } else {
+                showOverlay(`<h2 class="text-3xl font-pixel text-red-500 mb-4">GAME OVER</h2>
+                             <button onclick="initSpaceShooter(); hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">Yritä uudelleen</button>
+                             <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
+            }
+        }
+
+        function createSsParticle(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                ssParticles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1.0, color: color });
+            }
+        }
+
+        function drawSpaceShooter() {
+            // Tausta
+            let grad = ctx.createLinearGradient(0,0,0,canvasHeight);
+            grad.addColorStop(0, '#0a0a2a'); grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,canvasWidth,canvasHeight);
+
+            // Tähdet
+            ctx.fillStyle = '#fff';
+            ssStars.forEach(s => { ctx.globalAlpha = s.size/3; ctx.fillRect(s.x, s.y, s.size, s.size); });
+            ctx.globalAlpha = 1.0;
+
+            // Pelaaja
+            if (ssState === 'playing' || ssState === 'boss') {
+                if (playerImg.complete && playerImg.width > 0) {
+                    ctx.drawImage(playerImg, Math.round(ssPlayer.x), Math.round(ssPlayer.y), ssPlayer.width, ssPlayer.height);
+                } else {
+                    ctx.fillStyle = '#0ff'; ctx.fillRect(ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
+                }
+            }
+
+            // Ammukset
+            ctx.fillStyle = '#fef08a';
+            ssBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            ctx.fillStyle = '#ef4444';
+            ssEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+
+            // Sydämet
+            ctx.fillStyle = '#ef4444';
+            ssHearts.forEach(h => {
+                ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"'; ctx.fillText("♥", h.x, h.y+4);
+                ctx.fillStyle = '#ef4444';
+            });
+
+            // Pomo
+            if (ssBoss.active) {
+                if (enemyImg.complete && enemyImg.width > 0) {
+                    ctx.drawImage(enemyImg, Math.round(ssBoss.x), Math.round(ssBoss.y), ssBoss.width, ssBoss.height);
+                } else {
+                    ctx.fillStyle = '#f0f'; ctx.fillRect(ssBoss.x, ssBoss.y, ssBoss.width, ssBoss.height);
+                }
+                if (ssBoss.shield) {
+                    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 45, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = 'rgba(59,130,246,0.3)'; ctx.fill();
+                }
+            }
+
+            // Sanat
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ssTargets.forEach(t => {
+                ctx.fillStyle = 'rgba(15,23,42,0.8)'; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                ctx.fillRect(Math.round(t.x), Math.round(t.y), t.width, t.height);
+                ctx.strokeRect(Math.round(t.x), Math.round(t.y), t.width, t.height);
+                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"';
+                ctx.fillText(t.text, Math.round(t.x + t.width/2), Math.round(t.y + t.height/2));
+            });
+
+            // Tehtävä-HUD
+            if (ssState === 'playing' && ssCurrentVerb) {
+                ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(canvasWidth/2 - 200, 10, 400, 50);
+                ctx.strokeStyle = '#ffd700'; ctx.strokeRect(canvasWidth/2 - 200, 10, 400, 50);
+                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"';
+                ctx.fillText(`TUHOA: ${ssCurrentVerb.verb.finnish.toUpperCase()}`, canvasWidth/2, 25);
+                ctx.fillStyle = '#38bdf8'; ctx.font = '10px "Press Start 2P"';
+                ctx.fillText(`${ssCurrentVerb.formName}`, canvasWidth/2, 45);
+            }
+
+            // Partikkelit
+            ssParticles.forEach(p => {
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4);
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        // ==========================================
+        // PÄÄPELISILMUKKA TÄYDENNETTYNÄ
+        // ==========================================
         function gameLoop(timestamp) {
-            time = timestamp;
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
-            if (gameMode === 'dictionary' || !canvasWidth) {
-                animationFrameId = requestAnimationFrame(gameLoop);
-                return;
+            if (gameMode === 'spaceshooter') {
+                updateSpaceShooter(timestamp);
+                drawSpaceShooter();
+            } else {
+                time = timestamp;
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                if (gameMode !== 'dictionary' && canvasWidth) {
+                    drawBackground(); // Kuplapelin tausta
+                    if (gameMode === 'bubble' && lives > 0 && isBubblePlaying) {
+                        runBubbleMode();
+                    } else if (gameMode === 'bubble' && activeVerbs.length === 0 && !document.getElementById('start-screen').classList.contains('hidden') === false) {
+                        ctx.fillStyle = '#fff'; ctx.font = '16px "Press Start 2P"'; ctx.textAlign = 'center';
+                        ctx.fillText("VALITSE VERBIRYHMÄ ALOITTAAKSESI", canvasWidth/2, canvasHeight/2);
+                    }
+                    renderEffects(); // Kuplapelin efektit
+                }
             }
-
-            drawBackground();
-            
-            if (gameMode === 'bubble' && lives > 0 && isBubblePlaying) {
-                runBubbleMode();
-            } else if (gameMode === 'bubble' && activeVerbs.length === 0 && !document.getElementById('start-screen').classList.contains('hidden') === false) {
-                ctx.fillStyle = '#fff';
-                ctx.font = '16px "Press Start 2P"';
-                ctx.textAlign = 'center';
-                ctx.fillText("VALITSE VERBIRYHMÄ ALOITTAAKSESI", canvasWidth/2, canvasHeight/2);
-            }
-
-            renderEffects();
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
@@ -1879,7 +2452,6 @@ class ChiptuneEngine {
             
             const hasTarget = bubbles.some(b => b.text === correctText);
             
-            // Pakotetaan oikea kupla jos paikat alkaa loppua, mutta muutoin vapaa satunnaisuus (estetään "oikea aina ekana")
             const forceTarget = !hasTarget && bubbles.length >= difficulty.maxBubbles - 2;
             const isTargetMatch = forceTarget || (!hasTarget && Math.random() < 0.25);
             
@@ -1887,7 +2459,6 @@ class ChiptuneEngine {
             if (isTargetMatch) {
                 text = correctText;
             } else {
-                // 30% todennäköisyys sille, että peli harhauttaa pelaajaa saman verbin toisella muodolla
                 if (Math.random() < 0.3) {
                     let wrongForms = forms.filter((_, i) => i !== currentBubbleTarget.formIndex);
                     let trickText = currentBubbleTarget.verb[wrongForms[Math.floor(Math.random() * wrongForms.length)]];
@@ -1896,7 +2467,6 @@ class ChiptuneEngine {
                     }
                 }
                 
-                // Jos ei tullut harhautusta, valitaan täysin satunnainen verbi ja muoto
                 if (!text) {
                     let isValidWrong = false;
                     while (!isValidWrong) {
