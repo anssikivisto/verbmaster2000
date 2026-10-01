@@ -431,7 +431,7 @@
 
                 <!-- SPACE SHOOTER UI -->
                 <div id="ss-ui" class="pointer-events-none w-full h-full relative hidden">
-                    <div id="ss-boss-hud" class="absolute top-12 sm:top-2 left-1/2 transform -translate-x-1/2 w-64 hidden flex-col gap-1 bg-black/80 border-2 border-red-500 p-2 text-center">
+                    <div id="ss-boss-hud" class="absolute top-12 sm:top-2 left-1/2 transform -translate-x-1/2 w-64 hidden flex-col gap-1 bg-black/80 border-2 border-red-500 p-2 text-center transition-opacity">
                         <div class="text-red-500 font-pixel text-[10px]">CAPTAIN CONJUGATOR</div>
                         <div class="w-full bg-slate-800 h-4 border border-white">
                             <div id="ss-boss-hp-bar" class="bg-red-500 h-full w-full transition-all"></div>
@@ -1335,7 +1335,7 @@ class ChiptuneEngine {
             if(btns.length > 0) btns[0].classList.add('menu-active');
         }
 
-        // SPACE SHOOTER GLOBAALIT (KOKOJA PÄIVITETTY)
+        // SPACE SHOOTER GLOBAALIT
         let ssKeys = {};
         let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
         let ssBullets = [];
@@ -1344,7 +1344,22 @@ class ChiptuneEngine {
         let ssParticles = [];
         let ssStars = [];
         let ssHearts = [];
-        let ssBoss = { active: false, x: 800, y: 200, width: 128, height: 128, hp: 70, maxHp: 70, phase: 1, timer: 0, shield: false, shieldTimer: 0, targetY: 200, vy: 0 };
+        
+        // POMON PÄIVITETYT MUUTTUJAT
+        let ssBoss = { 
+            active: false, 
+            x: 800, y: 200, 
+            width: 200, height: 200, // VIELÄ SUUREMPI!
+            hp: 90, maxHp: 90, 
+            phase: 1, 
+            shield: false, shieldTimer: 0, 
+            vy: 0, 
+            state: 'entering', // 'entering', 'fighting', 'fleeing', 'dying'
+            isCharging: false,
+            lastCharge: 0,
+            chargeStart: 0
+        };
+        
         let ssState = 'menu'; 
         let ssCorrectWords = 0;
         let ssCurrentVerb = null;
@@ -2017,7 +2032,14 @@ class ChiptuneEngine {
             score = 0; 
             ssCorrectWords = 0;
             ssBullets = []; ssEnemyBullets = []; ssTargets = []; ssParticles = []; ssHearts = [];
-            ssBoss.active = false; ssBoss.hp = ssBoss.maxHp; ssBoss.phase = 1;
+            
+            // Pomon alustus: iso HP, mutta jaetaan 3 vaiheeseen
+            ssBoss.active = false; 
+            ssBoss.hp = 90; 
+            ssBoss.maxHp = 90; 
+            ssBoss.phase = 1;
+            ssBoss.state = 'entering';
+            
             ssState = 'playing';
             document.getElementById('ss-boss-hud').classList.add('hidden');
             document.getElementById('ss-btn-shoot').classList.remove('hidden');
@@ -2063,10 +2085,20 @@ class ChiptuneEngine {
                     x: canvasWidth + 50 + horizontalOffset,
                     y: lanes[i] + (Math.random()*40 - 20),
                     text: options[i],
-                    speed: 2.5 + (ssCorrectWords * 0.1),
+                    speed: 2.5 + (ssBoss.phase * 0.5), // Nopeus kasvaa vaiheittain
                     width: 100, height: 40
                 });
             }
+        }
+        
+        function endBossPhase(nextPhase) {
+            ssBoss.active = false;
+            ssBoss.phase = nextPhase;
+            ssBoss.state = 'entering';
+            ssCorrectWords = 0;
+            ssTargets.length = 0;
+            ssState = 'playing';
+            document.getElementById('ss-boss-hud').classList.add('hidden');
         }
 
         function updateSpaceShooter(timestamp) {
@@ -2086,8 +2118,21 @@ class ChiptuneEngine {
             }
 
             for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
-                let b = ssEnemyBullets[i]; b.x -= b.speed;
-                if (b.x < 0) { ssEnemyBullets.splice(i, 1); continue; }
+                let b = ssEnemyBullets[i]; 
+                
+                // Päivitetty ammuksen liikuttelu (suorat tai vektorit)
+                if (b.vx !== undefined) {
+                    b.x += b.vx;
+                    b.y += b.vy;
+                } else {
+                    b.x -= b.speed;
+                }
+                
+                if (b.x < -50 || b.y < -50 || b.y > canvasHeight + 50) { 
+                    ssEnemyBullets.splice(i, 1); 
+                    continue; 
+                }
+                
                 if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 35) {
                     ssEnemyBullets.splice(i, 1);
                     ssTakeDamage();
@@ -2136,12 +2181,18 @@ class ChiptuneEngine {
                                 addScore(15); combo++;
                                 createSsParticle(t.x, t.y, '#10b981', 15);
                                 ssCorrectWords++;
+                                
+                                // Pomon aktivointi
                                 if (ssCorrectWords >= 10) {
                                     ssState = 'boss';
                                     ssBoss.active = true;
+                                    ssBoss.state = 'entering';
                                     ssBoss.x = canvasWidth + 100;
+                                    ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
                                     document.getElementById('ss-boss-hud').classList.remove('hidden');
+                                    document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
                                 }
+                                
                                 ssTargets.length = 0; 
                                 ssBullets.splice(j, 1);
                                 i = -1; 
@@ -2160,14 +2211,31 @@ class ChiptuneEngine {
             }
 
             if (ssState === 'boss' && ssBoss.active) {
-                // POMON LIIKKUMISLOGIIKKA KORJATTU
-                if (ssBoss.x > canvasWidth - ssBoss.width - 20) {
+                // Pomon tilakone
+                if (ssBoss.state === 'entering') {
                     ssBoss.x -= 2;
-                } else {
-                    if (!ssBoss.vy) ssBoss.vy = 2; // Alustus
+                    if (ssBoss.x <= canvasWidth - ssBoss.width - 20) {
+                        ssBoss.state = 'fighting';
+                        ssBoss.lastCharge = ssTime;
+                    }
+                } 
+                else if (ssBoss.state === 'fleeing') {
+                    ssBoss.x += 4; // Pomo pakenee oikealle
+                    if (ssBoss.x > canvasWidth + 100) {
+                        endBossPhase(ssBoss.phase + 1);
+                    }
+                } 
+                else if (ssBoss.state === 'fighting') {
+                    // Pomon liikuttelu
+                    if (!ssBoss.vy) ssBoss.vy = 2;
                     
-                    if (ssBoss.phase === 3) ssBoss.vy = Math.sign(ssBoss.vy) * 4;
-                    else ssBoss.vy = Math.sign(ssBoss.vy) * 2;
+                    if (ssBoss.phase === 3 && ssBoss.isCharging) {
+                        ssBoss.vy = 0; // Pysähtyy lataamaan tila 3:ssa
+                    } else if (ssBoss.phase === 3) {
+                        ssBoss.vy = Math.sign(ssBoss.vy) * 4;
+                    } else {
+                        ssBoss.vy = Math.sign(ssBoss.vy) * 2;
+                    }
                     
                     ssBoss.y += ssBoss.vy;
                     
@@ -2179,46 +2247,84 @@ class ChiptuneEngine {
                         ssBoss.y = canvasHeight - ssBoss.height - 20;
                         ssBoss.vy *= -1;
                     }
-                }
 
-                if (ssBoss.phase > 1) {
-                    let cycle = ssBoss.phase === 3 ? 5000 : 7000;
-                    let duration = ssBoss.phase === 3 ? 3000 : 2000;
-                    if (ssTime - ssBoss.shieldTimer > cycle) {
-                        ssBoss.shield = true;
-                        if (ssTime - ssBoss.shieldTimer > cycle + duration) {
-                            ssBoss.shield = false; ssBoss.shieldTimer = ssTime;
+                    // Suojakilpilogiikka vaiheissa 2 ja 3
+                    if (ssBoss.phase > 1) {
+                        let cycle = ssBoss.phase === 3 ? 5000 : 7000;
+                        let duration = ssBoss.phase === 3 ? 3000 : 2000;
+                        if (ssTime - ssBoss.shieldTimer > cycle) {
+                            ssBoss.shield = true;
+                            if (ssTime - ssBoss.shieldTimer > cycle + duration) {
+                                ssBoss.shield = false; ssBoss.shieldTimer = ssTime;
+                            }
                         }
                     }
-                }
 
-                let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 600);
-                if (ssBoss.x <= canvasWidth - ssBoss.width - 20 && ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield) {
-                    audio.playLaser();
-                    ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*20-10), speed: 7, width: 20, height: 4 });
-                    ssLastEnemyShot = ssTime;
-                }
-
-                for (let j = ssBullets.length - 1; j >= 0; j--) {
-                    let b = ssBullets[j];
-                    if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 60) {
-                        ssBullets.splice(j, 1);
-                        if (ssBoss.shield) {
-                            createSsParticle(b.x, b.y, '#3b82f6', 5);
-                        } else {
-                            audio.playHit();
-                            ssBoss.hp--;
-                            createSsParticle(b.x, b.y, '#f59e0b', 10);
-                            document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                    // Vaihe 3: Energiaiskun lataaminen
+                    if (ssBoss.phase === 3) {
+                        if (!ssBoss.isCharging && ssTime - ssBoss.lastCharge > 6000) {
+                            ssBoss.isCharging = true;
+                            ssBoss.chargeStart = ssTime;
+                        }
+                        
+                        if (ssBoss.isCharging) {
+                            // Visuaalinen lataus (energiahiukkasia)
+                            if (Math.random() < 0.3) {
+                                createSsParticle(ssBoss.x + ssBoss.width/2 + (Math.random()*120-60), ssBoss.y + ssBoss.height/2 + (Math.random()*120-60), '#a855f7', 1);
+                            }
                             
-                            if (ssBoss.hp === 50 && ssBoss.phase === 1) endBossPhase(2);
-                            else if (ssBoss.hp === 30 && ssBoss.phase === 2) endBossPhase(3);
-                            else if (ssBoss.hp <= 0) {
-                                ssBoss.active = false;
+                            // Tulitus
+                            if (ssTime - ssBoss.chargeStart > 2000) {
+                                ssBoss.isCharging = false;
+                                ssBoss.lastCharge = ssTime;
                                 audio.playExplosion();
-                                createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 50);
-                                document.getElementById('ss-boss-hud').classList.add('hidden');
-                                ssGameOver(true);
+                                
+                                // Viuhkamainen ammuskuvio
+                                for(let angle = -0.4; angle <= 0.4; angle += 0.2) {
+                                    ssEnemyBullets.push({
+                                        x: ssBoss.x, y: ssBoss.y + ssBoss.height/2,
+                                        speed: 6, vx: -Math.cos(angle)*6, vy: Math.sin(angle)*6,
+                                        width: 25, height: 25, isEnergyBall: true
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    // Normaali ampuminen
+                    let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 800);
+                    if (ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield && !ssBoss.isCharging) {
+                        audio.playLaser();
+                        ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*40-20), speed: 7, width: 20, height: 4 });
+                        ssLastEnemyShot = ssTime;
+                    }
+
+                    // Osumat pomoon
+                    for (let j = ssBullets.length - 1; j >= 0; j--) {
+                        let b = ssBullets[j];
+                        // Laajennettu hitbox isomman koon vuoksi
+                        if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 90) {
+                            ssBullets.splice(j, 1);
+                            if (ssBoss.shield) {
+                                createSsParticle(b.x, b.y, '#3b82f6', 5);
+                            } else {
+                                audio.playHit();
+                                ssBoss.hp--;
+                                createSsParticle(b.x, b.y, '#f59e0b', 10);
+                                document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                                
+                                // TARKISTETAAN SIIRTYYKÖ POMO PAKOTILAAN VAI RÄJÄHTÄÄKÖ
+                                if (ssBoss.hp <= 60 && ssBoss.phase === 1 && ssBoss.state === 'fighting') {
+                                    ssBoss.state = 'fleeing';
+                                } else if (ssBoss.hp <= 30 && ssBoss.phase === 2 && ssBoss.state === 'fighting') {
+                                    ssBoss.state = 'fleeing';
+                                } else if (ssBoss.hp <= 0 && ssBoss.phase === 3 && ssBoss.state === 'fighting') {
+                                    ssBoss.active = false;
+                                    audio.playExplosion();
+                                    createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
+                                    document.getElementById('ss-boss-hud').classList.add('hidden');
+                                    ssGameOver(true);
+                                }
                             }
                         }
                     }
@@ -2229,14 +2335,6 @@ class ChiptuneEngine {
                 let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
                 if (p.life <= 0) ssParticles.splice(i, 1);
             }
-        }
-
-        function endBossPhase(nextPhase) {
-            ssBoss.active = false;
-            ssBoss.phase = nextPhase;
-            ssCorrectWords = 0;
-            ssState = 'playing';
-            document.getElementById('ss-boss-hud').classList.add('hidden');
         }
 
         function ssTakeDamage() {
@@ -2280,7 +2378,7 @@ class ChiptuneEngine {
             ssStars.forEach(s => { ctx.globalAlpha = s.size/3; ctx.fillRect(s.x, s.y, s.size, s.size); });
             ctx.globalAlpha = 1.0;
 
-            // Pelaajan alus: Pidetään kuvasuhde
+            // Pelaajan alus
             if (ssState === 'playing' || ssState === 'boss') {
                 if (playerImg.complete && playerImg.width > 0) {
                     let aspect = playerImg.width / playerImg.height;
@@ -2298,10 +2396,26 @@ class ChiptuneEngine {
 
             ctx.fillStyle = '#fef08a';
             ssBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-            ctx.fillStyle = '#ef4444';
-            ssEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            
+            // Pomon ammukset ja energiapallot
+            ssEnemyBullets.forEach(b => {
+                if (b.isEnergyBall) {
+                    ctx.fillStyle = '#a855f7'; 
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.width/2, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#f3e8ff';
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.width/4, 0, Math.PI*2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(b.x, b.y, b.width, b.height);
+                }
+            });
 
-            // Health Pack -piirtologiikka päivitetty
+            // Health Pack -piirtologiikka
             ssHearts.forEach(h => {
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2); ctx.fill();
@@ -2311,7 +2425,7 @@ class ChiptuneEngine {
                 ctx.fillRect(h.x - 2, h.y - 7, 4, 14); // pystypalkki
             });
 
-            // Pomun alus: Pidetään kuvasuhde
+            // Pomun alus
             if (ssBoss.active) {
                 if (enemyImg.complete && enemyImg.width > 0) {
                     let aspect = enemyImg.width / enemyImg.height;
@@ -2328,7 +2442,8 @@ class ChiptuneEngine {
                 
                 if (ssBoss.shield) {
                     ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 75, 0, Math.PI*2); ctx.stroke();
+                    // Suurempi säde kilvelle
+                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 110, 0, Math.PI*2); ctx.stroke();
                     ctx.fillStyle = 'rgba(59,130,246,0.3)'; ctx.fill();
                 }
             }
