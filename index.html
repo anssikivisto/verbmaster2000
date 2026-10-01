@@ -1189,7 +1189,6 @@ class ChiptuneEngine {
             if (wasSS) ssState = 'menu';
             
             startCutscene(sceneId, () => {
-                // Tärkeää: palauta peliruutu näkyviin cutscenen jälkeen ja skaalaa se takaisin
                 document.getElementById('game-canvas-wrapper').classList.remove('hidden');
                 resizeCanvas();
                 
@@ -1250,7 +1249,6 @@ class ChiptuneEngine {
         // YLEINEN VALIKKONAVIGAATIO NÄPPÄIMISTÖLLE
         // ==========================================
         function handleGenericMenuKeyboard(e) {
-            // Etsi päällimmäisin näkyvä valikkosäiliö, joka sisältää `.jrpg-btn` nappeja
             const containers = [
                 document.getElementById('overlay-panel'),
                 document.getElementById('mode-select-screen'),
@@ -1268,7 +1266,6 @@ class ChiptuneEngine {
 
             if (!activeContainer) return false;
 
-            // Hae kaikki näkyvät napit
             const btns = Array.from(activeContainer.querySelectorAll('.jrpg-btn')).filter(b => b.offsetParent !== null && !b.disabled);
             if (btns.length === 0) return false;
 
@@ -1301,11 +1298,9 @@ class ChiptuneEngine {
             return false;
         }
 
-        // Keskitetty hover-logiikka kaikille .jrpg-btn napeille
         document.addEventListener('mousemove', (e) => {
             const btn = e.target.closest('.jrpg-btn');
             if (btn && !btn.disabled && btn !== window._lastHoveredBtn) {
-                // Poistetaan muilta samassa säiliössä aktiivinen tila
                 const container = btn.closest('#main-menu-screen, #overlay-content, #start-screen, #mode-select-screen');
                 if (container) {
                      container.querySelectorAll('.jrpg-btn').forEach(b => b.classList.remove('menu-active'));
@@ -1335,22 +1330,21 @@ class ChiptuneEngine {
             
             checkUnlockedModes();
 
-            // Varmistetaan, että ensimmäinen nappi on aktiivinen
             const btns = document.querySelectorAll('#main-menu-screen .jrpg-btn');
             btns.forEach(b => b.classList.remove('menu-active'));
             if(btns.length > 0) btns[0].classList.add('menu-active');
         }
 
-        // SPACE SHOOTER GLOBAALIT
+        // SPACE SHOOTER GLOBAALIT (KOKOJA PÄIVITETTY)
         let ssKeys = {};
-        let ssPlayer = { x: 50, y: 250, width: 64, height: 64, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
+        let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
         let ssBullets = [];
         let ssEnemyBullets = [];
         let ssTargets = [];
         let ssParticles = [];
         let ssStars = [];
         let ssHearts = [];
-        let ssBoss = { active: false, x: 800, y: 200, width: 64, height: 64, hp: 70, maxHp: 70, phase: 1, timer: 0, shield: false, shieldTimer: 0, targetY: 200 };
+        let ssBoss = { active: false, x: 800, y: 200, width: 128, height: 128, hp: 70, maxHp: 70, phase: 1, timer: 0, shield: false, shieldTimer: 0, targetY: 200, vy: 0 };
         let ssState = 'menu'; 
         let ssCorrectWords = 0;
         let ssCurrentVerb = null;
@@ -1369,7 +1363,6 @@ class ChiptuneEngine {
 
             ssKeys[e.key] = true;
             
-            // --- GLOBAALI DEVELOPER CHEAT ---
             if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
                 e.preventDefault();
                 let newScore = prompt("DEV CHEAT: Aseta uusi Total EXP (kokonaispistemäärä):", getTotalScore());
@@ -1378,7 +1371,6 @@ class ChiptuneEngine {
                     localStorage.setItem('vm2000_totalscore', val);
                     document.getElementById('total-score-display').textContent = val;
                     
-                    // Avataan moodit ja kirjataan cutscenet nähdyiksi hiljaa taustalla
                     if (val >= 100) localStorage.setItem('vm2000_ms_100', 'true');
                     if (val >= 300) localStorage.setItem('vm2000_ms_300', 'true');
                     if (val >= 600) {
@@ -1400,7 +1392,7 @@ class ChiptuneEngine {
 
             if (e.key === 'Escape') {
                 if (ssState === 'playing' || ssState === 'boss') {
-                    ssState = 'menu'; // Pause
+                    ssState = 'menu';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
                                  <button onclick="ssState='playing'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
                                  <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
@@ -1439,9 +1431,8 @@ class ChiptuneEngine {
                 return;
             }
             
-            // Käsittele yleinen näppäimistönavigaatio (overlayt, valikot)
             if (handleGenericMenuKeyboard(e)) {
-                return; // Estä muu logiikka, jos valikkonavigaatio onnistui
+                return; 
             }
 
             if (gameMode === 'scramble' && !document.getElementById('scramble-ui').classList.contains('hidden')) {
@@ -1465,7 +1456,6 @@ class ChiptuneEngine {
             ssKeys[e.key] = false; 
         });
 
-        // MOBIILIOHJAUS SPACE SHOOTERILLE
         window.addEventListener('load', () => {
             const canvas = document.getElementById('main-canvas');
             canvas.addEventListener('touchmove', (e) => {
@@ -1485,7 +1475,6 @@ class ChiptuneEngine {
             startScreen.classList.remove('hidden');
             if (!audio.ctx) audio.init();
 
-            // Varmistetaan että valikon ensimmäinen nappi on aktiivinen
             const btns = document.querySelectorAll('#start-screen .jrpg-btn');
             btns.forEach(b => b.classList.remove('menu-active'));
             if (btns.length > 0) btns[0].classList.add('menu-active');
@@ -1582,7 +1571,6 @@ class ChiptuneEngine {
         function resizeCanvas() {
             if (!canvas) return;
             const rect = canvas.parentElement.getBoundingClientRect();
-            // Päivitetään koko vain jos elementti on oikeasti näkyvissä ja sen koko > 0
             if (rect.width > 0 && rect.height > 0) {
                 canvas.width = rect.width;
                 canvas.height = rect.height;
@@ -1652,7 +1640,6 @@ class ChiptuneEngine {
             document.getElementById('start-step-preview').classList.remove('hidden');
             document.getElementById('start-step-preview').classList.add('flex');
 
-            // Kohdennetaan "Aloita Peli" painikkeeseen
             const btns = document.querySelectorAll('#start-step-preview .jrpg-btn');
             btns.forEach(b => b.classList.remove('menu-active'));
             const startBtn = Array.from(btns).find(b => b.textContent.includes('ALOITA PELI'));
@@ -1752,7 +1739,6 @@ class ChiptuneEngine {
                 dictionarySection.classList.add('hidden');
                 dictionarySection.classList.remove('flex');
                 
-                // Uudelleenskaalaa canvas, kun se tuodaan esille piilotetusta tilasta
                 resizeCanvas();
                 
                 if (mode === 'spaceshooter') {
@@ -2102,20 +2088,20 @@ class ChiptuneEngine {
             for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
                 let b = ssEnemyBullets[i]; b.x -= b.speed;
                 if (b.x < 0) { ssEnemyBullets.splice(i, 1); continue; }
-                if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 25) {
+                if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 35) {
                     ssEnemyBullets.splice(i, 1);
                     ssTakeDamage();
                 }
             }
 
             if (Math.random() < 0.002 && ssTime - ssLastHeartSpawn > 5000) {
-                ssHearts.push({ x: canvasWidth, y: 100 + Math.random()*(canvasHeight-150), speed: 2, radius: 12 });
+                ssHearts.push({ x: canvasWidth, y: 100 + Math.random()*(canvasHeight-150), speed: 2, radius: 14 });
                 ssLastHeartSpawn = ssTime;
             }
             for (let i = ssHearts.length - 1; i >= 0; i--) {
                 let h = ssHearts[i]; h.x -= h.speed;
                 if (h.x < 0) { ssHearts.splice(i, 1); continue; }
-                if (Math.hypot(h.x - (ssPlayer.x+ssPlayer.width/2), h.y - (ssPlayer.y+ssPlayer.height/2)) < 30) {
+                if (Math.hypot(h.x - (ssPlayer.x+ssPlayer.width/2), h.y - (ssPlayer.y+ssPlayer.height/2)) < 45) {
                     audio.playCorrect();
                     if (ssPlayer.hp < ssPlayer.maxHp) ssPlayer.hp++;
                     updateHUD();
@@ -2174,12 +2160,25 @@ class ChiptuneEngine {
             }
 
             if (ssState === 'boss' && ssBoss.active) {
-                if (ssBoss.x > canvasWidth - 100) ssBoss.x -= 2;
-                else {
-                    let speed = ssBoss.phase === 3 ? 0.06 : 0.1;
-                    ssBoss.y += Math.sin(ssTime * speed) * 3;
-                    if (ssBoss.y < 60) ssBoss.y = 60;
-                    if (ssBoss.y > canvasHeight - 100) ssBoss.y = canvasHeight - 100;
+                // POMON LIIKKUMISLOGIIKKA KORJATTU
+                if (ssBoss.x > canvasWidth - ssBoss.width - 20) {
+                    ssBoss.x -= 2;
+                } else {
+                    if (!ssBoss.vy) ssBoss.vy = 2; // Alustus
+                    
+                    if (ssBoss.phase === 3) ssBoss.vy = Math.sign(ssBoss.vy) * 4;
+                    else ssBoss.vy = Math.sign(ssBoss.vy) * 2;
+                    
+                    ssBoss.y += ssBoss.vy;
+                    
+                    if (ssBoss.y < 60) {
+                        ssBoss.y = 60;
+                        ssBoss.vy *= -1;
+                    }
+                    if (ssBoss.y > canvasHeight - ssBoss.height - 20) {
+                        ssBoss.y = canvasHeight - ssBoss.height - 20;
+                        ssBoss.vy *= -1;
+                    }
                 }
 
                 if (ssBoss.phase > 1) {
@@ -2194,7 +2193,7 @@ class ChiptuneEngine {
                 }
 
                 let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 600);
-                if (ssBoss.x <= canvasWidth - 100 && ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield) {
+                if (ssBoss.x <= canvasWidth - ssBoss.width - 20 && ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield) {
                     audio.playLaser();
                     ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*20-10), speed: 7, width: 20, height: 4 });
                     ssLastEnemyShot = ssTime;
@@ -2202,7 +2201,7 @@ class ChiptuneEngine {
 
                 for (let j = ssBullets.length - 1; j >= 0; j--) {
                     let b = ssBullets[j];
-                    if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 40) {
+                    if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 60) {
                         ssBullets.splice(j, 1);
                         if (ssBoss.shield) {
                             createSsParticle(b.x, b.y, '#3b82f6', 5);
@@ -2217,7 +2216,7 @@ class ChiptuneEngine {
                             else if (ssBoss.hp <= 0) {
                                 ssBoss.active = false;
                                 audio.playExplosion();
-                                createSsParticle(ssBoss.x, ssBoss.y, '#ef4444', 50);
+                                createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 50);
                                 document.getElementById('ss-boss-hud').classList.add('hidden');
                                 ssGameOver(true);
                             }
@@ -2281,9 +2280,17 @@ class ChiptuneEngine {
             ssStars.forEach(s => { ctx.globalAlpha = s.size/3; ctx.fillRect(s.x, s.y, s.size, s.size); });
             ctx.globalAlpha = 1.0;
 
+            // Pelaajan alus: Pidetään kuvasuhde
             if (ssState === 'playing' || ssState === 'boss') {
                 if (playerImg.complete && playerImg.width > 0) {
-                    ctx.drawImage(playerImg, Math.round(ssPlayer.x), Math.round(ssPlayer.y), ssPlayer.width, ssPlayer.height);
+                    let aspect = playerImg.width / playerImg.height;
+                    let drawW = ssPlayer.width;
+                    let drawH = ssPlayer.width / aspect;
+                    if (drawH > ssPlayer.height) { 
+                        drawH = ssPlayer.height; 
+                        drawW = ssPlayer.height * aspect; 
+                    }
+                    ctx.drawImage(playerImg, Math.round(ssPlayer.x + (ssPlayer.width - drawW)/2), Math.round(ssPlayer.y + (ssPlayer.height - drawH)/2), drawW, drawH);
                 } else {
                     ctx.fillStyle = '#0ff'; ctx.fillRect(ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
                 }
@@ -2294,22 +2301,34 @@ class ChiptuneEngine {
             ctx.fillStyle = '#ef4444';
             ssEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-            ctx.fillStyle = '#ef4444';
+            // Health Pack -piirtologiikka päivitetty
             ssHearts.forEach(h => {
+                ctx.fillStyle = '#ffffff';
                 ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"'; ctx.fillText("♥", h.x, h.y+4);
+                
                 ctx.fillStyle = '#ef4444';
+                ctx.fillRect(h.x - 7, h.y - 2, 14, 4); // vaakapalkki
+                ctx.fillRect(h.x - 2, h.y - 7, 4, 14); // pystypalkki
             });
 
+            // Pomun alus: Pidetään kuvasuhde
             if (ssBoss.active) {
                 if (enemyImg.complete && enemyImg.width > 0) {
-                    ctx.drawImage(enemyImg, Math.round(ssBoss.x), Math.round(ssBoss.y), ssBoss.width, ssBoss.height);
+                    let aspect = enemyImg.width / enemyImg.height;
+                    let drawW = ssBoss.width;
+                    let drawH = ssBoss.width / aspect;
+                    if (drawH > ssBoss.height) { 
+                        drawH = ssBoss.height; 
+                        drawW = ssBoss.height * aspect; 
+                    }
+                    ctx.drawImage(enemyImg, Math.round(ssBoss.x + (ssBoss.width - drawW)/2), Math.round(ssBoss.y + (ssBoss.height - drawH)/2), drawW, drawH);
                 } else {
                     ctx.fillStyle = '#f0f'; ctx.fillRect(ssBoss.x, ssBoss.y, ssBoss.width, ssBoss.height);
                 }
+                
                 if (ssBoss.shield) {
                     ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 45, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 75, 0, Math.PI*2); ctx.stroke();
                     ctx.fillStyle = 'rgba(59,130,246,0.3)'; ctx.fill();
                 }
             }
