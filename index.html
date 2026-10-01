@@ -1337,24 +1337,30 @@ class ChiptuneEngine {
 
         // SPACE SHOOTER GLOBAALIT
         let ssKeys = {};
-        let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5 };
+        let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5, powerUp: null, forceAngle: 0 };
+        let ssForceX = 0; let ssForceY = 0;
         let ssBullets = [];
         let ssEnemyBullets = [];
         let ssTargets = [];
         let ssParticles = [];
+        let ssExhausts = [];
         let ssStars = [];
+        let ssNebulas = [];
         let ssHearts = [];
+        let ssPowerUps = [];
+        let ssTexts = [];
+        let ssShakeTime = 0;
+        let ssShakeMag = 0;
         
-        // POMON PÄIVITETYT MUUTTUJAT
         let ssBoss = { 
             active: false, 
             x: 800, y: 200, 
-            width: 200, height: 200, // VIELÄ SUUREMPI!
+            width: 200, height: 200,
             hp: 90, maxHp: 90, 
             phase: 1, 
             shield: false, shieldTimer: 0, 
             vy: 0, 
-            state: 'entering', // 'entering', 'fighting', 'fleeing', 'dying'
+            state: 'entering', 
             isCharging: false,
             lastCharge: 0,
             chargeStart: 0
@@ -1368,6 +1374,19 @@ class ChiptuneEngine {
         let ssLastEnemyShot = 0;
         let ssLastHeartSpawn = 0;
         let ssTime = 0;
+
+        function triggerSsShake(duration, mag) {
+            ssShakeTime = duration;
+            ssShakeMag = mag;
+        }
+
+        function createExhaust(x, y, color, vx, vy, size) {
+            ssExhausts.push({x, y, vx, vy, life: 1.0, color, size});
+        }
+
+        function createSsText(x, y, text, color) {
+            ssTexts.push({x, y, text, color, life: 1.0, vy: -1});
+        }
 
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
@@ -2029,11 +2048,13 @@ class ChiptuneEngine {
         // ==========================================
         function initSpaceShooter() {
             ssPlayer.hp = 3; 
+            ssPlayer.powerUp = null;
             score = 0; 
             ssCorrectWords = 0;
             ssBullets = []; ssEnemyBullets = []; ssTargets = []; ssParticles = []; ssHearts = [];
+            ssExhausts = []; ssPowerUps = []; ssTexts = [];
+            ssShakeTime = 0; ssShakeMag = 0;
             
-            // Pomon alustus: iso HP, mutta jaetaan 3 vaiheeseen
             ssBoss.active = false; 
             ssBoss.hp = 90; 
             ssBoss.maxHp = 90; 
@@ -2044,10 +2065,26 @@ class ChiptuneEngine {
             document.getElementById('ss-boss-hud').classList.add('hidden');
             document.getElementById('ss-btn-shoot').classList.remove('hidden');
             
+            // Tähdet parallaksia varten (koko määrittää nopeuden)
             ssStars = [];
             for(let i=0; i<100; i++) {
-                ssStars.push({ x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, size: Math.random()*2+1, speed: Math.random()*3+0.5 });
+                let size = Math.random()*2.5+0.5;
+                ssStars.push({ x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, size: size, speed: size * 1.5 });
             }
+            
+            // Avaruussumut (Nebulas) parallaksia varten
+            ssNebulas = [];
+            const nebColors = ['rgba(139, 92, 246, 0.12)', 'rgba(56, 189, 248, 0.08)', 'rgba(236, 72, 153, 0.08)'];
+            for(let i=0; i<6; i++) {
+                ssNebulas.push({
+                    x: Math.random() * canvasWidth * 1.5,
+                    y: Math.random() * canvasHeight,
+                    radius: 100 + Math.random() * 200,
+                    color: nebColors[Math.floor(Math.random() * nebColors.length)],
+                    speed: 0.1 + Math.random() * 0.3
+                });
+            }
+            
             updateHUD();
         }
 
@@ -2055,7 +2092,21 @@ class ChiptuneEngine {
             if (ssState !== 'playing' && ssState !== 'boss') return;
             if (ssTime - ssLastShot > 300) {
                 audio.playLaser();
-                ssBullets.push({ x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 - 2, speed: 10, width: 15, height: 4 });
+                let px = ssPlayer.x + ssPlayer.width;
+                let py = ssPlayer.y + ssPlayer.height/2 - 2;
+                
+                if (ssPlayer.powerUp === 'spread') {
+                    ssBullets.push({ x: px, y: py, vx: 10, vy: -3, width: 15, height: 4 });
+                    ssBullets.push({ x: px, y: py, vx: 10, vy: 0, width: 15, height: 4 });
+                    ssBullets.push({ x: px, y: py, vx: 10, vy: 3, width: 15, height: 4 });
+                } else {
+                    ssBullets.push({ x: px, y: py, vx: 10, vy: 0, width: 15, height: 4 });
+                }
+                
+                if (ssPlayer.powerUp === 'force') {
+                    ssBullets.push({ x: ssForceX, y: ssForceY, vx: 10, vy: 0, width: 15, height: 4 });
+                }
+                
                 ssLastShot = ssTime;
             }
         }
@@ -2085,7 +2136,7 @@ class ChiptuneEngine {
                     x: canvasWidth + 50 + horizontalOffset,
                     y: lanes[i] + (Math.random()*40 - 20),
                     text: options[i],
-                    speed: 2.5 + (ssBoss.phase * 0.5), // Nopeus kasvaa vaiheittain
+                    speed: 2.5 + (ssBoss.phase * 0.5),
                     width: 100, height: 40
                 });
             }
@@ -2102,25 +2153,73 @@ class ChiptuneEngine {
         }
 
         function updateSpaceShooter(timestamp) {
+            let dt = timestamp - (ssLastFrameTime || timestamp);
+            ssLastFrameTime = timestamp;
             ssTime = timestamp;
+            
+            if (ssShakeTime > 0) {
+                ssShakeTime -= 16;
+                if (ssShakeTime < 0) ssShakeTime = 0;
+            }
+            
             if (ssState !== 'playing' && ssState !== 'boss') return;
 
+            // Pelaajan liike
             if ((ssKeys['ArrowUp'] || ssKeys['w']) && ssPlayer.y > 60) ssPlayer.y -= ssPlayer.speed;
             if ((ssKeys['ArrowDown'] || ssKeys['s']) && ssPlayer.y < canvasHeight - ssPlayer.height) ssPlayer.y += ssPlayer.speed;
             if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
             if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
 
+            // Pelaajan Force Pod
+            if (ssPlayer.powerUp === 'force') {
+                ssPlayer.forceAngle += 0.05;
+                ssForceX = ssPlayer.x + ssPlayer.width/2 + Math.cos(ssPlayer.forceAngle)*70;
+                ssForceY = ssPlayer.y + ssPlayer.height/2 + Math.sin(ssPlayer.forceAngle)*70;
+            }
+
+            // Parallaksi tausta
             ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
+            ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
+
+            // Moottorin jättövanat
+            if (ssState === 'playing' || (ssState === 'boss' && ssBoss.state !== 'dying')) {
+                createExhaust(ssPlayer.x + 10, ssPlayer.y + ssPlayer.height/2 + (Math.random()*10-5), '#06b6d4', -(2 + Math.random()*2), (Math.random()-0.5), Math.random()*4+2);
+                if (ssBoss.active) {
+                    createExhaust(ssBoss.x + ssBoss.width - 20, ssBoss.y + ssBoss.height/2 + (Math.random()*60-30), '#f97316', 2 + Math.random()*3, (Math.random()-0.5), Math.random()*6+3);
+                }
+            }
+
+            for (let i = ssExhausts.length - 1; i >= 0; i--) {
+                let e = ssExhausts[i]; e.x += e.vx; e.y += e.vy; e.life -= 0.05; e.size *= 0.9;
+                if (e.life <= 0) ssExhausts.splice(i, 1);
+            }
+
+            // Power-ups
+            for (let i = ssPowerUps.length - 1; i >= 0; i--) {
+                let p = ssPowerUps[i];
+                p.x -= p.speed;
+                if (p.x < -p.width) { ssPowerUps.splice(i, 1); continue; }
+                if (Math.hypot(p.x - (ssPlayer.x+ssPlayer.width/2), p.y - (ssPlayer.y+ssPlayer.height/2)) < 50) {
+                    audio.playCorrect();
+                    ssPlayer.powerUp = p.type;
+                    if (p.type === 'force') ssPlayer.forceAngle = 0;
+                    createSsParticle(ssPlayer.x+ssPlayer.width/2, ssPlayer.y+ssPlayer.height/2, '#fef08a', 20);
+                    createSsText(ssPlayer.x + ssPlayer.width/2, ssPlayer.y - 20, "POWER UP!", "#fef08a");
+                    ssPowerUps.splice(i, 1);
+                }
+            }
+
+            ssTexts.forEach(t => { t.y += t.vy; t.life -= 0.02; });
+            ssTexts = ssTexts.filter(t => t.life > 0);
 
             for (let i = ssBullets.length - 1; i >= 0; i--) {
-                let b = ssBullets[i]; b.x += b.speed;
-                if (b.x > canvasWidth) ssBullets.splice(i, 1);
+                let b = ssBullets[i]; b.x += b.vx; b.y += b.vy;
+                if (b.x > canvasWidth || b.y < 0 || b.y > canvasHeight) ssBullets.splice(i, 1);
             }
 
             for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
                 let b = ssEnemyBullets[i]; 
                 
-                // Päivitetty ammuksen liikuttelu (suorat tai vektorit)
                 if (b.vx !== undefined) {
                     b.x += b.vx;
                     b.y += b.vy;
@@ -2131,6 +2230,15 @@ class ChiptuneEngine {
                 if (b.x < -50 || b.y < -50 || b.y > canvasHeight + 50) { 
                     ssEnemyBullets.splice(i, 1); 
                     continue; 
+                }
+                
+                // Tarkista osuma Force Podiin
+                if (ssPlayer.powerUp === 'force') {
+                    if (Math.hypot(b.x - ssForceX, b.y - ssForceY) < 25) {
+                        createSsParticle(b.x, b.y, '#38bdf8', 8);
+                        ssEnemyBullets.splice(i, 1);
+                        continue;
+                    }
                 }
                 
                 if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 35) {
@@ -2181,6 +2289,15 @@ class ChiptuneEngine {
                                 addScore(15); combo++;
                                 createSsParticle(t.x, t.y, '#10b981', 15);
                                 ssCorrectWords++;
+                                
+                                // Power-up mahdollisuus
+                                if (Math.random() < 0.25) {
+                                    ssPowerUps.push({
+                                        x: t.x + t.width/2, y: t.y + t.height/2,
+                                        type: Math.random() < 0.5 ? 'spread' : 'force',
+                                        width: 24, height: 24, speed: 2
+                                    });
+                                }
                                 
                                 // Pomon aktivointi
                                 if (ssCorrectWords >= 10) {
@@ -2278,6 +2395,7 @@ class ChiptuneEngine {
                                 ssBoss.isCharging = false;
                                 ssBoss.lastCharge = ssTime;
                                 audio.playExplosion();
+                                triggerSsShake(600, 8); // Tärinä suuren iskun yhteydessä
                                 
                                 // Viuhkamainen ammuskuvio
                                 for(let angle = -0.4; angle <= 0.4; angle += 0.2) {
@@ -2339,7 +2457,11 @@ class ChiptuneEngine {
 
         function ssTakeDamage() {
             audio.playWrong();
-            combo = 0; ssPlayer.hp--; updateHUD();
+            combo = 0; ssPlayer.hp--; 
+            ssPlayer.powerUp = null; // Osuma vie powerupin
+            updateHUD();
+            triggerSsShake(400, 6);
+            
             const flash = document.createElement('div');
             flash.className = 'absolute inset-0 bg-red-600 z-50 opacity-50 transition-opacity pointer-events-none duration-100';
             document.body.appendChild(flash);
@@ -2370,12 +2492,35 @@ class ChiptuneEngine {
         }
 
         function drawSpaceShooter() {
+            ctx.save();
+            if (ssShakeTime > 0) {
+                ctx.translate((Math.random()-0.5)*ssShakeMag, (Math.random()-0.5)*ssShakeMag);
+            }
+
             let grad = ctx.createLinearGradient(0,0,0,canvasHeight);
             grad.addColorStop(0, '#0a0a2a'); grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad; ctx.fillRect(0,0,canvasWidth,canvasHeight);
 
+            // Taustan parallaksisumut
+            ssNebulas.forEach(n => {
+                let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius);
+                g.addColorStop(0, n.color);
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2); ctx.fill();
+            });
+
+            // Tähdet
             ctx.fillStyle = '#fff';
-            ssStars.forEach(s => { ctx.globalAlpha = s.size/3; ctx.fillRect(s.x, s.y, s.size, s.size); });
+            ssStars.forEach(s => { ctx.globalAlpha = s.size/4; ctx.fillRect(s.x, s.y, s.size, s.size); });
+            ctx.globalAlpha = 1.0;
+
+            // Pakokaasut
+            ssExhausts.forEach(e => {
+                ctx.globalAlpha = e.life;
+                ctx.fillStyle = e.color;
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI*2); ctx.fill();
+            });
             ctx.globalAlpha = 1.0;
 
             // Pelaajan alus
@@ -2392,6 +2537,26 @@ class ChiptuneEngine {
                 } else {
                     ctx.fillStyle = '#0ff'; ctx.fillRect(ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
                 }
+            }
+
+            // Power-up piirto
+            ssPowerUps.forEach(p => {
+                ctx.fillStyle = p.type === 'spread' ? '#ef4444' : '#3b82f6';
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.strokeRect(p.x, p.y, p.width, p.height);
+                ctx.fillStyle = '#fff'; ctx.font = '14px "Press Start 2P"';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(p.type === 'spread' ? 'S' : 'F', p.x + p.width/2, p.y + p.height/2 + 1);
+            });
+
+            // Force Pod piirto
+            if (ssPlayer.powerUp === 'force') {
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath(); ctx.arc(ssForceX, ssForceY, 15, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(ssForceX, ssForceY, 5, 0, Math.PI*2); ctx.fill();
             }
 
             ctx.fillStyle = '#fef08a';
@@ -2442,7 +2607,6 @@ class ChiptuneEngine {
                 
                 if (ssBoss.shield) {
                     ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                    // Suurempi säde kilvelle
                     ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 110, 0, Math.PI*2); ctx.stroke();
                     ctx.fillStyle = 'rgba(59,130,246,0.3)'; ctx.fill();
                 }
@@ -2471,11 +2635,23 @@ class ChiptuneEngine {
                 ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4);
             });
             ctx.globalAlpha = 1.0;
+
+            // Tekstit (esim. Power Up)
+            ssTexts.forEach(t => {
+                ctx.globalAlpha = t.life;
+                ctx.font = '12px "Press Start 2P"';
+                ctx.fillStyle = '#000'; ctx.fillText(t.text, t.x + 2, t.y + 2);
+                ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
+            });
+            ctx.globalAlpha = 1.0;
+
+            ctx.restore(); // Palautetaan ruutu tärinän jäljiltä
         }
 
         // ==========================================
         // PÄÄPELISILMUKKA
         // ==========================================
+        let ssLastFrameTime = 0;
         function gameLoop(timestamp) {
             if (gameMode === 'spaceshooter') {
                 updateSpaceShooter(timestamp);
