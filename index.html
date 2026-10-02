@@ -177,6 +177,15 @@
             40%, 80% { transform: translateX(6px); }
         }
         .animate-shake { animation: shake 0.4s ease-in-out; }
+        
+        /* LOGON ANIMAATIO */
+        @keyframes slideDownLogo {
+            0% { transform: translateY(-150%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .logo-slide-in {
+            animation: slideDownLogo 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
@@ -187,12 +196,16 @@
     </div>
 
     <!-- SPLASH SCREEN -->
-    <div id="splash-screen" class="fixed inset-0 z-[80] flex flex-col items-center justify-end pb-24 bg-black bg-cover bg-center cursor-pointer" style="background-image: url('mainmenu.jpeg');" onclick="enterMainMenu()">
+    <div id="splash-screen" class="fixed inset-0 z-[80] flex flex-col items-center justify-end pb-24 bg-black bg-cover bg-center cursor-pointer" style="background-image: url('herostartscreen.png');" onclick="enterMainMenu()">
         <div class="text-white font-pixel text-2xl sm:text-4xl animate-pulse pixel-shadow tracking-widest mb-10">PRESS ENTER</div>
     </div>
 
     <!-- MAIN MENU SCREEN -->
-    <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('mainmenu.jpeg');">
+    <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('herostartscreen.png');">
+        
+        <!-- PELIN LOGO -->
+        <img src="logoo.png" alt="Pelin logo" class="absolute top-10 right-10 md:top-16 md:right-16 lg:top-24 lg:right-32 w-48 sm:w-64 md:w-80 lg:w-96 z-0 logo-slide-in pointer-events-none">
+
         <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
             <div class="jrpg-box p-5 sm:p-7 w-full flex flex-col gap-4 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                 <button onclick="newGame()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 menu-active">
