@@ -190,7 +190,7 @@
 </head>
 <body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
 
-    <!-- GLOBAL LOGO (Näkyy splash- ja main menu -ruuduissa) -->
+    <!-- GLOBAL LOGO -->
     <img id="game-logo" src="logoo.png" alt="Pelin logo" class="fixed top-8 right-8 md:top-12 md:right-16 lg:top-16 lg:right-24 w-96 sm:w-[32rem] md:w-[40rem] lg:w-[48rem] z-[85] logo-slide-in pointer-events-none">
 
     <!-- GLOBAL OVERLAY PANEL -->
@@ -203,9 +203,8 @@
         <div class="text-white font-pixel text-2xl sm:text-4xl animate-pulse pixel-shadow tracking-widest mb-10">PRESS ENTER</div>
     </div>
 
-    <!-- MAIN MENU SCREEN (Valikko oikealla alhaalla) -->
+    <!-- MAIN MENU SCREEN -->
     <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-end justify-end pb-12 pr-8 sm:pb-20 md:pr-16 lg:pr-24 bg-black bg-cover bg-center hidden" style="background-image: url('herostartscreen.png');">
-        
         <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-[260px] sm:max-w-[320px]">
             <div class="jrpg-box p-5 sm:p-7 w-full flex flex-col gap-4 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                 <button onclick="newGame()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 menu-active">
@@ -382,7 +381,7 @@
             </select>
         </div>
 
-        <nav class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 gap-2 p-1.5 bg-black border-2 border-white">
+        <nav class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 gap-2 p-1.5 bg-black border-2 border-white">
             <button id="tab-bubble" onclick="switchMode('bubble')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm tab-active">
                 <span>KUPLAPELI</span>
             </button>
@@ -399,6 +398,9 @@
                 <span>KIRJASTO</span>
             </button>
             <!-- UNLOCKABLE TABS -->
+            <button id="tab-runner" onclick="switchMode('runner')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm hidden border-fuchsia-500 text-fuchsia-200">
+                <span>SYNTH RUNNER</span>
+            </button>
             <button id="tab-spaceshooter" onclick="switchMode('spaceshooter')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm hidden border-red-500 text-red-200">
                 <span>SPACE SHOOTER</span>
             </button>
@@ -905,9 +907,7 @@ function startWelcomeScreen() {
     document.getElementById('welcome-screen').classList.remove('hidden');
     document.getElementById('welcome-screen').classList.add('flex');
     
-    // Aloitetaan uusi taustamusiikki valikkosivuja varten
     audio.playBGM('brutaldesign-climbing-569924.mp3');
-    
     showWelcomeText();
 }
 
@@ -924,11 +924,9 @@ function advanceWelcomeScreen() {
     if (welcomeIndex < welcomeTexts.length) {
         showWelcomeText();
     } else {
-        // Tervetuloruutu ohitettu -> Siirrytään valitse verbiryhmä -sivulle
         document.getElementById('welcome-screen').classList.add('hidden');
         document.getElementById('welcome-screen').classList.remove('flex');
         
-        // Musiikki jätetään soimaan ja näytetään startScreen
         document.getElementById('start-screen').classList.remove('hidden');
         if (!audio.ctx) audio.init();
     }
@@ -1190,20 +1188,23 @@ class ChiptuneEngine {
             document.getElementById('total-score-display').textContent = 0;
             localStorage.removeItem('vm2000_ms_100');
             localStorage.removeItem('vm2000_ms_300');
+            localStorage.removeItem('vm2000_unlocked_runner');
             localStorage.removeItem('vm2000_ms_600');
-            localStorage.removeItem('vm2000_ms_1000');
             localStorage.removeItem('vm2000_unlocked_spaceshooter');
+            localStorage.removeItem('vm2000_ms_1000');
             checkUnlockedModes();
         }
 
         function pauseGameForCutscene(sceneId, callback) {
             const wasBubble = isBubblePlaying;
             const wasSS = (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss'));
+            const wasRunner = (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT'));
             const prevMode = gameMode;
             const prevBGM = audio.currentTrack; 
             
             isBubblePlaying = false; 
             if (wasSS) ssState = 'menu';
+            if (wasRunner) trGameState = 'PAUSED';
             
             startCutscene(sceneId, () => {
                 document.getElementById('game-canvas-wrapper').classList.remove('hidden');
@@ -1212,14 +1213,16 @@ class ChiptuneEngine {
                 if (callback) {
                     callback(prevBGM);
                 } else {
-                    resumeAfterCutscene(prevMode, wasSS, wasBubble, prevBGM);
+                    resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM);
                 }
             });
         }
 
-        function resumeAfterCutscene(prevMode, wasSS, wasBubble, prevBGM) {
+        function resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM) {
             if (prevMode === 'spaceshooter' && wasSS) {
                 ssState = 'playing';
+            } else if (prevMode === 'runner' && wasRunner) {
+                trGameState = 'CHASE'; // Yksinkertaistettu palautus
             } else if (prevMode === 'bubble' && wasBubble) {
                 isBubblePlaying = true;
             }
@@ -1232,9 +1235,11 @@ class ChiptuneEngine {
                 pauseGameForCutscene('cutscene_100');
             } else if (currentTotal >= 300 && !localStorage.getItem('vm2000_ms_300')) {
                 localStorage.setItem('vm2000_ms_300', 'true');
+                localStorage.setItem('vm2000_unlocked_runner', 'true');
+                checkUnlockedModes();
                 pauseGameForCutscene('cutscene_300', (prevBGM) => {
-                    alert("Uusi ominaisuus avattu! Jatketaan peliä.");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
+                    alert("UUSI PELIMOODI AVATTU: Synth Runner!\nLöydät sen nyt ylävalikosta.");
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
                 });
             } else if (currentTotal >= 600 && !localStorage.getItem('vm2000_ms_600')) {
                 localStorage.setItem('vm2000_ms_600', 'true');
@@ -1242,18 +1247,25 @@ class ChiptuneEngine {
                 checkUnlockedModes();
                 pauseGameForCutscene('cutscene_600', (prevBGM) => {
                     alert("UUSI PELIMOODI AVATTU: Space Shooter!\nLöydät sen nyt ylävalikosta.");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
                 });
             } else if (currentTotal >= 1000 && !localStorage.getItem('vm2000_ms_1000')) {
                 localStorage.setItem('vm2000_ms_1000', 'true');
                 pauseGameForCutscene('cutscene_1000', (prevBGM) => {
                     alert("Lopputaistelu avattu! (Odottaa toteutusta)");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, prevBGM);
+                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
                 });
             }
         }
 
         function checkUnlockedModes() {
+            const tabRunner = document.getElementById('tab-runner');
+            if (localStorage.getItem('vm2000_unlocked_runner') === 'true') {
+                tabRunner.classList.remove('hidden');
+            } else {
+                tabRunner.classList.add('hidden');
+            }
+            
             const tabSs = document.getElementById('tab-spaceshooter');
             if (localStorage.getItem('vm2000_unlocked_spaceshooter') === 'true') {
                 tabSs.classList.remove('hidden');
@@ -1334,7 +1346,6 @@ class ChiptuneEngine {
             document.getElementById('splash-screen').classList.add('hidden');
             document.getElementById('main-menu-screen').classList.remove('hidden');
             
-            // Varmistetaan että logo on yhä näkyvissä (jos pelaaja palaa menuun peliin mentyään)
             const gameLogo = document.getElementById('game-logo');
             if(gameLogo) gameLogo.classList.remove('hidden');
 
@@ -1345,6 +1356,7 @@ class ChiptuneEngine {
             hideOverlay();
             isBubblePlaying = false;
             ssState = 'menu';
+            trGameState = 'START';
             
             if (!audio.ctx) audio.init();
             
@@ -1357,7 +1369,9 @@ class ChiptuneEngine {
             if(btns.length > 0) btns[0].classList.add('menu-active');
         }
 
+        // ==========================================
         // SPACE SHOOTER GLOBAALIT
+        // ==========================================
         let ssKeys = {};
         let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5, powerUp: null, forceAngle: 0 };
         let ssForceX = 0; let ssForceY = 0;
@@ -1375,17 +1389,9 @@ class ChiptuneEngine {
         let ssShakeMag = 0;
         
         let ssBoss = { 
-            active: false, 
-            x: 800, y: 200, 
-            width: 200, height: 200,
-            hp: 90, maxHp: 90, 
-            phase: 1, 
-            shield: false, shieldTimer: 0, 
-            vy: 0, 
-            state: 'entering', 
-            isCharging: false,
-            lastCharge: 0,
-            chargeStart: 0
+            active: false, x: 800, y: 200, width: 200, height: 200,
+            hp: 90, maxHp: 90, phase: 1, shield: false, shieldTimer: 0, vy: 0, 
+            state: 'entering', isCharging: false, lastCharge: 0, chargeStart: 0
         };
         
         let ssState = 'menu'; 
@@ -1410,6 +1416,68 @@ class ChiptuneEngine {
             ssTexts.push({x, y, text, color, life: 1.0, vy: -1});
         }
 
+        // ==========================================
+        // SYNTH RUNNER GLOBAALIT
+        // ==========================================
+        let trGameState = 'START'; // START, CHASE, TRANSITION, COMBAT, SUPER_ATTACK, RESPAWNING, VICTORY, GAMEOVER, PAUSED
+        let trRound = 1; 
+        const trRoundGoals = [5, 7, 10]; 
+        
+        let trPlayerLives = 3;
+        const trMaxLives = 5;
+        let trChaseProgress = 0; 
+        let trScrollSpeed = 5.5;
+        let trGlobalFrames = 0;
+        let trScreenShake = 0;
+
+        let trHeartsSpawned = 0;
+        let trHeartsTarget = 2;
+
+        let trTargetVerb = null;
+        let trTargetTense = 2; 
+        let trUnusedVerbs = [];
+        let trLastUsedVerb = null;
+        let trLastTenseIndex = 0;
+        let trVerbsCompleted = 0; 
+        let trTypingExpected = "";
+        let trTypingCurrent = "";
+        let trFlashError = 0;
+        let trTypingFeedback = null;
+        let trFeedbackTimer = 0;
+        let trSuperAttackTimer = 0;
+
+        let trArenaY = 350;
+
+        let trBossProjectiles = [];
+        let trBossShootTimer = 0;
+
+        let trBigMessage = "PAINA VÄLILYÖNTIÄ";
+        let trSmallMessage = "Aloita pako";
+        let trMessageTimer = 0;
+
+        const trPlayer = {
+            x: 250, y: 200, w: 30, h: 40,
+            vy: 0, gravity: 0.6,
+            jumpPower: -12.5, doubleJumpPower: -14.5,
+            jumps: 0, maxJumps: 2,
+            color: '#00f0ff', grounded: false
+        };
+
+        const trBoss = {
+            x: -150, y: 200, w: 70, h: 90,
+            color: '#ff007f', state: 'normal',
+            offsetY: 0, visible: true
+        };
+
+        let trPlatforms = [];
+        let trHearts = [];
+        let trCheckpoints = [];
+        let trActiveCheckpoint = null; 
+        let trParticles = [];
+        let trEnergyParticles = []; 
+        let trStars = [];
+        let trCitySilhouette = [];
+
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) > -1) {
                 if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
@@ -1428,26 +1496,85 @@ class ChiptuneEngine {
                     document.getElementById('total-score-display').textContent = val;
                     
                     if (val >= 100) localStorage.setItem('vm2000_ms_100', 'true');
-                    if (val >= 300) localStorage.setItem('vm2000_ms_300', 'true');
+                    if (val >= 300) {
+                        localStorage.setItem('vm2000_ms_300', 'true');
+                        localStorage.setItem('vm2000_unlocked_runner', 'true');
+                    }
                     if (val >= 600) {
                         localStorage.setItem('vm2000_ms_600', 'true');
                         localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
-                        checkUnlockedModes();
                     }
                     if (val >= 1000) localStorage.setItem('vm2000_ms_1000', 'true');
+                    checkUnlockedModes();
                     
                     alert(`Kokonaispisteet asetettu arvoon: ${val}\nTarvittavat pelimoodit on avattu ja cutscenet ohitettu automaattisesti.`);
                 }
                 return;
             }
 
-            if (e.key === ' ' && gameMode === 'spaceshooter') {
-                e.preventDefault();
-                ssShoot();
+            if (e.key === ' ') {
+                if (gameMode === 'spaceshooter') {
+                    e.preventDefault();
+                    ssShoot();
+                } else if (gameMode === 'runner') {
+                    e.preventDefault();
+                    if (e.repeat) return;
+                    handleTrJump();
+                }
+            }
+
+            // Synth Runner typing
+            if (gameMode === 'runner' && trGameState === 'COMBAT') {
+                if (trFeedbackTimer > 0) return;
+
+                if (e.key.length === 1 && /[a-zA-ZäöåÄÖÅ]/.test(e.key)) {
+                    let char = e.key.toUpperCase();
+                    
+                    if (trTypingCurrent.length < trTypingExpected.length) {
+                        trTypingCurrent += char;
+                        
+                        if (trTypingCurrent.length === trTypingExpected.length) {
+                            if (trTypingCurrent === trTypingExpected.toUpperCase()) {
+                                trTypingFeedback = 'success';
+                                trFeedbackTimer = 20;
+                                createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 20, '#ffe600', 2);
+                                createTrEnergyParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 30, '#ffe600');
+                                audio.playCorrect();
+                                
+                                setTimeout(() => {
+                                    applyTrSupercharge();
+                                    trTypingFeedback = null;
+                                }, 280);
+                            } else {
+                                trTypingFeedback = 'error';
+                                trFeedbackTimer = 25;
+                                createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 20, '#ff007f');
+                                audio.playWrong();
+                                combo = 0;
+                                updateHUD();
+                                setTimeout(() => {
+                                    trTypingCurrent = "";
+                                    trTypingFeedback = null;
+                                }, 450);
+                            }
+                        }
+                    }
+                }
+                if (e.code === 'Backspace' && trTypingCurrent.length > 0 && trTypingFeedback === null) {
+                    trTypingCurrent = trTypingCurrent.slice(0, -1);
+                }
             }
 
             if (e.key === 'Escape') {
-                if (ssState === 'playing' || ssState === 'boss') {
+                if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'TRANSITION')) {
+                    trGameState = 'PAUSED';
+                    showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
+                                 <button onclick="trGameState='CHASE'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
+                                 <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
+                    return;
+                }
+                
+                if (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss')) {
                     ssState = 'menu';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
                                  <button onclick="ssState='playing'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
@@ -1510,6 +1637,10 @@ class ChiptuneEngine {
         
         window.addEventListener('keyup', (e) => { 
             ssKeys[e.key] = false; 
+            if (e.code === 'Space' && gameMode === 'runner') {
+                e.preventDefault();
+                handleTrJumpRelease();
+            }
         });
 
         window.addEventListener('load', () => {
@@ -1522,10 +1653,24 @@ class ChiptuneEngine {
                     ssPlayer.y = e.touches[0].clientY - rect.top - ssPlayer.height/2;
                 }
             }, {passive: false});
+            
+            canvas.addEventListener('mousedown', (e) => {
+                if (gameMode === 'runner') handleTrJump();
+                else handleCanvasClick(e);
+            });
+            canvas.addEventListener('touchstart', (e) => {
+                if (gameMode === 'runner') { e.preventDefault(); handleTrJump(); }
+                else handleCanvasClick(e);
+            }, { passive: false });
+            canvas.addEventListener('mouseup', () => {
+                if (gameMode === 'runner') handleTrJumpRelease();
+            });
+            canvas.addEventListener('touchend', (e) => {
+                if (gameMode === 'runner') { e.preventDefault(); handleTrJumpRelease(); }
+            }, { passive: false });
         });
 
         function startGameFromMenu() {
-            // Piilotetaan logo
             const gameLogo = document.getElementById('game-logo');
             if (gameLogo) gameLogo.classList.add('hidden');
             
@@ -1616,12 +1761,6 @@ class ChiptuneEngine {
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            canvas.addEventListener('mousedown', handleCanvasClick);
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                handleCanvasClick(e);
-            }, { passive: false });
-            
             populateDictionary(VERB_DATA);
             animationFrameId = requestAnimationFrame(gameLoop);
             
@@ -1637,6 +1776,8 @@ class ChiptuneEngine {
                 canvasWidth = rect.width;
                 canvasHeight = rect.height;
                 ctx.imageSmoothingEnabled = false;
+                
+                trArenaY = canvasHeight * 0.75;
             }
         }
 
@@ -1744,6 +1885,9 @@ class ChiptuneEngine {
                 isBubblePlaying = false;
                 showDifficultyModal();
             }
+            if(gameMode === 'runner') {
+                initTrGame();
+            }
         }
 
         function switchMode(mode) {
@@ -1753,6 +1897,7 @@ class ChiptuneEngine {
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
             else if (mode === 'spaceshooter') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
+            else if (mode === 'runner') modeBGM = "gh0stly-the-infinite-fall-271940.mp3"; 
             else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; 
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
             else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
@@ -1778,7 +1923,7 @@ class ChiptuneEngine {
                 if (diffBadge) diffBadge.classList.remove('hidden');
                 document.getElementById('hud-lives-container').classList.add('flex');
                 if (diffBadge) diffBadge.classList.add('flex');
-            } else if (mode === 'spaceshooter') {
+            } else if (mode === 'spaceshooter' || mode === 'runner') {
                 document.getElementById('hud-lives-container').classList.remove('hidden');
                 if (diffBadge) diffBadge.classList.add('hidden');
                 document.getElementById('hud-lives-container').classList.add('flex');
@@ -1806,6 +1951,9 @@ class ChiptuneEngine {
                     htmlControlsOverlay.classList.remove('pointer-events-none');
                     canvasHud.classList.remove('hidden');
                     initSpaceShooter();
+                } else if (mode === 'runner') {
+                    canvasHud.classList.add('hidden'); // Runner piirtää oman HUDinsa Canvakselle
+                    initTrGame();
                 } else if (mode === 'cards') {
                     document.getElementById('cards-ui').classList.remove('hidden');
                     document.getElementById('cards-ui').classList.add('flex');
@@ -1829,7 +1977,7 @@ class ChiptuneEngine {
                     canvasHud.classList.remove('hidden');
                 }
             }
-            if(mode !== 'spaceshooter') resetGame();
+            if(mode !== 'spaceshooter' && mode !== 'runner') resetGame();
         }
 
         function resetGame() {
@@ -1849,8 +1997,10 @@ class ChiptuneEngine {
             
             const pixelHeartSvg = `<svg width="18" height="18" viewBox="0 0 8 8" fill="currentColor" style="shape-rendering: crispedges;"><path d="M1,2 h2 v-1 h2 v1 h2 v3 h-1 v1 h-1 v1 h-2 v-1 h-1 v-1 h-1 z"/></svg>`;
             let hearts = '';
-            let maxH = (gameMode === 'spaceshooter') ? ssPlayer.maxHp : 3;
-            let curH = (gameMode === 'spaceshooter') ? ssPlayer.hp : lives;
+            let maxH = 3; let curH = lives;
+            if (gameMode === 'spaceshooter') { maxH = ssPlayer.maxHp; curH = ssPlayer.hp; }
+            if (gameMode === 'runner') { maxH = trMaxLives; curH = trPlayerLives; }
+            
             for(let i=0; i<maxH; i++) {
                 let active = i < curH;
                 hearts += active ? `<span class="text-red-500 drop-shadow-md">${pixelHeartSvg}</span>` : `<span class="text-slate-800 drop-shadow-none">${pixelHeartSvg}</span>`;
@@ -2070,114 +2220,867 @@ class ChiptuneEngine {
         }
 
         // ==========================================
-        // SPACE SHOOTER PELILOGIIKKA
+        // SYNTH RUNNER LOGIIKKA
         // ==========================================
-        function initSpaceShooter() {
-            ssPlayer.hp = 3; 
-            ssPlayer.powerUp = null;
-            score = 0; 
-            ssCorrectWords = 0;
-            ssBullets = []; ssEnemyBullets = []; ssTargets = []; ssParticles = []; ssHearts = [];
-            ssExhausts = []; ssPowerUps = []; ssTexts = [];
-            ssShakeTime = 0; ssShakeMag = 0;
-            
-            ssBoss.active = false; 
-            ssBoss.hp = 90; 
-            ssBoss.maxHp = 90; 
-            ssBoss.phase = 1;
-            ssBoss.state = 'entering';
-            
-            ssState = 'playing';
-            document.getElementById('ss-boss-hud').classList.add('hidden');
-            document.getElementById('ss-btn-shoot').classList.remove('hidden');
-            
-            // Tähdet parallaksia varten (koko määrittää nopeuden)
-            ssStars = [];
-            for(let i=0; i<100; i++) {
-                let size = Math.random()*2.5+0.5;
-                ssStars.push({ x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, size: size, speed: size * 1.5 });
-            }
-            
-            // Avaruussumut (Nebulas) parallaksia varten
-            ssNebulas = [];
-            const nebColors = ['rgba(139, 92, 246, 0.12)', 'rgba(56, 189, 248, 0.08)', 'rgba(236, 72, 153, 0.08)'];
-            for(let i=0; i<6; i++) {
-                ssNebulas.push({
-                    x: Math.random() * canvasWidth * 1.5,
-                    y: Math.random() * canvasHeight,
-                    radius: 100 + Math.random() * 200,
-                    color: nebColors[Math.floor(Math.random() * nebColors.length)],
-                    speed: 0.1 + Math.random() * 0.3
-                });
-            }
-            
-            updateHUD();
-        }
-
-        function ssShoot() {
-            if (ssState !== 'playing' && ssState !== 'boss') return;
-            if (ssTime - ssLastShot > 300) {
-                audio.playLaser();
-                let px = ssPlayer.x + ssPlayer.width;
-                let py = ssPlayer.y + ssPlayer.height/2 - 2;
-                
-                if (ssPlayer.powerUp === 'spread') {
-                    ssBullets.push({ x: px, y: py, vx: 10, vy: -3, width: 15, height: 4 });
-                    ssBullets.push({ x: px, y: py, vx: 10, vy: 0, width: 15, height: 4 });
-                    ssBullets.push({ x: px, y: py, vx: 10, vy: 3, width: 15, height: 4 });
-                } else {
-                    ssBullets.push({ x: px, y: py, vx: 10, vy: 0, width: 15, height: 4 });
-                }
-                
-                if (ssPlayer.powerUp === 'force') {
-                    ssBullets.push({ x: ssForceX, y: ssForceY, vx: 10, vy: 0, width: 15, height: 4 });
-                }
-                
-                ssLastShot = ssTime;
-            }
-        }
-
-        function spawnSsTargets() {
-            if (activeVerbs.length === 0) return;
-            const v = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
-            const forms = ['base', 'past', 'participle'];
-            const fIdx = Math.floor(Math.random() * 3);
-            const names = ['1. MUOTO (PERUS)', '2. MUOTO (IMPERFEKTI)', '3. MUOTO (PERFEKTI)'];
-            ssCurrentVerb = { verb: v, formIndex: fIdx, formName: names[fIdx] };
-
-            const correctText = v[forms[fIdx]];
-            let options = [correctText];
-            
-            while(options.length < 3) {
-                const randV = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
-                const randText = randV[forms[Math.floor(Math.random() * 3)]];
-                if (!options.includes(randText)) options.push(randText);
-            }
-            options.sort(() => Math.random() - 0.5);
-
-            const lanes = [120, 250, 380];
-            for (let i = 0; i < 3; i++) {
-                const horizontalOffset = Math.random() * 200;
-                ssTargets.push({
-                    x: canvasWidth + 50 + horizontalOffset,
-                    y: lanes[i] + (Math.random()*40 - 20),
-                    text: options[i],
-                    speed: 2.5 + (ssBoss.phase * 0.5),
-                    width: 100, height: 40
-                });
-            }
-        }
         
-        function endBossPhase(nextPhase) {
-            ssBoss.active = false;
-            ssBoss.phase = nextPhase;
-            ssBoss.state = 'entering';
-            ssCorrectWords = 0;
-            ssTargets.length = 0;
-            ssState = 'playing';
-            document.getElementById('ss-boss-hud').classList.add('hidden');
+        function initTrStars() {
+            trStars = [];
+            for (let i = 0; i < 90; i++) {
+                trStars.push({
+                    x: Math.random() * canvasWidth,
+                    y: Math.random() * (canvasHeight * 0.65),
+                    size: Math.random() * 2.2 + 0.8,
+                    color: Math.random() > 0.4 ? '#00f0ff' : '#ff77ff'
+                });
+            }
+
+            trCitySilhouette = [];
+            let curX = 0;
+            while (curX < canvasWidth * 2.5) {
+                let w = Math.random() * 50 + 35;
+                let h = Math.random() * 110 + 60;
+                trCitySilhouette.push({ x: curX, w: w, h: h, y: canvasHeight - h - 40 });
+                curX += w + Math.random() * 10;
+            }
         }
 
+        function createTrParticles(x, y, count, color, speedScale = 1) {
+            for (let i = 0; i < count; i++) {
+                trParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 8 * speedScale,
+                    vy: (Math.random() - 0.5) * 8 * speedScale,
+                    life: 1.0,
+                    size: Math.random() * 4 + 2,
+                    color: color
+                });
+            }
+        }
+
+        function createTrEnergyParticles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let dist = Math.random() * 80 + 40;
+                trEnergyParticles.push({
+                    x: x + Math.cos(angle) * dist,
+                    y: y + Math.sin(angle) * dist,
+                    targetX: x, targetY: y,
+                    life: 1.0,
+                    size: Math.random() * 3 + 2,
+                    color: color
+                });
+            }
+        }
+
+        function showTrMessage(main, sub, duration = 120) {
+            trBigMessage = main;
+            trSmallMessage = sub;
+            trMessageTimer = duration;
+        }
+
+        function generateTrSafeStartPlatform() {
+            trPlatforms = [];
+            trHearts = [];
+            trCheckpoints = [];
+            
+            let startPlat = {
+                x: 0, y: canvasHeight * 0.65, w: 600, h: canvasHeight - (canvasHeight * 0.65),
+                isArena: false, id: 1, xSeed: Math.random() * 1000
+            };
+            trPlatforms.push(startPlat);
+
+            trPlayer.x = 250;
+            trPlayer.y = startPlat.y - trPlayer.h - 5;
+            trPlayer.vy = 0;
+            trPlayer.jumps = 0;
+
+            trActiveCheckpoint = {
+                platId: startPlat.id,
+                relX: 250,
+                y: startPlat.y - 30
+            };
+        }
+
+        function generateTrNextPlatform() {
+            if (trPlatforms.length === 0) return;
+
+            let last = trPlatforms[trPlatforms.length - 1];
+
+            let gap = Math.random() * 110 + 60;
+            let w = Math.random() * 200 + 130; 
+            
+            let heightChange = (Math.random() * 140) - 70;
+            let y = last.y + heightChange;
+            
+            let minY = canvasHeight * 0.4;
+            let maxY = canvasHeight * 0.8;
+            if (y < minY) y = minY;
+            if (y > maxY) y = maxY;
+
+            let startX = last.x + last.w + gap;
+            let newPlat = {
+                x: startX, y: y, w: w, h: canvasHeight - y,
+                isArena: false,
+                id: trGlobalFrames + Math.random() * 1000,
+                xSeed: Math.random() * 1000
+            };
+            trPlatforms.push(newPlat);
+
+            if (trHeartsSpawned < trHeartsTarget && Math.random() > 0.4) {
+                trHearts.push({
+                    x: newPlat.x + w / 2,
+                    y: newPlat.y - 35,
+                    active: true,
+                    pulse: Math.random() * Math.PI
+                });
+                trHeartsSpawned++;
+            }
+
+            if (Math.random() > 0.65 && (trCheckpoints.length === 0 || last.x - trCheckpoints[trCheckpoints.length - 1].x > 500)) {
+                trCheckpoints.push({
+                    x: newPlat.x + 40,
+                    y: newPlat.y - 25,
+                    platId: newPlat.id,
+                    active: false
+                });
+            }
+        }
+
+        function handleTrJump() {
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                if (trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                    trGameState = 'START';
+                    showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
+                } else {
+                    initTrGameRun();
+                }
+                return;
+            }
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlayer.jumps === 0 && trPlayer.grounded) {
+                    trPlayer.vy = trPlayer.jumpPower;
+                    trPlayer.jumps = 1;
+                    trPlayer.grounded = false;
+                    createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h, 6, '#00f0ff');
+                } else if (trPlayer.jumps === 1) {
+                    trPlayer.vy = trPlayer.doubleJumpPower;
+                    trPlayer.jumps = 2;
+                    createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h, 16, '#ff007f', 1.5);
+                }
+            }
+        }
+
+        function handleTrJumpRelease() {
+            if (trPlayer.vy < -2) {
+                trPlayer.vy *= 0.4;
+            }
+        }
+
+        function setupTrNextVerb() {
+            if (activeVerbs.length === 0) {
+                trUnusedVerbs = [...VERB_DATA].sort(() => Math.random() - 0.5);
+            } else if (trUnusedVerbs.length === 0) {
+                trUnusedVerbs = [...activeVerbs].sort(() => Math.random() - 0.5);
+                if (trLastUsedVerb && trUnusedVerbs.length > 1 && trUnusedVerbs[trUnusedVerbs.length - 1] === trLastUsedVerb) {
+                    let temp = trUnusedVerbs[trUnusedVerbs.length - 1];
+                    trUnusedVerbs[trUnusedVerbs.length - 1] = trUnusedVerbs[0];
+                    trUnusedVerbs[0] = temp;
+                }
+            }
+            
+            trTargetVerb = trUnusedVerbs.pop();
+            trLastUsedVerb = trTargetVerb;
+            trLastTenseIndex = (trLastTenseIndex + 1) % 3;
+            
+            if (trLastTenseIndex === 0) {
+                trTargetTense = 1; 
+                trTypingExpected = trTargetVerb.base.split('/')[0].trim();
+            } else if (trLastTenseIndex === 1) {
+                trTargetTense = 2; 
+                trTypingExpected = trTargetVerb.past.split('/')[0].trim();
+            } else {
+                trTargetTense = 3; 
+                trTypingExpected = trTargetVerb.participle.split('/')[0].trim();
+            }
+            trTypingCurrent = "";
+        }
+
+        function applyTrSupercharge() {
+            trTypingCurrent = ""; 
+            trVerbsCompleted++;
+            addScore(10);
+            combo++;
+            
+            if (trVerbsCompleted < trRoundGoals[trRound - 1]) {
+                setTimeout(setupTrNextVerb, 200);
+            } else {
+                trGameState = 'SUPER_ATTACK';
+                trSuperAttackTimer = 120;
+                showTrMessage("SUPERLATAUS VALMIS!", "VASTAISKU!", 120);
+                trScreenShake = 15;
+            }
+        }
+
+        function triggerTrSetback() {
+            trPlayerLives--;
+            createTrParticles(trPlayer.x + trPlayer.w/2, canvasHeight - 20, 35, '#ff007f', 1.5);
+            audio.playExplosion();
+
+            if (trPlayerLives <= 0) {
+                trGameState = 'GAMEOVER';
+                showTrMessage("GAME OVER", "Elämät loppuivat! Paina Hyppy aloittaaksesi uudelleen.", 9999);
+                return;
+            }
+
+            trGameState = 'RESPAWNING';
+            showTrMessage("PUTOSIT!", `Elämiä jäljellä: ${trPlayerLives}`, 70);
+
+            setTimeout(() => {
+                let respawnPlat = null;
+                if (trActiveCheckpoint) {
+                    respawnPlat = trPlatforms.find(p => p.id === trActiveCheckpoint.platId);
+                }
+
+                if (!respawnPlat || respawnPlat.x + respawnPlat.w < 150) {
+                    generateTrSafeStartPlatform();
+                } else {
+                    trPlayer.x = 250;
+                    trPlayer.y = respawnPlat.y - trPlayer.h - 10;
+                    trPlayer.vy = 0;
+                    trPlayer.jumps = 0;
+                }
+                
+                trChaseProgress = Math.max(0, trChaseProgress - 15);
+                trGameState = 'CHASE';
+            }, 900);
+        }
+
+        function transitionTrToCombat() {
+            trGameState = 'TRANSITION';
+            trHearts = [];
+            trCheckpoints = [];
+            showTrMessage("TURBO ON HENGÄSTYNYT!", "Aika kerätä superlataus!", 90);
+            
+            let last = trPlatforms.length > 0 ? trPlatforms[trPlatforms.length - 1] : { x: 0, y: trArenaY, w: 400, h: 20 };
+            let bridgeStart = last.x + last.w;
+            let arenaStartX = Math.max(canvasWidth, bridgeStart);
+            
+            if (arenaStartX > bridgeStart) {
+                trPlatforms.push({
+                    x: bridgeStart, y: last.y, w: arenaStartX - bridgeStart + 50, h: canvasHeight - last.y,
+                    isArena: false, id: trGlobalFrames, xSeed: Math.random() * 1000
+                });
+            }
+            
+            trPlatforms.push({
+                x: arenaStartX, y: trArenaY, w: 3200, h: canvasHeight - trArenaY,
+                isArena: true, id: trGlobalFrames + 1, xSeed: 999
+            });
+        }
+
+        function initTrGame() {
+            initTrStars();
+            trGameState = 'START';
+            showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
+        }
+
+        function initTrGameRun() {
+            initTrStars();
+            trPlayerLives = 3;
+            trChaseProgress = 0;
+            trRound = 1;
+            trHeartsSpawned = 0;
+            trHeartsTarget = Math.floor(Math.random() * 2) + 1;
+            trBoss.x = -150;
+            
+            trBossProjectiles = [];
+            trBossShootTimer = 0;
+            
+            trVerbsCompleted = 0;
+            trMessageTimer = 0;
+            trGlobalFrames = 0;
+            
+            score = 0;
+            combo = 0;
+
+            generateTrSafeStartPlatform();
+            trGameState = 'CHASE';
+        }
+
+        function updateRunner() {
+            trGlobalFrames++;
+            if (trMessageTimer > 0) trMessageTimer--;
+            if (trFeedbackTimer > 0) trFeedbackTimer--;
+            if (trScreenShake > 0) trScreenShake *= 0.9;
+
+            let bgScrollSpeed = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
+            
+            trCitySilhouette.forEach(b => {
+                b.x -= bgScrollSpeed * 0.18;
+                if (b.x + b.w < 0) {
+                    let maxX = Math.max(...trCitySilhouette.map(s => s.x + s.w));
+                    b.x = maxX;
+                    b.h = Math.random() * 110 + 60;
+                    b.y = canvasHeight - b.h - 40;
+                    b.w = Math.random() * 50 + 35;
+                }
+            });
+
+            for (let i = trParticles.length - 1; i >= 0; i--) {
+                let p = trParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.035;
+                if (p.life <= 0) trParticles.splice(i, 1);
+            }
+
+            for (let i = trEnergyParticles.length - 1; i >= 0; i--) {
+                let p = trEnergyParticles[i];
+                p.x += (trPlayer.x + trPlayer.w/2 - p.x) * 0.15;
+                p.y += (trPlayer.y + trPlayer.h/2 - p.y) * 0.15;
+                p.life -= 0.04;
+                if (p.life <= 0) trEnergyParticles.splice(i, 1);
+            }
+
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING') {
+                return;
+            }
+
+            let currentScrollSpeed = bgScrollSpeed;
+
+            if (trGameState !== 'SUPER_ATTACK' && trGameState !== 'COMBAT') {
+                trPlayer.vy += trPlayer.gravity;
+                trPlayer.y += trPlayer.vy;
+            }
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlayer.x > 255) trPlayer.x -= 2;
+                if (trPlayer.x < 245) trPlayer.x += 2;
+            }
+
+            if (trPlayer.y > canvasHeight + 40 && (trGameState === 'CHASE' || trGameState === 'TRANSITION')) {
+                triggerTrSetback();
+            }
+
+            if (trGameState === 'CHASE') {
+                trChaseProgress += 0.07; 
+                if (trChaseProgress >= 100) {
+                    trChaseProgress = 100;
+                    transitionTrToCombat();
+                }
+
+                let targetBossX = -150 + (trChaseProgress / 100) * (trPlayer.x - 100 - (-150));
+                trBoss.x += (targetBossX - trBoss.x) * 0.1;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.1) * 12;
+
+                trBossShootTimer--;
+                if (trBossShootTimer <= 0 && trBoss.x > -50) { 
+                    trBossProjectiles.push({
+                        x: trBoss.x + trBoss.w,
+                        y: trBoss.y + trBoss.offsetY + trBoss.h / 2 - 4,
+                        w: 24, h: 8,
+                        vx: 9
+                    });
+                    trBossShootTimer = Math.random() * 50 + 50;
+                    audio.playLaser();
+                }
+            }
+
+            if (trGameState === 'TRANSITION') {
+                let arenaPlat = trPlatforms.find(p => p.isArena);
+                
+                if (arenaPlat) {
+                    let dist = arenaPlat.x - 0;
+                    if (dist > 0) {
+                        currentScrollSpeed = Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035));
+                    } else {
+                        currentScrollSpeed = 0;
+                        trGameState = 'COMBAT';
+                        trVerbsCompleted = 0;
+                        setupTrNextVerb();
+                    }
+                }
+                
+                trBoss.x += ((trPlayer.x - 120) - trBoss.x) * 0.05; 
+                trBoss.y = trArenaY - trBoss.h;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.07) * 18; 
+            }
+
+            if (trGameState === 'COMBAT') {
+                currentScrollSpeed = 0;
+                trBoss.y = trArenaY - trBoss.h;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.04) * 25; 
+            }
+
+            if (trGameState === 'SUPER_ATTACK') {
+                currentScrollSpeed = 0;
+                trSuperAttackTimer--;
+                
+                if (trSuperAttackTimer > 80) {
+                    trScreenShake = 10;
+                    if (trSuperAttackTimer % 10 === 0) audio.playHit();
+                }
+                
+                trBoss.state = 'hurt';
+                
+                trBoss.x -= 8;
+                if (trBoss.x < -150) trBoss.x = -150;
+
+                createTrParticles(trBoss.x + trBoss.w, trBoss.y + trBoss.h/2, 2, '#ffe600', 3);
+
+                if (trSuperAttackTimer <= 0) {
+                    trBoss.state = 'normal';
+                    if (trRound >= 3) {
+                        trGameState = 'VICTORY';
+                        showTrMessage("VOITTO!", "TURBO THRASHER ON LYÖTY!", 9999);
+                        createTrParticles(trBoss.x + trBoss.w/2, trBoss.y + trBoss.h/2, 120, '#ff007f', 3);
+                        audio.playExplosion();
+                    } else {
+                        trRound++;
+                        trChaseProgress = 0;
+                        trHeartsSpawned = 0;
+                        trHeartsTarget = Math.floor(Math.random() * 2) + 1;
+                        trPlatforms = trPlatforms.filter(p => !p.isArena);
+                        generateTrSafeStartPlatform();
+                        trGameState = 'CHASE';
+                        showTrMessage("SE JATKUU!", "Jatka pakoa!", 90);
+                    }
+                }
+            }
+
+            trPlayer.grounded = false;
+            for (let i = trPlatforms.length - 1; i >= 0; i--) {
+                let p = trPlatforms[i];
+                p.x -= currentScrollSpeed;
+
+                if (trPlayer.vy > 0 && 
+                    trPlayer.x + trPlayer.w > p.x + 4 && 
+                    trPlayer.x < p.x + p.w - 4 &&
+                    trPlayer.y + trPlayer.h >= p.y && 
+                    trPlayer.y + trPlayer.h <= p.y + trPlayer.vy + 12) 
+                {
+                    trPlayer.y = p.y - trPlayer.h;
+                    trPlayer.vy = 0;
+                    trPlayer.grounded = true;
+                    trPlayer.jumps = 0;
+                }
+
+                if (p.x + p.w < -120) trPlatforms.splice(i, 1);
+            }
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlatforms.length === 0) {
+                    generateTrSafeStartPlatform();
+                } else {
+                    let lastPlat = trPlatforms[trPlatforms.length - 1];
+                    if (!lastPlat.isArena && lastPlat.x + lastPlat.w < canvasWidth + 250) {
+                        generateTrNextPlatform();
+                    }
+                }
+            }
+
+            for (let i = trHearts.length - 1; i >= 0; i--) {
+                let h = trHearts[i];
+                h.x -= currentScrollSpeed;
+                h.pulse += 0.08;
+
+                if (h.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
+                    trPlayer.x < h.x + 18 && trPlayer.x + trPlayer.w > h.x - 18 &&
+                    trPlayer.y < h.y + 18 && trPlayer.y + trPlayer.h > h.y - 18) 
+                {
+                    h.active = false;
+                    if (trPlayerLives < trMaxLives) trPlayerLives++;
+                    createTrParticles(h.x, h.y, 20, '#ff007f', 1.2);
+                    showTrMessage("+1 ELÄMÄ!", "Sydän kerätty", 45);
+                    audio.playCorrect();
+                }
+
+                if (h.x < -50 || !h.active) trHearts.splice(i, 1);
+            }
+
+            trCheckpoints.forEach(cp => {
+                cp.x -= currentScrollSpeed;
+                if (!cp.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
+                    trPlayer.x + trPlayer.w > cp.x - 15 && trPlayer.x < cp.x + 15) {
+                    cp.active = true;
+                    trActiveCheckpoint = { platId: cp.platId, relX: cp.x, y: cp.y };
+                    createTrParticles(cp.x, cp.y, 25, '#00f0ff', 1.4);
+                    showTrMessage("CHECKPOINT!", "Tallennuspiste aktivoitu", 50);
+                    audio.playSelect();
+                }
+            });
+
+            for (let i = trBossProjectiles.length - 1; i >= 0; i--) {
+                let bp = trBossProjectiles[i];
+                bp.x += bp.vx; 
+                
+                if ((trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
+                    bp.x < trPlayer.x + trPlayer.w && bp.x + bp.w > trPlayer.x &&
+                    bp.y < trPlayer.y + trPlayer.h && bp.y + bp.h > trPlayer.y) 
+                {
+                    createTrParticles(trPlayer.x, trPlayer.y + trPlayer.h/2, 22, '#ff007f');
+                    trFlashError = 15;
+                    trScreenShake = 10;
+                    trPlayerLives--;
+                    trBossProjectiles.splice(i, 1);
+                    audio.playWrong();
+
+                    if (trPlayerLives <= 0) {
+                        trGameState = 'GAMEOVER';
+                        showTrMessage("GAME OVER", "Sait osuman ja elämät loppuivat!", 9999);
+                    } else {
+                        showTrMessage("OSUMA!", `Elämiä jäljellä: ${trPlayerLives}`, 50);
+                    }
+                    continue;
+                }
+
+                if (bp.x > canvasWidth + 100) trBossProjectiles.splice(i, 1); 
+            }
+        }
+
+        function drawRunner() {
+            ctx.save();
+            if (trScreenShake > 0) {
+                let dx = (Math.random() - 0.5) * trScreenShake;
+                let dy = (Math.random() - 0.5) * trScreenShake;
+                ctx.translate(dx, dy);
+            }
+
+            // Sky
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+            skyGrad.addColorStop(0, '#0c021a');
+            skyGrad.addColorStop(0.55, '#29004d');
+            skyGrad.addColorStop(0.85, '#7a0055');
+            skyGrad.addColorStop(1, '#ff3377');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // Stars
+            trStars.forEach(s => {
+                ctx.fillStyle = s.color;
+                ctx.globalAlpha = Math.random() > 0.95 ? 0.3 : 0.85;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Sun
+            let sunX = canvasWidth / 2;
+            let sunY = canvasHeight * 0.52;
+            let sunRadius = 65;
+            let sunGrad = ctx.createLinearGradient(sunX, sunY - sunRadius, sunX, sunY + sunRadius);
+            sunGrad.addColorStop(0, '#ffe600');
+            sunGrad.addColorStop(0.5, '#ff007f');
+            sunGrad.addColorStop(1, '#7a0055');
+
+            ctx.fillStyle = sunGrad;
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff007f';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = '#29004d';
+            for (let i = 0; i < 6; i++) {
+                let lineY = sunY + 10 + (i * 8);
+                let lineHeight = 2 + (i * 0.8);
+                ctx.fillRect(sunX - sunRadius, lineY, sunRadius * 2, lineHeight);
+            }
+            ctx.restore();
+
+            // Background Cityscape
+            ctx.fillStyle = '#120224';
+            trCitySilhouette.forEach(b => {
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+            });
+
+            // Synth Grid Ground horizon line
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvasHeight - 35);
+            ctx.lineTo(canvasWidth, canvasHeight - 35);
+            ctx.stroke();
+
+            // Buildings
+            trPlatforms.forEach(p => {
+                ctx.fillStyle = p.isArena ? '#0a0314' : '#14052b';
+                ctx.fillRect(p.x, p.y, p.w, canvasHeight - p.y);
+                
+                ctx.fillStyle = '#00f0ff';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#00f0ff';
+                ctx.fillRect(p.x, p.y, p.w, 4);
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#ff007f';
+                ctx.fillRect(p.x, p.y + 4, p.w, 2);
+
+                let windowW = 10, windowH = 15, gapX = 14, gapY = 22;
+                let colIndex = 0;
+                for (let wx = p.x + 12; wx < p.x + p.w - windowW - 8; wx += windowW + gapX) {
+                    let rowIndex = 0;
+                    for (let wy = p.y + 25; wy < canvasHeight - windowH - 10; wy += windowH + gapY) {
+                        let seed = Math.sin(p.xSeed * 77.3 + colIndex * 13.7 + rowIndex * 31.9) * 10000;
+                        let val = seed - Math.floor(seed);
+                        if (val > 0.62) {
+                            ctx.fillStyle = '#fffa8b';
+                            ctx.shadowColor = '#ffe600';
+                            ctx.shadowBlur = 8;
+                        } else {
+                            ctx.fillStyle = '#090214'; 
+                            ctx.shadowBlur = 0;
+                        }
+                        ctx.fillRect(wx, wy, windowW, windowH);
+                        rowIndex++;
+                    }
+                    colIndex++;
+                }
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Checkpoints
+            trCheckpoints.forEach(cp => {
+                ctx.fillStyle = cp.active ? '#00f0ff' : '#660066';
+                ctx.shadowBlur = cp.active ? 15 : 0;
+                ctx.shadowColor = '#00f0ff';
+                ctx.beginPath();
+                ctx.moveTo(cp.x, cp.y - 12);
+                ctx.lineTo(cp.x + 10, cp.y);
+                ctx.lineTo(cp.x, cp.y + 12);
+                ctx.lineTo(cp.x - 10, cp.y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = cp.active ? '#ffffff' : '#aa00aa';
+                ctx.beginPath();
+                ctx.arc(cp.x, cp.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Collectible Hearts
+            trHearts.forEach(h => {
+                if (!h.active) return;
+                let hoverY = h.y + Math.sin(h.pulse) * 4;
+                ctx.fillStyle = '#ff007f';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff007f';
+                ctx.beginPath();
+                ctx.arc(hoverY ? h.x - 4 : h.x - 4, hoverY - 4, 5, Math.PI, 0, false);
+                ctx.arc(hoverY ? h.x + 4 : h.x + 4, hoverY - 4, 5, Math.PI, 0, false);
+                ctx.lineTo(h.x, hoverY + 7);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(h.x - 3, hoverY - 4, 2, 2);
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Boss Projectiles
+            trBossProjectiles.forEach(bp => {
+                ctx.fillStyle = '#ff007f';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff007f';
+                ctx.fillRect(bp.x, bp.y, bp.w, bp.h);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(bp.x + 2, bp.y + 2, bp.w - 4, bp.h - 4);
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Boss
+            if (trBoss.visible && trGameState !== 'VICTORY') {
+                ctx.fillStyle = trBoss.state === 'hurt' ? '#ffffff' : trBoss.color;
+                ctx.shadowBlur = trBoss.state === 'hurt' ? 30 : 18; 
+                ctx.shadowColor = trBoss.color;
+                
+                let by = trBoss.y + trBoss.offsetY;
+                ctx.fillRect(trBoss.x, by, trBoss.w, trBoss.h);
+                
+                ctx.fillStyle = '#00f0ff';
+                ctx.fillRect(trBoss.x - 12, by + trBoss.h - 25, 12, Math.random() * 18 + 8);
+                
+                ctx.fillStyle = '#000';
+                ctx.fillRect(trBoss.x + trBoss.w - 46, by + 20, 46, 14);
+                ctx.fillStyle = '#ffe600';
+                ctx.fillRect(trBoss.x + trBoss.w - 40, by + 24, 30, 6);
+
+                if (trGameState === 'COMBAT') {
+                    ctx.fillStyle = '#00f0ff';
+                    ctx.fillRect(trBoss.x + trBoss.w/2 + Math.sin(trGlobalFrames*0.2)*10, by - 10 - Math.abs(Math.cos(trGlobalFrames*0.1)*15), 4, 8);
+                }
+
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw Player
+            if (trGameState !== 'GAMEOVER' && trGameState !== 'RESPAWNING') {
+                if (trFlashError > 0) {
+                    ctx.fillStyle = '#ff0055';
+                    trFlashError--;
+                } else {
+                    ctx.fillStyle = trPlayer.color;
+                }
+                
+                ctx.shadowBlur = (trSuperAttackTimer > 0) ? 25 : 15;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.fillRect(trPlayer.x, trPlayer.y, trPlayer.w, trPlayer.h);
+                
+                if (trPlayer.vy < -1.5) {
+                    ctx.fillStyle = trPlayer.jumps === 2 ? '#ff007f' : '#ffe600';
+                    ctx.fillRect(trPlayer.x + 6, trPlayer.y + trPlayer.h, 18, Math.random() * 16 + 8);
+                }
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw Super Attack Laser
+            if (trGameState === 'SUPER_ATTACK' && trSuperAttackTimer > 20) {
+                let beamHeight = Math.min(80, (120 - trSuperAttackTimer) * 4);
+                let beamY = trPlayer.y + trPlayer.h/2 - beamHeight/2;
+                
+                ctx.fillStyle = '#ffe600';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ffe600';
+                ctx.fillRect(0, beamY, trPlayer.x, beamHeight);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, beamY + beamHeight*0.3, trPlayer.x, beamHeight*0.4);
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw Particles
+            trParticles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            trEnergyParticles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            ctx.restore(); 
+            drawTrUI();
+        }
+
+        function drawTrUI() {
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px "Press Start 2P"';
+            
+            ctx.fillStyle = '#00f0ff';
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillText(`KIERROS: ${trRound}/3`, 20, 28);
+            ctx.shadowBlur = 0;
+
+            ctx.fillText("HP: ", 20, 50);
+            let hpStartX = 65;
+            for (let i = 0; i < trMaxLives; i++) {
+                if (i < trPlayerLives) {
+                    ctx.fillStyle = '#ff007f';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = '#ff007f';
+                } else {
+                    ctx.fillStyle = '#3a0826';
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fillText("♥", hpStartX + (i * 18), 50);
+            }
+            ctx.shadowBlur = 0;
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                ctx.fillStyle = '#ff007f';
+                ctx.fillText("TURBON ETÄISYYS:", 20, 75);
+                
+                ctx.strokeStyle = '#ff007f';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(205, 62, 184, 16);
+                
+                ctx.fillStyle = trChaseProgress >= 100 ? (trGlobalFrames % 10 < 5 ? '#fff' : '#00f0ff') : '#00f0ff';
+                ctx.fillRect(207, 64, trChaseProgress * 1.8, 12);
+            }
+
+            if (trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK') {
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#ffe600';
+                let totalReq = trRoundGoals[trRound - 1];
+                let currentProg = Math.min(totalReq, trVerbsCompleted);
+                let blocks = "█".repeat(currentProg) + "░".repeat(totalReq - currentProg);
+                ctx.fillText(`SUPERLATAUS: ${blocks}`, canvasWidth - 20, 28);
+
+                if (trTargetVerb && trGameState === 'COMBAT') {
+                    ctx.textAlign = 'center';
+                    
+                    ctx.fillStyle = 'rgba(12, 2, 26, 0.9)';
+                    ctx.fillRect(canvasWidth/2 - 250, 55, 500, 125);
+                    ctx.strokeStyle = '#ffe600';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(canvasWidth/2 - 250, 55, 500, 125);
+                    
+                    ctx.fillStyle = '#00f0ff';
+                    let tenseName = '';
+                    
+                    if (trTargetTense === 1) tenseName = 'PERUSMUOTO (1. MUOTO)';
+                    else if (trTargetTense === 2) tenseName = 'IMPERFEKTI (2. MUOTO)';
+                    else tenseName = 'PERFEKTI (3. MUOTO)';
+                    
+                    ctx.fillText(`${trTargetVerb.finnish.toUpperCase()} -> ${tenseName}`, canvasWidth/2, 90);
+                    
+                    if (trTypingFeedback === 'success') {
+                        ctx.fillStyle = '#ffe600';
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = '#ffe600';
+                    } else if (trTypingFeedback === 'error') {
+                        ctx.fillStyle = '#ff007f';
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = '#ff007f';
+                    } else {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.font = '22px "Press Start 2P"';
+                    let displayStr = "";
+                    for (let i = 0; i < trTypingExpected.length; i++) {
+                        if (i < trTypingCurrent.length) {
+                            displayStr += trTypingCurrent[i] + " ";
+                        } else {
+                            displayStr += "_ ";
+                        }
+                    }
+                    ctx.fillText(displayStr, canvasWidth/2, 140);
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            if (trMessageTimer > 0 || trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                    ctx.fillStyle = 'rgba(12, 2, 26, 0.85)';
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                }
+                
+                ctx.textAlign = 'center';
+                ctx.fillStyle = (trGameState === 'GAMEOVER') ? '#ff0055' : (trGameState === 'SUPER_ATTACK' ? '#ffe600' : '#00f0ff');
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.font = '18px "Press Start 2P"';
+                ctx.fillText(trBigMessage, canvasWidth/2, canvasHeight/2 - 12);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.font = '11px "Press Start 2P"';
+                ctx.fillText(trSmallMessage, canvasWidth/2, canvasHeight/2 + 25);
+            }
+        }
+
+        // ==========================================
         function updateSpaceShooter(timestamp) {
             let dt = timestamp - (ssLastFrameTime || timestamp);
             ssLastFrameTime = timestamp;
@@ -2196,18 +3099,15 @@ class ChiptuneEngine {
             if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
             if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
 
-            // Pelaajan Force Pod
             if (ssPlayer.powerUp === 'force') {
                 ssPlayer.forceAngle += 0.05;
                 ssForceX = ssPlayer.x + ssPlayer.width/2 + Math.cos(ssPlayer.forceAngle)*70;
                 ssForceY = ssPlayer.y + ssPlayer.height/2 + Math.sin(ssPlayer.forceAngle)*70;
             }
 
-            // Parallaksi tausta
             ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
             ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
 
-            // Moottorin jättövanat
             if (ssState === 'playing' || (ssState === 'boss' && ssBoss.state !== 'dying')) {
                 createExhaust(ssPlayer.x + 10, ssPlayer.y + ssPlayer.height/2 + (Math.random()*10-5), '#06b6d4', -(2 + Math.random()*2), (Math.random()-0.5), Math.random()*4+2);
                 if (ssBoss.active) {
@@ -2220,7 +3120,6 @@ class ChiptuneEngine {
                 if (e.life <= 0) ssExhausts.splice(i, 1);
             }
 
-            // Power-ups
             for (let i = ssPowerUps.length - 1; i >= 0; i--) {
                 let p = ssPowerUps[i];
                 p.x -= p.speed;
@@ -2245,31 +3144,13 @@ class ChiptuneEngine {
 
             for (let i = ssEnemyBullets.length - 1; i >= 0; i--) {
                 let b = ssEnemyBullets[i]; 
-                
-                if (b.vx !== undefined) {
-                    b.x += b.vx;
-                    b.y += b.vy;
-                } else {
-                    b.x -= b.speed;
+                if (b.vx !== undefined) { b.x += b.vx; b.y += b.vy; } else { b.x -= b.speed; }
+                if (b.x < -50 || b.y < -50 || b.y > canvasHeight + 50) { ssEnemyBullets.splice(i, 1); continue; }
+                if (ssPlayer.powerUp === 'force' && Math.hypot(b.x - ssForceX, b.y - ssForceY) < 25) {
+                    createSsParticle(b.x, b.y, '#38bdf8', 8); ssEnemyBullets.splice(i, 1); continue;
                 }
-                
-                if (b.x < -50 || b.y < -50 || b.y > canvasHeight + 50) { 
-                    ssEnemyBullets.splice(i, 1); 
-                    continue; 
-                }
-                
-                // Tarkista osuma Force Podiin
-                if (ssPlayer.powerUp === 'force') {
-                    if (Math.hypot(b.x - ssForceX, b.y - ssForceY) < 25) {
-                        createSsParticle(b.x, b.y, '#38bdf8', 8);
-                        ssEnemyBullets.splice(i, 1);
-                        continue;
-                    }
-                }
-                
                 if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 35) {
-                    ssEnemyBullets.splice(i, 1);
-                    ssTakeDamage();
+                    ssEnemyBullets.splice(i, 1); ssTakeDamage();
                 }
             }
 
@@ -2283,70 +3164,38 @@ class ChiptuneEngine {
                 if (Math.hypot(h.x - (ssPlayer.x+ssPlayer.width/2), h.y - (ssPlayer.y+ssPlayer.height/2)) < 45) {
                     audio.playCorrect();
                     if (ssPlayer.hp < ssPlayer.maxHp) ssPlayer.hp++;
-                    updateHUD();
-                    ssHearts.splice(i, 1);
+                    updateHUD(); ssHearts.splice(i, 1);
                 }
             }
 
             if (ssState === 'playing') {
                 if (ssTargets.length === 0 && ssTime - ssLastTargetSpawn > 1000) {
-                    spawnSsTargets();
-                    ssLastTargetSpawn = ssTime;
+                    spawnSsTargets(); ssLastTargetSpawn = ssTime;
                 }
-
                 for (let i = ssTargets.length - 1; i >= 0; i--) {
                     let t = ssTargets[i];
                     t.x -= t.speed;
                     if (t.x < -t.width) {
                         const forms = ['base', 'past', 'participle'];
-                        if (ssCurrentVerb && t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
-                            ssTakeDamage();
-                        }
-                        ssTargets.splice(i, 1);
-                        continue;
+                        if (ssCurrentVerb && t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) ssTakeDamage();
+                        ssTargets.splice(i, 1); continue;
                     }
-
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
                         if (b.x > t.x && b.x < t.x + t.width && b.y > t.y && b.y < t.y + t.height) {
                             const forms = ['base', 'past', 'participle'];
                             if (t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
-                                audio.playExplosion();
-                                addScore(15); combo++;
-                                createSsParticle(t.x, t.y, '#10b981', 15);
-                                ssCorrectWords++;
-                                
-                                // Power-up mahdollisuus
-                                if (Math.random() < 0.25) {
-                                    ssPowerUps.push({
-                                        x: t.x + t.width/2, y: t.y + t.height/2,
-                                        type: Math.random() < 0.5 ? 'spread' : 'force',
-                                        width: 24, height: 24, speed: 2
-                                    });
-                                }
-                                
-                                // Pomon aktivointi
+                                audio.playExplosion(); addScore(15); combo++;
+                                createSsParticle(t.x, t.y, '#10b981', 15); ssCorrectWords++;
+                                if (Math.random() < 0.25) ssPowerUps.push({ x: t.x + t.width/2, y: t.y + t.height/2, type: Math.random() < 0.5 ? 'spread' : 'force', width: 24, height: 24, speed: 2 });
                                 if (ssCorrectWords >= 10) {
-                                    ssState = 'boss';
-                                    ssBoss.active = true;
-                                    ssBoss.state = 'entering';
-                                    ssBoss.x = canvasWidth + 100;
-                                    ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
-                                    document.getElementById('ss-boss-hud').classList.remove('hidden');
-                                    document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                                    ssState = 'boss'; ssBoss.active = true; ssBoss.state = 'entering'; ssBoss.x = canvasWidth + 100; ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
+                                    document.getElementById('ss-boss-hud').classList.remove('hidden'); document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
                                 }
-                                
-                                ssTargets.length = 0; 
-                                ssBullets.splice(j, 1);
-                                i = -1; 
-                                break; 
+                                ssTargets.length = 0; ssBullets.splice(j, 1); i = -1; break; 
                             } else {
-                                audio.playExplosion();
-                                ssTakeDamage();
-                                createSsParticle(t.x, t.y, '#ef4444', 10);
-                                ssTargets.splice(i, 1);
-                                ssBullets.splice(j, 1);
-                                break; 
+                                audio.playExplosion(); ssTakeDamage(); createSsParticle(t.x, t.y, '#ef4444', 10);
+                                ssTargets.splice(i, 1); ssBullets.splice(j, 1); break; 
                             }
                         }
                     }
@@ -2354,120 +3203,50 @@ class ChiptuneEngine {
             }
 
             if (ssState === 'boss' && ssBoss.active) {
-                // Pomon tilakone
                 if (ssBoss.state === 'entering') {
-                    ssBoss.x -= 2;
-                    if (ssBoss.x <= canvasWidth - ssBoss.width - 20) {
-                        ssBoss.state = 'fighting';
-                        ssBoss.lastCharge = ssTime;
-                    }
+                    ssBoss.x -= 2; if (ssBoss.x <= canvasWidth - ssBoss.width - 20) { ssBoss.state = 'fighting'; ssBoss.lastCharge = ssTime; }
                 } 
                 else if (ssBoss.state === 'fleeing') {
-                    ssBoss.x += 4; // Pomo pakenee oikealle
-                    if (ssBoss.x > canvasWidth + 100) {
-                        endBossPhase(ssBoss.phase + 1);
-                    }
+                    ssBoss.x += 4; if (ssBoss.x > canvasWidth + 100) endBossPhase(ssBoss.phase + 1);
                 } 
                 else if (ssBoss.state === 'fighting') {
-                    // Pomon liikuttelu
                     if (!ssBoss.vy) ssBoss.vy = 2;
-                    
-                    if (ssBoss.phase === 3 && ssBoss.isCharging) {
-                        ssBoss.vy = 0; // Pysähtyy lataamaan tila 3:ssa
-                    } else if (ssBoss.phase === 3) {
-                        ssBoss.vy = Math.sign(ssBoss.vy) * 4;
-                    } else {
-                        ssBoss.vy = Math.sign(ssBoss.vy) * 2;
-                    }
-                    
+                    if (ssBoss.phase === 3 && ssBoss.isCharging) { ssBoss.vy = 0; } else if (ssBoss.phase === 3) { ssBoss.vy = Math.sign(ssBoss.vy) * 4; } else { ssBoss.vy = Math.sign(ssBoss.vy) * 2; }
                     ssBoss.y += ssBoss.vy;
-                    
-                    if (ssBoss.y < 60) {
-                        ssBoss.y = 60;
-                        ssBoss.vy *= -1;
-                    }
-                    if (ssBoss.y > canvasHeight - ssBoss.height - 20) {
-                        ssBoss.y = canvasHeight - ssBoss.height - 20;
-                        ssBoss.vy *= -1;
-                    }
-
-                    // Suojakilpilogiikka vaiheissa 2 ja 3
+                    if (ssBoss.y < 60) { ssBoss.y = 60; ssBoss.vy *= -1; }
+                    if (ssBoss.y > canvasHeight - ssBoss.height - 20) { ssBoss.y = canvasHeight - ssBoss.height - 20; ssBoss.vy *= -1; }
                     if (ssBoss.phase > 1) {
-                        let cycle = ssBoss.phase === 3 ? 5000 : 7000;
-                        let duration = ssBoss.phase === 3 ? 3000 : 2000;
+                        let cycle = ssBoss.phase === 3 ? 5000 : 7000; let duration = ssBoss.phase === 3 ? 3000 : 2000;
                         if (ssTime - ssBoss.shieldTimer > cycle) {
-                            ssBoss.shield = true;
-                            if (ssTime - ssBoss.shieldTimer > cycle + duration) {
-                                ssBoss.shield = false; ssBoss.shieldTimer = ssTime;
-                            }
+                            ssBoss.shield = true; if (ssTime - ssBoss.shieldTimer > cycle + duration) { ssBoss.shield = false; ssBoss.shieldTimer = ssTime; }
                         }
                     }
-
-                    // Vaihe 3: Energiaiskun lataaminen
                     if (ssBoss.phase === 3) {
-                        if (!ssBoss.isCharging && ssTime - ssBoss.lastCharge > 6000) {
-                            ssBoss.isCharging = true;
-                            ssBoss.chargeStart = ssTime;
-                        }
-                        
+                        if (!ssBoss.isCharging && ssTime - ssBoss.lastCharge > 6000) { ssBoss.isCharging = true; ssBoss.chargeStart = ssTime; }
                         if (ssBoss.isCharging) {
-                            // Visuaalinen lataus (energiahiukkasia)
-                            if (Math.random() < 0.3) {
-                                createSsParticle(ssBoss.x + ssBoss.width/2 + (Math.random()*120-60), ssBoss.y + ssBoss.height/2 + (Math.random()*120-60), '#a855f7', 1);
-                            }
-                            
-                            // Tulitus
+                            if (Math.random() < 0.3) createSsParticle(ssBoss.x + ssBoss.width/2 + (Math.random()*120-60), ssBoss.y + ssBoss.height/2 + (Math.random()*120-60), '#a855f7', 1);
                             if (ssTime - ssBoss.chargeStart > 2000) {
-                                ssBoss.isCharging = false;
-                                ssBoss.lastCharge = ssTime;
-                                audio.playExplosion();
-                                triggerSsShake(600, 8); // Tärinä suuren iskun yhteydessä
-                                
-                                // Viuhkamainen ammuskuvio
+                                ssBoss.isCharging = false; ssBoss.lastCharge = ssTime; audio.playExplosion(); triggerSsShake(600, 8);
                                 for(let angle = -0.4; angle <= 0.4; angle += 0.2) {
-                                    ssEnemyBullets.push({
-                                        x: ssBoss.x, y: ssBoss.y + ssBoss.height/2,
-                                        speed: 6, vx: -Math.cos(angle)*6, vy: Math.sin(angle)*6,
-                                        width: 25, height: 25, isEnergyBall: true
-                                    });
+                                    ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2, speed: 6, vx: -Math.cos(angle)*6, vy: Math.sin(angle)*6, width: 25, height: 25, isEnergyBall: true });
                                 }
                             }
                         }
                     }
-
-                    // Normaali ampuminen
                     let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 800);
                     if (ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield && !ssBoss.isCharging) {
-                        audio.playLaser();
-                        ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*40-20), speed: 7, width: 20, height: 4 });
-                        ssLastEnemyShot = ssTime;
+                        audio.playLaser(); ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*40-20), speed: 7, width: 20, height: 4 }); ssLastEnemyShot = ssTime;
                     }
-
-                    // Osumat pomoon
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
-                        // Laajennettu hitbox isomman koon vuoksi
                         if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 90) {
                             ssBullets.splice(j, 1);
-                            if (ssBoss.shield) {
-                                createSsParticle(b.x, b.y, '#3b82f6', 5);
-                            } else {
-                                audio.playHit();
-                                ssBoss.hp--;
-                                createSsParticle(b.x, b.y, '#f59e0b', 10);
+                            if (ssBoss.shield) { createSsParticle(b.x, b.y, '#3b82f6', 5); } else {
+                                audio.playHit(); ssBoss.hp--; createSsParticle(b.x, b.y, '#f59e0b', 10);
                                 document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
-                                
-                                // TARKISTETAAN SIIRTYYKÖ POMO PAKOTILAAN VAI RÄJÄHTÄÄKÖ
-                                if (ssBoss.hp <= 60 && ssBoss.phase === 1 && ssBoss.state === 'fighting') {
-                                    ssBoss.state = 'fleeing';
-                                } else if (ssBoss.hp <= 30 && ssBoss.phase === 2 && ssBoss.state === 'fighting') {
-                                    ssBoss.state = 'fleeing';
-                                } else if (ssBoss.hp <= 0 && ssBoss.phase === 3 && ssBoss.state === 'fighting') {
-                                    ssBoss.active = false;
-                                    audio.playExplosion();
-                                    createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
-                                    document.getElementById('ss-boss-hud').classList.add('hidden');
-                                    ssGameOver(true);
+                                if (ssBoss.hp <= 60 && ssBoss.phase === 1 && ssBoss.state === 'fighting') { ssBoss.state = 'fleeing'; } else if (ssBoss.hp <= 30 && ssBoss.phase === 2 && ssBoss.state === 'fighting') { ssBoss.state = 'fleeing'; } else if (ssBoss.hp <= 0 && ssBoss.phase === 3 && ssBoss.state === 'fighting') {
+                                    ssBoss.active = false; audio.playExplosion(); createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
+                                    document.getElementById('ss-boss-hud').classList.add('hidden'); ssGameOver(true);
                                 }
                             }
                         }
@@ -2481,207 +3260,14 @@ class ChiptuneEngine {
             }
         }
 
-        function ssTakeDamage() {
-            audio.playWrong();
-            combo = 0; ssPlayer.hp--; 
-            ssPlayer.powerUp = null; // Osuma vie powerupin
-            updateHUD();
-            triggerSsShake(400, 6);
-            
-            const flash = document.createElement('div');
-            flash.className = 'absolute inset-0 bg-red-600 z-50 opacity-50 transition-opacity pointer-events-none duration-100';
-            document.body.appendChild(flash);
-            setTimeout(() => { flash.style.opacity='0'; setTimeout(()=>flash.remove(),100); }, 50);
-            if (ssPlayer.hp <= 0) ssGameOver(false);
-        }
-
-        function ssGameOver(isVictory) {
-            ssState = isVictory ? 'victory' : 'gameover';
-            document.getElementById('ss-btn-shoot').classList.add('hidden');
-            if (isVictory) {
-                localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
-                checkUnlockedModes();
-                showOverlay(`<h2 class="text-3xl font-pixel text-green-400 mb-4">VICTORY!</h2>
-                             <p class="text-white font-pixel">Captain Conjugator on lyöty!</p>
-                             <button onclick="enterMainMenu()" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full menu-active">JATKA</button>`);
-            } else {
-                showOverlay(`<h2 class="text-3xl font-pixel text-red-500 mb-4">GAME OVER</h2>
-                             <button onclick="initSpaceShooter(); hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full menu-active">Yritä uudelleen</button>
-                             <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
-            }
-        }
-
-        function createSsParticle(x, y, color, count) {
-            for(let i=0; i<count; i++) {
-                ssParticles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1.0, color: color });
-            }
-        }
-
-        function drawSpaceShooter() {
-            ctx.save();
-            if (ssShakeTime > 0) {
-                ctx.translate((Math.random()-0.5)*ssShakeMag, (Math.random()-0.5)*ssShakeMag);
-            }
-
-            let grad = ctx.createLinearGradient(0,0,0,canvasHeight);
-            grad.addColorStop(0, '#0a0a2a'); grad.addColorStop(1, '#000000');
-            ctx.fillStyle = grad; ctx.fillRect(0,0,canvasWidth,canvasHeight);
-
-            // Taustan parallaksisumut
-            ssNebulas.forEach(n => {
-                let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius);
-                g.addColorStop(0, n.color);
-                g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = g;
-                ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2); ctx.fill();
-            });
-
-            // Tähdet
-            ctx.fillStyle = '#fff';
-            ssStars.forEach(s => { ctx.globalAlpha = s.size/4; ctx.fillRect(s.x, s.y, s.size, s.size); });
-            ctx.globalAlpha = 1.0;
-
-            // Pakokaasut
-            ssExhausts.forEach(e => {
-                ctx.globalAlpha = e.life;
-                ctx.fillStyle = e.color;
-                ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI*2); ctx.fill();
-            });
-            ctx.globalAlpha = 1.0;
-
-            // Pelaajan alus
-            if (ssState === 'playing' || ssState === 'boss') {
-                if (playerImg.complete && playerImg.width > 0) {
-                    let aspect = playerImg.width / playerImg.height;
-                    let drawW = ssPlayer.width;
-                    let drawH = ssPlayer.width / aspect;
-                    if (drawH > ssPlayer.height) { 
-                        drawH = ssPlayer.height; 
-                        drawW = ssPlayer.height * aspect; 
-                    }
-                    ctx.drawImage(playerImg, Math.round(ssPlayer.x + (ssPlayer.width - drawW)/2), Math.round(ssPlayer.y + (ssPlayer.height - drawH)/2), drawW, drawH);
-                } else {
-                    ctx.fillStyle = '#0ff'; ctx.fillRect(ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
-                }
-            }
-
-            // Power-up piirto
-            ssPowerUps.forEach(p => {
-                ctx.fillStyle = p.type === 'spread' ? '#ef4444' : '#3b82f6';
-                ctx.fillRect(p.x, p.y, p.width, p.height);
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-                ctx.strokeRect(p.x, p.y, p.width, p.height);
-                ctx.fillStyle = '#fff'; ctx.font = '14px "Press Start 2P"';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(p.type === 'spread' ? 'S' : 'F', p.x + p.width/2, p.y + p.height/2 + 1);
-            });
-
-            // Force Pod piirto
-            if (ssPlayer.powerUp === 'force') {
-                ctx.fillStyle = '#3b82f6';
-                ctx.beginPath(); ctx.arc(ssForceX, ssForceY, 15, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(ssForceX, ssForceY, 5, 0, Math.PI*2); ctx.fill();
-            }
-
-            ctx.fillStyle = '#fef08a';
-            ssBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-            
-            // Pomon ammukset ja energiapallot
-            ssEnemyBullets.forEach(b => {
-                if (b.isEnergyBall) {
-                    ctx.fillStyle = '#a855f7'; 
-                    ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.width/2, 0, Math.PI*2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = '#f3e8ff';
-                    ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.width/4, 0, Math.PI*2);
-                    ctx.fill();
-                } else {
-                    ctx.fillStyle = '#ef4444';
-                    ctx.fillRect(b.x, b.y, b.width, b.height);
-                }
-            });
-
-            // Health Pack -piirtologiikka
-            ssHearts.forEach(h => {
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2); ctx.fill();
-                
-                ctx.fillStyle = '#ef4444';
-                ctx.fillRect(h.x - 7, h.y - 2, 14, 4); // vaakapalkki
-                ctx.fillRect(h.x - 2, h.y - 7, 4, 14); // pystypalkki
-            });
-
-            // Pomun alus
-            if (ssBoss.active) {
-                if (enemyImg.complete && enemyImg.width > 0) {
-                    let aspect = enemyImg.width / enemyImg.height;
-                    let drawW = ssBoss.width;
-                    let drawH = ssBoss.width / aspect;
-                    if (drawH > ssBoss.height) { 
-                        drawH = ssBoss.height; 
-                        drawW = ssBoss.height * aspect; 
-                    }
-                    ctx.drawImage(enemyImg, Math.round(ssBoss.x + (ssBoss.width - drawW)/2), Math.round(ssBoss.y + (ssBoss.height - drawH)/2), drawW, drawH);
-                } else {
-                    ctx.fillStyle = '#f0f'; ctx.fillRect(ssBoss.x, ssBoss.y, ssBoss.width, ssBoss.height);
-                }
-                
-                if (ssBoss.shield) {
-                    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                    ctx.beginPath(); ctx.arc(ssBoss.x+ssBoss.width/2, ssBoss.y+ssBoss.height/2, 110, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = 'rgba(59,130,246,0.3)'; ctx.fill();
-                }
-            }
-
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ssTargets.forEach(t => {
-                ctx.fillStyle = 'rgba(15,23,42,0.8)'; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
-                ctx.fillRect(Math.round(t.x), Math.round(t.y), t.width, t.height);
-                ctx.strokeRect(Math.round(t.x), Math.round(t.y), t.width, t.height);
-                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"';
-                ctx.fillText(t.text, Math.round(t.x + t.width/2), Math.round(t.y + t.height/2));
-            });
-
-            if (ssState === 'playing' && ssCurrentVerb) {
-                ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(canvasWidth/2 - 200, 10, 400, 50);
-                ctx.strokeStyle = '#ffd700'; ctx.strokeRect(canvasWidth/2 - 200, 10, 400, 50);
-                ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"';
-                ctx.fillText(`TUHOA: ${ssCurrentVerb.verb.finnish.toUpperCase()}`, canvasWidth/2, 25);
-                ctx.fillStyle = '#38bdf8'; ctx.font = '10px "Press Start 2P"';
-                ctx.fillText(`${ssCurrentVerb.formName}`, canvasWidth/2, 45);
-            }
-
-            ssParticles.forEach(p => {
-                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
-                ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4);
-            });
-            ctx.globalAlpha = 1.0;
-
-            // Tekstit (esim. Power Up)
-            ssTexts.forEach(t => {
-                ctx.globalAlpha = t.life;
-                ctx.font = '12px "Press Start 2P"';
-                ctx.fillStyle = '#000'; ctx.fillText(t.text, t.x + 2, t.y + 2);
-                ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
-            });
-            ctx.globalAlpha = 1.0;
-
-            ctx.restore(); // Palautetaan ruutu tärinän jäljiltä
-        }
-
         // ==========================================
-        // PÄÄPELISILMUKKA
-        // ==========================================
-        let ssLastFrameTime = 0;
         function gameLoop(timestamp) {
             if (gameMode === 'spaceshooter') {
                 updateSpaceShooter(timestamp);
                 drawSpaceShooter();
+            } else if (gameMode === 'runner') {
+                updateRunner(timestamp);
+                drawRunner();
             } else {
                 time = timestamp;
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
