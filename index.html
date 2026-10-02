@@ -177,18 +177,21 @@
             40%, 80% { transform: translateX(6px); }
         }
         .animate-shake { animation: shake 0.4s ease-in-out; }
-        
-        /* LOGON ANIMAATIO */
+
+        /* LOGON ANIMAATIO (HIDAS) */
         @keyframes slideDownLogo {
             0% { transform: translateY(-150%); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
         }
         .logo-slide-in {
-            animation: slideDownLogo 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: slideDownLogo 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
     </style>
 </head>
 <body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
+
+    <!-- GLOBAL LOGO (Näkyy splash- ja main menu -ruuduissa) -->
+    <img id="game-logo" src="logoo.png" alt="Pelin logo" class="fixed top-8 right-8 md:top-12 md:right-16 lg:top-16 lg:right-24 w-96 sm:w-[32rem] md:w-[40rem] lg:w-[48rem] z-[85] logo-slide-in pointer-events-none">
 
     <!-- GLOBAL OVERLAY PANEL -->
     <div id="overlay-panel" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] flex flex-col items-center justify-center p-4 text-center hidden">
@@ -200,13 +203,10 @@
         <div class="text-white font-pixel text-2xl sm:text-4xl animate-pulse pixel-shadow tracking-widest mb-10">PRESS ENTER</div>
     </div>
 
-    <!-- MAIN MENU SCREEN -->
-    <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-12 sm:pb-20 bg-black bg-cover bg-center hidden" style="background-image: url('herostartscreen.png');">
+    <!-- MAIN MENU SCREEN (Valikko oikealla alhaalla) -->
+    <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-end justify-end pb-12 pr-8 sm:pb-20 md:pr-16 lg:pr-24 bg-black bg-cover bg-center hidden" style="background-image: url('herostartscreen.png');">
         
-        <!-- PELIN LOGO -->
-        <img src="logoo.png" alt="Pelin logo" class="absolute top-10 right-10 md:top-16 md:right-16 lg:top-24 lg:right-32 w-48 sm:w-64 md:w-80 lg:w-96 z-0 logo-slide-in pointer-events-none">
-
-        <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-4">
+        <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-[260px] sm:max-w-[320px]">
             <div class="jrpg-box p-5 sm:p-7 w-full flex flex-col gap-4 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                 <button onclick="newGame()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 menu-active">
                     <span>NEW GAME</span>
@@ -812,6 +812,10 @@ function startCutscene(sceneId, callback) {
     currentCutscene = scene;
     currentLineIndex = 0;
     cutsceneCallback = callback;
+    
+    // Piilotetaan logo cutscenen ajaksi
+    const gameLogo = document.getElementById('game-logo');
+    if (gameLogo) gameLogo.classList.add('hidden');
 
     document.getElementById('main-menu-screen').classList.add('hidden');
     document.getElementById('game-canvas-wrapper').classList.add('hidden');
@@ -1329,6 +1333,11 @@ class ChiptuneEngine {
         function enterMainMenu() {
             document.getElementById('splash-screen').classList.add('hidden');
             document.getElementById('main-menu-screen').classList.remove('hidden');
+            
+            // Varmistetaan että logo on yhä näkyvissä (jos pelaaja palaa menuun peliin mentyään)
+            const gameLogo = document.getElementById('game-logo');
+            if(gameLogo) gameLogo.classList.remove('hidden');
+
             startScreen.classList.add('hidden');
             modeSelectScreen.classList.add('hidden');
             gameCanvasWrapper.classList.add('hidden');
@@ -1516,6 +1525,10 @@ class ChiptuneEngine {
         });
 
         function startGameFromMenu() {
+            // Piilotetaan logo
+            const gameLogo = document.getElementById('game-logo');
+            if (gameLogo) gameLogo.classList.add('hidden');
+            
             document.getElementById('main-menu-screen').classList.add('hidden');
             gameCanvasWrapper.classList.add('hidden');
             dictionarySection.classList.add('hidden');
