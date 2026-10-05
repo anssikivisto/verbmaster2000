@@ -1370,7 +1370,7 @@ class ChiptuneEngine {
         }
 
         // ==========================================
-        // SPACE SHOOTER GLOBAALIT
+        // SPACE SHOOTER GLOBAALIT & FUNKTIOT (KORJATTU)
         // ==========================================
         let ssKeys = {};
         let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5, powerUp: null, forceAngle: 0 };
@@ -1387,6 +1387,7 @@ class ChiptuneEngine {
         let ssTexts = [];
         let ssShakeTime = 0;
         let ssShakeMag = 0;
+        let ssLastFrameTime = 0;
         
         let ssBoss = { 
             active: false, x: 800, y: 200, width: 200, height: 200,
@@ -1403,6 +1404,285 @@ class ChiptuneEngine {
         let ssLastHeartSpawn = 0;
         let ssTime = 0;
 
+        function initSpaceShooter() {
+            if (activeVerbs.length === 0) activeVerbs = [...VERB_DATA];
+            
+            ssPlayer.hp = ssPlayer.maxHp;
+            ssPlayer.powerUp = null;
+            ssPlayer.x = 50;
+            ssPlayer.y = canvasHeight / 2 - ssPlayer.height / 2;
+            
+            ssBullets = [];
+            ssEnemyBullets = [];
+            ssTargets = [];
+            ssParticles = [];
+            ssExhausts = [];
+            ssPowerUps = [];
+            ssHearts = [];
+            ssTexts = [];
+            ssCorrectWords = 0;
+            
+            ssBoss.active = false;
+            ssBoss.hp = ssBoss.maxHp;
+            ssBoss.phase = 1;
+            ssBoss.shield = false;
+            
+            document.getElementById('ss-boss-hud').classList.add('hidden');
+            
+            ssStars = [];
+            for(let i=0; i<100; i++) {
+                ssStars.push({x: Math.random()*canvasWidth, y: Math.random()*canvasHeight, speed: Math.random()*2+0.5});
+            }
+            ssNebulas = [];
+            for(let i=0; i<3; i++) {
+                ssNebulas.push({
+                    x: Math.random()*canvasWidth, 
+                    y: Math.random()*canvasHeight, 
+                    radius: Math.random()*100+50, 
+                    speed: Math.random()*0.5+0.1, 
+                    color: `rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},0.1)`
+                });
+            }
+            
+            ssState = 'playing';
+            updateHUD();
+            
+            ssLastTargetSpawn = ssTime;
+            ssLastHeartSpawn = ssTime;
+        }
+
+        function drawSpaceShooter() {
+            ctx.save();
+            if (ssShakeTime > 0) {
+                ctx.translate((Math.random()-0.5)*ssShakeMag, (Math.random()-0.5)*ssShakeMag);
+            }
+            
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            
+            ssNebulas.forEach(n => {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
+                ctx.fillStyle = n.color;
+                ctx.fill();
+            });
+            
+            ctx.fillStyle = '#ffffff';
+            ssStars.forEach(s => {
+                ctx.globalAlpha = Math.random() > 0.8 ? 0.5 : 1.0;
+                ctx.fillRect(s.x, s.y, 2, 2);
+            });
+            ctx.globalAlpha = 1.0;
+            
+            if (ssState === 'playing' || ssState === 'boss') {
+                ssExhausts.forEach(e => {
+                    ctx.fillStyle = e.color;
+                    ctx.globalAlpha = e.life;
+                    ctx.fillRect(e.x, e.y, e.size, e.size);
+                });
+                ctx.globalAlpha = 1.0;
+
+                ctx.drawImage(playerImg, ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
+                
+                if (ssPlayer.powerUp === 'force') {
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.arc(ssForceX, ssForceY, 15, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fill();
+                }
+
+                if (ssBoss.active) {
+                    ctx.drawImage(enemyImg, ssBoss.x, ssBoss.y, ssBoss.width, ssBoss.height);
+                    if (ssBoss.shield) {
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.arc(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, ssBoss.width/2 + 20, 0, Math.PI*2);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.fillStyle = '#fef08a';
+                ssBullets.forEach(b => {
+                    ctx.fillRect(b.x, b.y, b.width, b.height);
+                });
+
+                ssEnemyBullets.forEach(b => {
+                    ctx.fillStyle = b.isEnergyBall ? '#a855f7' : '#ef4444';
+                    if (b.isEnergyBall) {
+                        ctx.beginPath();
+                        ctx.arc(b.x, b.y, b.width/2, 0, Math.PI*2);
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(b.x, b.y, b.width, b.height);
+                    }
+                });
+
+                ssTargets.forEach(t => {
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(t.x, t.y, t.width, t.height);
+                    ctx.strokeRect(t.x, t.y, t.width, t.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '12px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(t.text, t.x + t.width/2, t.y + t.height/2 + 4);
+                });
+
+                ssPowerUps.forEach(p => {
+                    ctx.fillStyle = p.type === 'spread' ? '#ef4444' : '#38bdf8';
+                    ctx.fillRect(p.x, p.y, p.width, p.height);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px "Press Start 2P"';
+                    ctx.fillText('P', p.x + p.width/2, p.y + p.height/2 + 3);
+                });
+
+                ctx.fillStyle = '#ef4444';
+                ssHearts.forEach(h => {
+                    ctx.beginPath();
+                    ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2);
+                    ctx.fill();
+                });
+
+                ssParticles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                });
+                ctx.globalAlpha = 1.0;
+                
+                if (ssState === 'playing' && ssCurrentVerb) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '16px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    const forms = ['1. MUOTO', '2. MUOTO', '3. MUOTO'];
+                    ctx.fillText(`AMMU: ${ssCurrentVerb.verb.finnish.toUpperCase()} -> ${forms[ssCurrentVerb.formIndex]}`, canvasWidth/2, 40);
+                }
+            }
+            
+            ssTexts.forEach(t => {
+                ctx.fillStyle = t.color;
+                ctx.globalAlpha = t.life;
+                ctx.font = '14px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.fillText(t.text, t.x, t.y);
+            });
+            ctx.globalAlpha = 1.0;
+            
+            ctx.restore();
+        }
+
+        function ssShoot() {
+            if (ssState !== 'playing' && ssState !== 'boss') return;
+            if (ssTime - ssLastShot < 200) return;
+            
+            audio.playLaser();
+            
+            if (ssPlayer.powerUp === 'spread') {
+                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2, width: 15, height: 5, vx: 10, vy: 0});
+                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 - 10, width: 15, height: 5, vx: 10, vy: -2});
+                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 + 10, width: 15, height: 5, vx: 10, vy: 2});
+            } else {
+                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2, width: 20, height: 6, vx: 12, vy: 0});
+            }
+            
+            ssLastShot = ssTime;
+        }
+
+        function ssTakeDamage() {
+            audio.playWrong();
+            triggerSsShake(300, 5);
+            createSsParticle(ssPlayer.x + ssPlayer.width/2, ssPlayer.y + ssPlayer.height/2, '#ef4444', 30);
+            
+            if (ssPlayer.powerUp) {
+                ssPlayer.powerUp = null;
+            } else {
+                ssPlayer.hp--;
+                combo = 0;
+                updateHUD();
+                if (ssPlayer.hp <= 0) {
+                    ssGameOver(false);
+                }
+            }
+        }
+
+        function spawnSsTargets() {
+            if (activeVerbs.length === 0) return;
+            
+            const verb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+            const fIdx = Math.floor(Math.random() * 3);
+            ssCurrentVerb = { verb: verb, formIndex: fIdx };
+            
+            const forms = ['base', 'past', 'participle'];
+            const correctText = verb[forms[fIdx]].split('/')[0].trim();
+            
+            const numTargets = 3;
+            let texts = [correctText];
+            
+            while(texts.length < numTargets) {
+                const randV = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+                const randF = forms[Math.floor(Math.random() * 3)];
+                const randText = randV[randF].split('/')[0].trim();
+                if (!texts.includes(randText)) texts.push(randText);
+            }
+            
+            texts.sort(() => Math.random() - 0.5);
+            
+            const startY = 100;
+            const spacing = (canvasHeight - 200) / numTargets;
+            
+            texts.forEach((text, i) => {
+                ctx.font = '12px "Press Start 2P"';
+                const tw = ctx.measureText(text).width + 20;
+                ssTargets.push({
+                    x: canvasWidth + Math.random()*100,
+                    y: startY + i * spacing + (Math.random()*40 - 20),
+                    width: Math.max(tw, 80),
+                    height: 30,
+                    speed: 2 + Math.random()*1.5,
+                    text: text
+                });
+            });
+        }
+
+        function endBossPhase(nextPhase) {
+            ssBoss.phase = nextPhase;
+            ssBoss.maxHp = nextPhase === 2 ? 120 : 150;
+            ssBoss.hp = ssBoss.maxHp;
+            ssBoss.state = 'entering';
+            ssBoss.x = canvasWidth + 100;
+            ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
+            document.getElementById('ss-boss-hp-bar').style.width = '100%';
+        }
+
+        function ssGameOver(win) {
+            ssState = 'menu';
+            audio.stopBGM();
+            
+            if (win) {
+                addScore(500);
+                showOverlay(`
+                    <h2 class="text-3xl sm:text-4xl font-pixel text-green-400 pixel-shadow mb-5">VOITTO!</h2>
+                    <div class="jrpg-box bg-black p-5 mb-5">
+                        <p class="text-yellow-300 font-pixel text-base">Sait bossin kukistettua!</p>
+                        <p class="text-cyan-300 font-pixel text-base mt-2">Pisteet: ${score}</p>
+                    </div>
+                    <button onclick="hideOverlay(); enterMainMenu();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Palaa valikkoon</button>
+                `);
+            } else {
+                showOverlay(`
+                    <h2 class="text-3xl sm:text-4xl font-pixel text-red-500 pixel-shadow mb-5">GAME OVER</h2>
+                    <div class="jrpg-box bg-black p-5 mb-5">
+                        <p class="text-yellow-300 font-pixel text-base">Pisteet: ${score}</p>
+                    </div>
+                    <button onclick="resetGame(); switchMode('spaceshooter');" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Yritä uudelleen</button>
+                `);
+            }
+        }
+
         function triggerSsShake(duration, mag) {
             ssShakeTime = duration;
             ssShakeMag = mag;
@@ -1414,6 +1694,19 @@ class ChiptuneEngine {
 
         function createSsText(x, y, text, color) {
             ssTexts.push({x, y, text, color, life: 1.0, vy: -1});
+        }
+        
+        function createSsParticle(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                ssParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random()-0.5)*8,
+                    vy: (Math.random()-0.5)*8,
+                    life: 1.0,
+                    size: Math.random()*4+2,
+                    color: color
+                });
+            }
         }
 
         // ==========================================
@@ -1952,7 +2245,7 @@ class ChiptuneEngine {
                     canvasHud.classList.remove('hidden');
                     initSpaceShooter();
                 } else if (mode === 'runner') {
-                    canvasHud.classList.add('hidden'); // Runner piirtää oman HUDinsa Canvakselle
+                    canvasHud.classList.add('hidden'); 
                     initTrGame();
                 } else if (mode === 'cards') {
                     document.getElementById('cards-ui').classList.remove('hidden');
