@@ -1373,8 +1373,8 @@ class ChiptuneEngine {
         // SPACE SHOOTER GLOBAALIT & FUNKTIOT (KORJATTU)
         // ==========================================
         let ssKeys = {};
-        let ssPlayer = { x: 50, y: 250, width: 96, height: 96, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5, powerUp: null, forceAngle: 0 };
-        let ssForceX = 0; let ssForceY = 0;
+        // Pelaajan mitat uusittu, ei enää 96x96 venytetty vaan laajempi 110x70
+        let ssPlayer = { x: 50, y: 250, width: 110, height: 70, speed: 5, maxSpeed: 5, vx: 0, vy: 0, hp: 3, maxHp: 5, shield: 0 };
         let ssBullets = [];
         let ssEnemyBullets = [];
         let ssTargets = [];
@@ -1390,7 +1390,7 @@ class ChiptuneEngine {
         let ssLastFrameTime = 0;
         
         let ssBoss = { 
-            active: false, x: 800, y: 200, width: 200, height: 200,
+            active: false, x: 800, y: 200, width: 220, height: 150,
             hp: 90, maxHp: 90, phase: 1, shield: false, shieldTimer: 0, vy: 0, 
             state: 'entering', isCharging: false, lastCharge: 0, chargeStart: 0
         };
@@ -1408,7 +1408,7 @@ class ChiptuneEngine {
             if (activeVerbs.length === 0) activeVerbs = [...VERB_DATA];
             
             ssPlayer.hp = ssPlayer.maxHp;
-            ssPlayer.powerUp = null;
+            ssPlayer.shield = 0; // suojakilven ajastin
             ssPlayer.x = 50;
             ssPlayer.y = canvasHeight / 2 - ssPlayer.height / 2;
             
@@ -1426,6 +1426,7 @@ class ChiptuneEngine {
             ssBoss.hp = ssBoss.maxHp;
             ssBoss.phase = 1;
             ssBoss.shield = false;
+            ssBoss.state = 'entering';
             
             document.getElementById('ss-boss-hud').classList.add('hidden');
             
@@ -1482,15 +1483,16 @@ class ChiptuneEngine {
                 });
                 ctx.globalAlpha = 1.0;
 
+                // Piirretään pelaaja
                 ctx.drawImage(playerImg, ssPlayer.x, ssPlayer.y, ssPlayer.width, ssPlayer.height);
                 
-                if (ssPlayer.powerUp === 'force') {
+                // Piirretään pelaajan uusi suoja-powerup
+                if (ssPlayer.shield > ssTime) {
                     ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.arc(ssForceX, ssForceY, 15, 0, Math.PI*2);
+                    ctx.arc(ssPlayer.x + ssPlayer.width/2, ssPlayer.y + ssPlayer.height/2, Math.max(ssPlayer.width, ssPlayer.height)/2 + 10, 0, Math.PI*2);
                     ctx.stroke();
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.fill();
                 }
 
                 if (ssBoss.active) {
@@ -1499,7 +1501,7 @@ class ChiptuneEngine {
                         ctx.strokeStyle = '#3b82f6';
                         ctx.lineWidth = 4;
                         ctx.beginPath();
-                        ctx.arc(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, ssBoss.width/2 + 20, 0, Math.PI*2);
+                        ctx.arc(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, ssBoss.width/2 + 15, 0, Math.PI*2);
                         ctx.stroke();
                     }
                 }
@@ -1532,19 +1534,28 @@ class ChiptuneEngine {
                     ctx.fillText(t.text, t.x + t.width/2, t.y + t.height/2 + 4);
                 });
 
+                // Uusi suoja-powerup ulkoasu (sininen pallo "S" kirjaimella)
                 ssPowerUps.forEach(p => {
-                    ctx.fillStyle = p.type === 'spread' ? '#ef4444' : '#38bdf8';
-                    ctx.fillRect(p.x, p.y, p.width, p.height);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                    ctx.fill();
                     ctx.fillStyle = '#fff';
                     ctx.font = '10px "Press Start 2P"';
-                    ctx.fillText('P', p.x + p.width/2, p.y + p.height/2 + 3);
+                    ctx.textAlign = 'center';
+                    ctx.fillText('S', p.x, p.y + 4);
                 });
 
-                ctx.fillStyle = '#ef4444';
+                // Health Pack ulkoasu uusittu valkoiseksi + punainen risti
                 ssHearts.forEach(h => {
+                    ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.arc(h.x, h.y, h.radius, 0, Math.PI*2);
                     ctx.fill();
+                    ctx.fillStyle = '#ef4444';
+                    // Risti
+                    ctx.fillRect(h.x - h.radius/2, h.y - h.radius/6, h.radius, h.radius/3);
+                    ctx.fillRect(h.x - h.radius/6, h.y - h.radius/2, h.radius/3, h.radius);
                 });
 
                 ssParticles.forEach(p => {
@@ -1580,32 +1591,29 @@ class ChiptuneEngine {
             if (ssTime - ssLastShot < 200) return;
             
             audio.playLaser();
-            
-            if (ssPlayer.powerUp === 'spread') {
-                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2, width: 15, height: 5, vx: 10, vy: 0});
-                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 - 10, width: 15, height: 5, vx: 10, vy: -2});
-                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2 + 10, width: 15, height: 5, vx: 10, vy: 2});
-            } else {
-                ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2, width: 20, height: 6, vx: 12, vy: 0});
-            }
-            
+            // Poistettu spread, käytetään yhtä asetta aina
+            ssBullets.push({x: ssPlayer.x + ssPlayer.width, y: ssPlayer.y + ssPlayer.height/2, width: 20, height: 6, vx: 12, vy: 0});
             ssLastShot = ssTime;
         }
 
         function ssTakeDamage() {
+            // Jos suoja on päällä, estetään damage
+            if (ssPlayer.shield > ssTime) {
+                audio.playHit();
+                createSsParticle(ssPlayer.x + ssPlayer.width/2, ssPlayer.y + ssPlayer.height/2, '#3b82f6', 20);
+                ssPlayer.shield = 0; // Suoja rikkoutuu osumasta
+                return;
+            }
+            
             audio.playWrong();
             triggerSsShake(300, 5);
             createSsParticle(ssPlayer.x + ssPlayer.width/2, ssPlayer.y + ssPlayer.height/2, '#ef4444', 30);
             
-            if (ssPlayer.powerUp) {
-                ssPlayer.powerUp = null;
-            } else {
-                ssPlayer.hp--;
-                combo = 0;
-                updateHUD();
-                if (ssPlayer.hp <= 0) {
-                    ssGameOver(false);
-                }
+            ssPlayer.hp--;
+            combo = 0;
+            updateHUD();
+            if (ssPlayer.hp <= 0) {
+                ssGameOver(false);
             }
         }
 
@@ -1646,16 +1654,6 @@ class ChiptuneEngine {
                     text: text
                 });
             });
-        }
-
-        function endBossPhase(nextPhase) {
-            ssBoss.phase = nextPhase;
-            ssBoss.maxHp = nextPhase === 2 ? 120 : 150;
-            ssBoss.hp = ssBoss.maxHp;
-            ssBoss.state = 'entering';
-            ssBoss.x = canvasWidth + 100;
-            ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
-            document.getElementById('ss-boss-hp-bar').style.width = '100%';
         }
 
         function ssGameOver(win) {
@@ -3392,12 +3390,6 @@ class ChiptuneEngine {
             if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
             if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
 
-            if (ssPlayer.powerUp === 'force') {
-                ssPlayer.forceAngle += 0.05;
-                ssForceX = ssPlayer.x + ssPlayer.width/2 + Math.cos(ssPlayer.forceAngle)*70;
-                ssForceY = ssPlayer.y + ssPlayer.height/2 + Math.sin(ssPlayer.forceAngle)*70;
-            }
-
             ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
             ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
 
@@ -3413,16 +3405,24 @@ class ChiptuneEngine {
                 if (e.life <= 0) ssExhausts.splice(i, 1);
             }
 
+            // Kilpi-powerupin spawnaus pomotaistelussa
+            if (ssState === 'boss' && ssTime - (window.ssLastShieldSpawn || 0) > 4000 && Math.random() < 0.01) {
+                ssPowerUps.push({ x: canvasWidth, y: 50 + Math.random()*(canvasHeight-100), type: 'shield', radius: 15, speed: 3 });
+                window.ssLastShieldSpawn = ssTime;
+            }
+
             for (let i = ssPowerUps.length - 1; i >= 0; i--) {
                 let p = ssPowerUps[i];
                 p.x -= p.speed;
-                if (p.x < -p.width) { ssPowerUps.splice(i, 1); continue; }
-                if (Math.hypot(p.x - (ssPlayer.x+ssPlayer.width/2), p.y - (ssPlayer.y+ssPlayer.height/2)) < 50) {
+                if (p.x < -p.radius*2) { ssPowerUps.splice(i, 1); continue; }
+                
+                if (Math.hypot(p.x - (ssPlayer.x+ssPlayer.width/2), p.y - (ssPlayer.y+ssPlayer.height/2)) < ssPlayer.width/2 + p.radius) {
                     audio.playCorrect();
-                    ssPlayer.powerUp = p.type;
-                    if (p.type === 'force') ssPlayer.forceAngle = 0;
-                    createSsParticle(ssPlayer.x+ssPlayer.width/2, ssPlayer.y+ssPlayer.height/2, '#fef08a', 20);
-                    createSsText(ssPlayer.x + ssPlayer.width/2, ssPlayer.y - 20, "POWER UP!", "#fef08a");
+                    if (p.type === 'shield') {
+                        ssPlayer.shield = ssTime + 10000; // 10 sekuntia
+                    }
+                    createSsParticle(ssPlayer.x+ssPlayer.width/2, ssPlayer.y+ssPlayer.height/2, '#38bdf8', 20);
+                    createSsText(ssPlayer.x + ssPlayer.width/2, ssPlayer.y - 20, "SHIELD!", "#38bdf8");
                     ssPowerUps.splice(i, 1);
                 }
             }
@@ -3439,11 +3439,11 @@ class ChiptuneEngine {
                 let b = ssEnemyBullets[i]; 
                 if (b.vx !== undefined) { b.x += b.vx; b.y += b.vy; } else { b.x -= b.speed; }
                 if (b.x < -50 || b.y < -50 || b.y > canvasHeight + 50) { ssEnemyBullets.splice(i, 1); continue; }
-                if (ssPlayer.powerUp === 'force' && Math.hypot(b.x - ssForceX, b.y - ssForceY) < 25) {
-                    createSsParticle(b.x, b.y, '#38bdf8', 8); ssEnemyBullets.splice(i, 1); continue;
-                }
-                if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < 35) {
-                    ssEnemyBullets.splice(i, 1); ssTakeDamage();
+                
+                // Osuma pelaajaan
+                if (Math.hypot(b.x - (ssPlayer.x+ssPlayer.width/2), b.y - (ssPlayer.y+ssPlayer.height/2)) < Math.max(ssPlayer.width, ssPlayer.height)/2) {
+                    ssEnemyBullets.splice(i, 1); 
+                    ssTakeDamage();
                 }
             }
 
@@ -3480,10 +3480,16 @@ class ChiptuneEngine {
                             if (t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
                                 audio.playExplosion(); addScore(15); combo++;
                                 createSsParticle(t.x, t.y, '#10b981', 15); ssCorrectWords++;
-                                if (Math.random() < 0.25) ssPowerUps.push({ x: t.x + t.width/2, y: t.y + t.height/2, type: Math.random() < 0.5 ? 'spread' : 'force', width: 24, height: 24, speed: 2 });
+                                
+                                // Bossi saapuu aina 10 sanan välein (HP määrittää loput)
                                 if (ssCorrectWords >= 10) {
-                                    ssState = 'boss'; ssBoss.active = true; ssBoss.state = 'entering'; ssBoss.x = canvasWidth + 100; ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
-                                    document.getElementById('ss-boss-hud').classList.remove('hidden'); document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                                    ssState = 'boss'; 
+                                    ssBoss.active = true; 
+                                    ssBoss.state = 'entering'; 
+                                    ssBoss.x = canvasWidth + 100; 
+                                    ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
+                                    document.getElementById('ss-boss-hud').classList.remove('hidden'); 
+                                    document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
                                 }
                                 ssTargets.length = 0; ssBullets.splice(j, 1); i = -1; break; 
                             } else {
@@ -3496,24 +3502,52 @@ class ChiptuneEngine {
             }
 
             if (ssState === 'boss' && ssBoss.active) {
+                let targetX = ssBoss.phase === 3 ? canvasWidth - ssBoss.width - 150 : canvasWidth - ssBoss.width - 20;
+
                 if (ssBoss.state === 'entering') {
-                    ssBoss.x -= 2; if (ssBoss.x <= canvasWidth - ssBoss.width - 20) { ssBoss.state = 'fighting'; ssBoss.lastCharge = ssTime; }
+                    ssBoss.x -= 3; 
+                    if (ssBoss.x <= targetX) { 
+                        ssBoss.state = 'fighting'; 
+                        ssBoss.lastCharge = ssTime; 
+                    }
                 } 
                 else if (ssBoss.state === 'fleeing') {
-                    ssBoss.x += 4; if (ssBoss.x > canvasWidth + 100) endBossPhase(ssBoss.phase + 1);
+                    ssBoss.x += 4; 
+                    if (ssBoss.x > canvasWidth + 100) { 
+                        ssBoss.active = false;
+                        ssState = 'playing';
+                        ssCorrectWords = 0;
+                        document.getElementById('ss-boss-hud').classList.add('hidden');
+                    }
                 } 
                 else if (ssBoss.state === 'fighting') {
+                    // Pomon pystyliike
                     if (!ssBoss.vy) ssBoss.vy = 2;
-                    if (ssBoss.phase === 3 && ssBoss.isCharging) { ssBoss.vy = 0; } else if (ssBoss.phase === 3) { ssBoss.vy = Math.sign(ssBoss.vy) * 4; } else { ssBoss.vy = Math.sign(ssBoss.vy) * 2; }
+                    if (ssBoss.phase === 3 && ssBoss.isCharging) { ssBoss.vy = 0; } 
+                    else if (ssBoss.phase === 3) { ssBoss.vy = Math.sign(ssBoss.vy) * 4; } 
+                    else { ssBoss.vy = Math.sign(ssBoss.vy) * 2; }
+                    
                     ssBoss.y += ssBoss.vy;
                     if (ssBoss.y < 60) { ssBoss.y = 60; ssBoss.vy *= -1; }
                     if (ssBoss.y > canvasHeight - ssBoss.height - 20) { ssBoss.y = canvasHeight - ssBoss.height - 20; ssBoss.vy *= -1; }
+
+                    // Phase 3 vaeltava vaakaliike
+                    if (ssBoss.phase === 3 && !ssBoss.isCharging) {
+                        ssBoss.x = targetX + Math.sin(ssTime * 0.002) * 50;
+                    }
+
+                    // Kilpi logiikka
                     if (ssBoss.phase > 1) {
                         let cycle = ssBoss.phase === 3 ? 5000 : 7000; let duration = ssBoss.phase === 3 ? 3000 : 2000;
                         if (ssTime - ssBoss.shieldTimer > cycle) {
-                            ssBoss.shield = true; if (ssTime - ssBoss.shieldTimer > cycle + duration) { ssBoss.shield = false; ssBoss.shieldTimer = ssTime; }
+                            ssBoss.shield = true; 
+                            if (ssTime - ssBoss.shieldTimer > cycle + duration) { 
+                                ssBoss.shield = false; ssBoss.shieldTimer = ssTime; 
+                            }
                         }
                     }
+
+                    // Mega-isku (Phase 3)
                     if (ssBoss.phase === 3) {
                         if (!ssBoss.isCharging && ssTime - ssBoss.lastCharge > 6000) { ssBoss.isCharging = true; ssBoss.chargeStart = ssTime; }
                         if (ssBoss.isCharging) {
@@ -3526,20 +3560,40 @@ class ChiptuneEngine {
                             }
                         }
                     }
+
+                    // Normaali ammunta
                     let fireRate = ssBoss.phase === 1 ? 1500 : (ssBoss.phase === 2 ? 1000 : 800);
                     if (ssTime - ssLastEnemyShot > fireRate && !ssBoss.shield && !ssBoss.isCharging) {
                         audio.playLaser(); ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*40-20), speed: 7, width: 20, height: 4 }); ssLastEnemyShot = ssTime;
                     }
+
+                    // Osumat pomoon
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
                         if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 90) {
                             ssBullets.splice(j, 1);
-                            if (ssBoss.shield) { createSsParticle(b.x, b.y, '#3b82f6', 5); } else {
+                            if (ssBoss.shield) { 
+                                createSsParticle(b.x, b.y, '#3b82f6', 5); 
+                            } else {
                                 audio.playHit(); ssBoss.hp--; createSsParticle(b.x, b.y, '#f59e0b', 10);
                                 document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
-                                if (ssBoss.hp <= 60 && ssBoss.phase === 1 && ssBoss.state === 'fighting') { ssBoss.state = 'fleeing'; } else if (ssBoss.hp <= 30 && ssBoss.phase === 2 && ssBoss.state === 'fighting') { ssBoss.state = 'fleeing'; } else if (ssBoss.hp <= 0 && ssBoss.phase === 3 && ssBoss.state === 'fighting') {
-                                    ssBoss.active = false; audio.playExplosion(); createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
-                                    document.getElementById('ss-boss-hud').classList.add('hidden'); ssGameOver(true);
+                                
+                                // Bossin pakenemis-vaiheet
+                                if (ssBoss.hp <= 60 && ssBoss.phase === 1) { 
+                                    ssBoss.state = 'fleeing';
+                                    ssBoss.phase = 2;
+                                    break;
+                                } else if (ssBoss.hp <= 30 && ssBoss.phase === 2) { 
+                                    ssBoss.state = 'fleeing';
+                                    ssBoss.phase = 3;
+                                    break;
+                                } else if (ssBoss.hp <= 0 && ssBoss.phase === 3) {
+                                    ssBoss.active = false; 
+                                    audio.playExplosion(); 
+                                    createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
+                                    document.getElementById('ss-boss-hud').classList.add('hidden'); 
+                                    ssGameOver(true);
+                                    break;
                                 }
                             }
                         }
