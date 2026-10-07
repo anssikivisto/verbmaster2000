@@ -11,7 +11,7 @@
     <!-- Google Fonts: 16-bit pixel fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -186,9 +186,66 @@
         .logo-slide-in {
             animation: slideDownLogo 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
+        /* ==========================================
+           KIINTEÄ KUVASUHDE: koko peli elää #game-stage -laatikon sisällä.
+           Laatikon koon ja juurifontin asettaa fitGameStage() (skriptin lopussa).
+           transform luo "containing blockin", joten kaikki fixed-ruudut
+           (menut, cutscenet, overlayt) täyttävät laatikon eivätkä koko selainikkunaa.
+           ========================================== */
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+        #game-stage {
+            position: fixed;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            background: #000;
+            transform: translateZ(0);
+        }
+
+        /* ==========================================
+           MAIN MENU: ei laatikkoa, vain pikselitekstit allekkain.
+           Aktiivinen valinta hehkuu/sykkii kuten PRESS ENTER.
+           ========================================== */
+        @keyframes menuGlowPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        #main-menu-screen .jrpg-btn {
+            font-family: 'Silkscreen', 'Pixelify Sans', 'Press Start 2P', monospace;
+            font-weight: 700;
+            font-size: 2.1rem;
+            line-height: 1.1;
+            letter-spacing: 0.14em;
+            padding: 0.3rem 0.6rem;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #94a3b8 !important;
+            text-shadow: 3px 3px 0px #000000;
+            white-space: nowrap;
+            transition: color 0.1s ease, transform 0.1s ease;
+        }
+        #main-menu-screen .jrpg-btn.menu-active,
+        #main-menu-screen .jrpg-btn.menu-active:hover {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #ffffff !important;
+            text-shadow: 3px 3px 0px #000000, 0 0 10px rgba(255,255,255,0.85), 0 0 26px rgba(125,211,252,0.65);
+            animation: menuGlowPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        #main-menu-screen .jrpg-btn:hover:not(.menu-active) {
+            background: none !important;
+            border: none !important;
+        }
+        #main-menu-screen .jrpg-btn:active:not(:disabled) {
+            transform: translate(2px, 2px);
+        }
     </style>
 </head>
-<body id="app-body" class="h-full flex flex-col justify-between overflow-x-hidden bg-black text-slate-100">
+<body id="app-body" class="h-full overflow-hidden bg-black text-slate-100">
+
+    <!-- KIINTEÄ KUVASUHDE: kaikki pelin sisältö on tämän laatikon sisällä -->
+    <div id="game-stage">
 
     <!-- GLOBAL LOGO -->
     <img id="game-logo" src="logoo.png" alt="Pelin logo" class="fixed top-8 right-8 md:top-12 md:right-16 lg:top-16 lg:right-24 w-96 sm:w-[32rem] md:w-[40rem] lg:w-[48rem] z-[85] logo-slide-in pointer-events-none">
@@ -205,29 +262,21 @@
 
     <!-- MAIN MENU SCREEN -->
     <div id="main-menu-screen" class="fixed inset-0 z-[60] flex flex-col items-end justify-end pb-12 pr-8 sm:pb-20 md:pr-16 lg:pr-24 bg-black bg-cover bg-center hidden" style="background-image: url('herostartscreen.png');">
-        <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-[260px] sm:max-w-[320px]">
-            <div class="jrpg-box p-5 sm:p-7 w-full flex flex-col gap-4 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-                <button onclick="newGame()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 menu-active">
-                    <span>NEW GAME</span>
-                </button>
-                <button onclick="continueGame()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2">
-                    <span>CONTINUE</span>
-                </button>
-                <button onclick="showOptionsMenu()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2">
-                    <span>OPTIONS</span>
-                </button>
-                <button onclick="showCredits()" class="jrpg-btn py-4 px-4 text-sm sm:text-base flex items-center justify-center gap-2 text-slate-300">
-                    <span>CREDITS</span>
-                </button>
+        <div class="relative z-10 flex flex-col items-center gap-4 w-full max-w-[22rem]">
+            <div id="main-menu-list" class="flex flex-col items-center gap-3 sm:gap-4 w-full">
+                <button onclick="newGame()" class="jrpg-btn menu-active"><span>NEW GAME</span></button>
+                <button onclick="continueGame()" class="jrpg-btn"><span>CONTINUE</span></button>
+                <button onclick="showOptionsMenu()" class="jrpg-btn"><span>OPTIONS</span></button>
+                <button onclick="showCredits()" class="jrpg-btn"><span>CREDITS</span></button>
             </div>
-            <p class="text-xs font-pixel text-slate-400 opacity-70 mb-4 pixel-shadow">© 2026 ANSSI KIVISTÖ</p>
+            <p class="text-xs font-pixel text-slate-400 opacity-70 mt-4 mb-4 pixel-shadow">© 2026 ANSSI KIVISTÖ</p>
         </div>
     </div>
 
     <!-- CUTSCENE SCREEN -->
     <div id="cutscene-screen" class="fixed inset-0 z-[70] bg-black bg-cover bg-center hidden flex-col justify-end p-4 pb-8 cursor-pointer" onclick="advanceCutscene()">
         <div class="absolute inset-0 bg-black/30 pointer-events-none"></div>
-        <div class="relative z-10 jrpg-box w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+        <div class="relative z-10 jrpg-box w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-[8.125rem] sm:min-h-[10rem] flex flex-col justify-between">
             <p id="cutscene-text" class="font-pixel text-sm sm:text-base md:text-lg text-white pixel-shadow leading-[2.5]"></p>
             <div id="cutscene-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce hidden">▼</div>
         </div>
@@ -235,7 +284,7 @@
 
     <!-- WELCOME LORE SCREEN -->
     <div id="welcome-screen" class="fixed inset-0 bg-black/95 z-[65] items-center justify-center p-4 hidden cursor-pointer" onclick="advanceWelcomeScreen()">
-        <div class="relative z-10 jrpg-box max-w-2xl w-full mx-auto p-6 sm:p-10 flex flex-col justify-between shadow-2xl min-h-[250px]">
+        <div class="relative z-10 jrpg-box max-w-2xl w-full mx-auto p-6 sm:p-10 flex flex-col justify-between shadow-2xl min-h-[15.625rem]">
             <p id="welcome-text" class="font-pixel text-sm sm:text-base text-cyan-200 pixel-shadow leading-loose whitespace-pre-wrap text-center flex-1 flex items-center justify-center"></p>
             <div id="welcome-indicator" class="self-end text-yellow-300 font-pixel text-xl animate-bounce mt-4">▼</div>
         </div>
@@ -264,7 +313,7 @@
                     <div class="flex-grow border-t-2 border-dashed border-cyan-500/50"></div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[17.5rem] overflow-y-auto pr-2">
                     <button onclick="selectStartGroup('1')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>1. be – break</span><span class="text-yellow-300">☞</span></button>
                     <button onclick="selectStartGroup('2')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>2. bring – dive</span><span class="text-yellow-300">☞</span></button>
                     <button onclick="selectStartGroup('3')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>3. do – feel</span><span class="text-yellow-300">☞</span></button>
@@ -292,7 +341,7 @@
 
                 <p class="text-sm text-cyan-200 font-sans">Taistelukirjaston verbit:</p>
 
-                <div class="max-h-[260px] overflow-y-auto border-2 border-white bg-black/80 p-2">
+                <div class="max-h-[16.25rem] overflow-y-auto border-2 border-white bg-black/80 p-2">
                     <table class="w-full text-left text-sm sm:text-base">
                         <thead>
                             <tr class="text-yellow-300 font-pixel text-xs border-b border-cyan-500/50">
@@ -324,12 +373,18 @@
                 <button onclick="launchSelectedMode('bubble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 menu-active"><i class="fa-solid fa-bullseye text-blue-300"></i> KUPLAPELI</button>
                 <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
                 <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
+                <!-- AVATTAVAT PELIMOODIT: näkyvät vasta kun pelaaja on avannut ne (checkUnlockedModes) -->
+                <button id="mode-btn-runner" onclick="launchSelectedMode('runner')" class="jrpg-btn py-4 text-sm sm:text-base hidden flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> SYNTH RUNNER</button>
+                <button id="mode-btn-spaceshooter" onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn py-4 text-sm sm:text-base hidden flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> SPACE SHOOTER</button>
                 <div class="border-t-2 border-dashed border-cyan-500/50 my-2"></div>
                 <button onclick="launchSelectedMode('cards')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-layer-group text-yellow-300"></i> SANAKORTIT</button>
                 <button onclick="launchSelectedMode('dictionary')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-book text-cyan-300"></i> KIRJASTO</button>
             </div>
         </div>
     </div>
+
+    <!-- SOVELLUKSEN PÄÄLAYOUT (header + pelialue) -->
+    <div id="app-shell" class="h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden">
 
     <!-- HEADER / HUD -->
     <header class="bg-black border-b-4 border-white">
@@ -344,7 +399,7 @@
 
             <div class="flex items-center gap-3 sm:gap-4">
                 <div class="text-right hidden sm:block border-2 border-cyan-500 bg-blue-950 px-3 py-1.5">
-                    <div class="text-[10px] font-pixel text-cyan-300">TOTAL EXP</div>
+                    <div class="text-[0.625rem] font-pixel text-cyan-300">TOTAL EXP</div>
                     <div id="total-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
                 </div>
 
@@ -359,7 +414,7 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+    <main class="flex-1 min-h-0 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
         <!-- TOP NAV / OPTIONS -->
         <div class="jrpg-box p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-yellow-300 font-pixel text-xs sm:text-sm">
@@ -406,7 +461,7 @@
             </button>
         </nav>
 
-        <div id="game-canvas-wrapper" class="relative flex-1 min-h-[440px] md:min-h-[500px] w-full bg-black border-4 border-white outline outline-2 outline-yellow-400 overflow-hidden shadow-2xl flex flex-col">
+        <div id="game-canvas-wrapper" class="relative flex-1 min-h-0 w-full bg-black border-4 border-white outline outline-2 outline-yellow-400 overflow-hidden shadow-2xl flex flex-col">
             <div id="canvas-hud" class="absolute top-0 left-0 right-0 p-3 flex items-center justify-between z-10 pointer-events-none gap-2">
                 <div class="flex items-center gap-3">
                     <div class="jrpg-box bg-blue-950 px-3 py-2 flex items-center gap-2">
@@ -416,21 +471,21 @@
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-xs px-2 py-1 animate-pulse shadow-lg">
                         <span id="hud-combo">2x</span> COMBO!
                     </div>
-                    <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-[10px] sm:text-xs px-2 py-1 shadow-lg">
+                    <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-[0.625rem] sm:text-xs px-2 py-1 shadow-lg">
                         TASO: <span id="hud-diff-name">Keskitaso</span>
                     </div>
                 </div>
 
                 <!-- 8-bit Heart SVG -->
                 <div id="hud-lives-container" class="flex items-center gap-2 jrpg-box bg-blue-950 px-3 py-2">
-                    <span class="text-[10px] sm:text-xs text-yellow-300 font-pixel">HEALTH:</span>
+                    <span class="text-[0.625rem] sm:text-xs text-yellow-300 font-pixel">HEALTH:</span>
                     <div id="hud-lives" class="flex gap-1.5">
                         <!-- Hearts dynamically injected here -->
                     </div>
                 </div>
             </div>
 
-            <canvas id="main-canvas" class="w-full h-full flex-1 cursor-pointer block"></canvas>
+            <canvas id="main-canvas" class="absolute inset-0 w-full h-full cursor-pointer block"></canvas>
 
             <div id="html-controls-overlay" class="absolute inset-0 pointer-events-none flex flex-col justify-center items-center p-4 z-[15]">
                 
@@ -447,12 +502,12 @@
                 <!-- SPACE SHOOTER UI -->
                 <div id="ss-ui" class="pointer-events-none w-full h-full relative hidden">
                     <div id="ss-boss-hud" class="absolute top-12 sm:top-2 left-1/2 transform -translate-x-1/2 w-64 hidden flex-col gap-1 bg-black/80 border-2 border-red-500 p-2 text-center transition-opacity">
-                        <div class="text-red-500 font-pixel text-[10px]">CAPTAIN CONJUGATOR</div>
+                        <div class="text-red-500 font-pixel text-[0.625rem]">CAPTAIN CONJUGATOR</div>
                         <div class="w-full bg-slate-800 h-4 border border-white">
                             <div id="ss-boss-hp-bar" class="bg-red-500 h-full w-full transition-all"></div>
                         </div>
                     </div>
-                    <button id="ss-btn-shoot" onpointerdown="ssShoot()" onmousedown="ssShoot()" class="pointer-events-auto absolute bottom-8 right-8 w-16 h-16 rounded-full bg-red-600 border-4 border-red-400 text-white font-pixel text-[10px] shadow-[0_0_15px_rgba(220,38,38,0.8)] active:scale-95 hidden sm:hidden flex items-center justify-center">
+                    <button id="ss-btn-shoot" onpointerdown="ssShoot()" onmousedown="ssShoot()" class="pointer-events-auto absolute bottom-8 right-8 w-16 h-16 rounded-full bg-red-600 border-4 border-red-400 text-white font-pixel text-[0.625rem] shadow-[0_0_15px_rgba(220,38,38,0.8)] active:scale-95 hidden sm:hidden flex items-center justify-center">
                         AMMU
                     </button>
                 </div>
@@ -460,8 +515,8 @@
                 <!-- FLASHCARDS UI -->
                 <div id="cards-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3">
                     <div class="flex justify-between w-full gap-2 mb-1">
-                        <button onclick="toggleCardLang()" id="card-lang-btn" class="jrpg-btn text-[10px] sm:text-xs py-2.5 px-3 flex-1">NÄYTÄ ENSIN: ENGLANTI</button>
-                        <button onclick="shuffleCards()" class="jrpg-btn text-[10px] sm:text-xs py-2.5 px-3 flex-1"><i class="fa-solid fa-shuffle"></i> SEKOITA KORTIT</button>
+                        <button onclick="toggleCardLang()" id="card-lang-btn" class="jrpg-btn text-[0.625rem] sm:text-xs py-2.5 px-3 flex-1">NÄYTÄ ENSIN: ENGLANTI</button>
+                        <button onclick="shuffleCards()" class="jrpg-btn text-[0.625rem] sm:text-xs py-2.5 px-3 flex-1"><i class="fa-solid fa-shuffle"></i> SEKOITA KORTIT</button>
                     </div>
                     <div id="flashcard-element" onclick="flipCard()" class="w-full h-64 sm:h-72 perspective-1000 cursor-pointer">
                         <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d jrpg-box-gold flex flex-col justify-center items-center p-6 text-center">
@@ -529,14 +584,14 @@
                 <!-- SCRAMBLE UI -->
                 <div id="scramble-ui" class="pointer-events-auto w-full max-w-xl hidden flex-col items-center gap-4 jrpg-box p-5">
                     <div class="flex gap-2 w-full mb-1">
-                        <button onclick="setScrambleDiff('easy')" id="scramble-diff-easy" class="jrpg-btn flex-1 text-[10px] sm:text-xs py-2 menu-active">HELPPO</button>
-                        <button onclick="setScrambleDiff('hard')" id="scramble-diff-hard" class="jrpg-btn flex-1 text-[10px] sm:text-xs py-2">HAASTAVA</button>
+                        <button onclick="setScrambleDiff('easy')" id="scramble-diff-easy" class="jrpg-btn flex-1 text-[0.625rem] sm:text-xs py-2 menu-active">HELPPO</button>
+                        <button onclick="setScrambleDiff('hard')" id="scramble-diff-hard" class="jrpg-btn flex-1 text-[0.625rem] sm:text-xs py-2">HAASTAVA</button>
                     </div>
                     <div class="text-center mt-2">
                         <div class="text-xs font-pixel text-yellow-300 uppercase" id="scramble-hint-label">MUODOSTA 2. MUOTO / IMPERFEKTI:</div>
                         <div id="scramble-target-prompt" class="text-xl sm:text-2xl font-pixel text-white mt-2 pixel-shadow">OLLA</div>
                     </div>
-                    <div id="scramble-answer-box" class="min-h-[56px] w-full bg-black border-2 border-yellow-400 flex items-center justify-center gap-2 p-3 flex-wrap"></div>
+                    <div id="scramble-answer-box" class="min-h-[3.5rem] w-full bg-black border-2 border-yellow-400 flex items-center justify-center gap-2 p-3 flex-wrap"></div>
                     <div id="scramble-letter-pool" class="flex flex-wrap justify-center gap-2 p-2"></div>
                     <div class="flex gap-2 w-full mt-2">
                         <button onclick="clearScrambleAnswer()" class="jrpg-btn w-full text-sm py-3">
@@ -558,7 +613,7 @@
                 </div>
             </div>
 
-            <div class="overflow-y-auto max-h-[450px] border-2 border-white bg-black">
+            <div class="overflow-y-auto max-h-[28.125rem] border-2 border-white bg-black">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead class="bg-blue-950 text-yellow-300 font-pixel text-xs sticky top-0 border-b-2 border-white">
                         <tr>
@@ -574,6 +629,9 @@
             </div>
         </div>
     </main>
+
+    </div><!-- /app-shell -->
+    </div><!-- /game-stage -->
 
     <script>
         // GLOBAL CANVAS REFERENCES
@@ -1282,6 +1340,12 @@ class ChiptuneEngine {
             } else {
                 tabSs.classList.add('hidden');
             }
+
+            // Sama myös "VALITSE PELI" -ikkunan painikkeille
+            const modeBtnRunner = document.getElementById('mode-btn-runner');
+            if (modeBtnRunner) modeBtnRunner.classList.toggle('hidden', localStorage.getItem('vm2000_unlocked_runner') !== 'true');
+            const modeBtnSs = document.getElementById('mode-btn-spaceshooter');
+            if (modeBtnSs) modeBtnSs.classList.toggle('hidden', localStorage.getItem('vm2000_unlocked_spaceshooter') !== 'true');
         }
 
         // ==========================================
@@ -1792,6 +1856,7 @@ class ChiptuneEngine {
             dictionarySection.classList.add('hidden');
             startScreen.classList.add('hidden');
             hideOverlay();
+            checkUnlockedModes();
             modeSelectScreen.classList.remove('hidden');
 
             const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
@@ -2296,6 +2361,7 @@ class ChiptuneEngine {
             document.getElementById('group-selector').value = selectedGroupForStart;
             changeVerbGroup(selectedGroupForStart);
             startScreen.classList.add('hidden');
+            checkUnlockedModes();
             modeSelectScreen.classList.remove('hidden');
 
             const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
@@ -2467,7 +2533,7 @@ class ChiptuneEngine {
             
             const flash = document.createElement('div');
             flash.className = 'absolute inset-0 bg-red-600 z-50 opacity-50 transition-opacity duration-100 pointer-events-none';
-            document.body.appendChild(flash);
+            (document.getElementById('game-stage') || document.body).appendChild(flash);
             setTimeout(() => {
                 flash.style.opacity = '0';
                 setTimeout(() => flash.remove(), 100);
@@ -4427,6 +4493,60 @@ class ChiptuneEngine {
                 v.finnish.toLowerCase().includes(term)
             );
             populateDictionary(filtered);
+        }
+
+        // ==========================================
+        // KIINTEÄ KUVASUHDE (PAKOTETTU, RIIPPUMATON RUUDUSTA)
+        // ==========================================
+        // Vaihda näitä jos haluat toisen kuvasuhteen.
+        // 3:2 = vaakaformaatti (oletus). Pystyformaatti 2:3 = GAME_ASPECT_W = 2, GAME_ASPECT_H = 3.
+        const GAME_ASPECT_W = 3;
+        const GAME_ASPECT_H = 2;
+        // Referenssikorkeus: tällä korkeudella 1 rem = 16 px. Kaikki rem-pohjaiset koot
+        // (tekstit, marginaalit, logo) skaalautuvat laatikon koon mukana.
+        const GAME_REF_HEIGHT = 900;
+
+        function fitGameStage() {
+            const stage = document.getElementById('game-stage');
+            if (!stage) return;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            let w = vw;
+            let h = vw * GAME_ASPECT_H / GAME_ASPECT_W;
+            if (h > vh) {
+                h = vh;
+                w = vh * GAME_ASPECT_W / GAME_ASPECT_H;
+            }
+            w = Math.floor(w);
+            h = Math.floor(h);
+
+            stage.style.width = w + 'px';
+            stage.style.height = h + 'px';
+            stage.style.left = Math.floor((vw - w) / 2) + 'px';
+            stage.style.top = Math.floor((vh - h) / 2) + 'px';
+
+            document.documentElement.style.fontSize = Math.max(5, 16 * h / GAME_REF_HEIGHT) + 'px';
+
+            resizeCanvas();
+        }
+
+        window.addEventListener('resize', fitGameStage);
+        window.addEventListener('orientationchange', () => setTimeout(fitGameStage, 150));
+        fitGameStage();
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitGameStage);
+
+        // Pidetään canvas ajan tasalla, jos pelialueen koko muuttuu muusta syystä (esim. fontin latautuminen)
+        if (window.ResizeObserver) {
+            const wrapperEl = document.getElementById('game-canvas-wrapper');
+            if (wrapperEl) {
+                new ResizeObserver(() => {
+                    const r = wrapperEl.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0 && (Math.abs(r.width - canvasWidth) > 0.5 || Math.abs(r.height - canvasHeight) > 0.5)) {
+                        resizeCanvas();
+                    }
+                }).observe(wrapperEl);
+            }
         }
     </script>
 </body>
