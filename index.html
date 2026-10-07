@@ -768,6 +768,15 @@
                 "I, Boss Katsuyoshi, will finish you personally!"
             ]
         },
+        // TODO: Space Shooter -voiton cutscene (Boss Katsuyoshi raivoaa, kun apuri Captain Conjugator hävisi).
+        // Nyt vain paikanvaraus: korvaa lines-taulukko ja image oikealla sisällöllä.
+        cutscene_ss_victory: {
+            image: "image1.jpeg",
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "cutscene"
+            ]
+        },
         cutscene_win: {
             image: "image1.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
@@ -1203,7 +1212,7 @@ class ChiptuneEngine {
             const prevBGM = audio.currentTrack; 
             
             isBubblePlaying = false; 
-            if (wasSS) ssState = 'menu';
+            if (wasSS) { ssPausedState = ssState; ssState = 'menu'; }
             if (wasRunner) trGameState = 'PAUSED';
             
             startCutscene(sceneId, () => {
@@ -1220,7 +1229,8 @@ class ChiptuneEngine {
 
         function resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM) {
             if (prevMode === 'spaceshooter' && wasSS) {
-                ssState = 'playing';
+                ssState = ssPausedState || 'playing';
+                ssPausedState = null;
             } else if (prevMode === 'runner' && wasRunner) {
                 trGameState = 'CHASE'; // Yksinkertaistettu palautus
             } else if (prevMode === 'bubble' && wasBubble) {
@@ -1390,7 +1400,7 @@ class ChiptuneEngine {
         let ssLastFrameTime = 0;
         
         let ssBoss = { 
-            active: false, x: 800, y: 200, width: 220, height: 150,
+            active: false, x: 800, y: 200, width: 280, height: 150,
             hp: 90, maxHp: 90, phase: 1, shield: false, shieldTimer: 0, vy: 0, 
             state: 'entering', isCharging: false, lastCharge: 0, chargeStart: 0
         };
@@ -1403,6 +1413,7 @@ class ChiptuneEngine {
         let ssLastEnemyShot = 0;
         let ssLastHeartSpawn = 0;
         let ssTime = 0;
+        let ssPausedState = null; // tila ennen taukoa/cutscenea ('playing' tai 'boss')
 
         function initSpaceShooter() {
             if (activeVerbs.length === 0) activeVerbs = [...VERB_DATA];
@@ -1427,6 +1438,11 @@ class ChiptuneEngine {
             ssBoss.phase = 1;
             ssBoss.shield = false;
             ssBoss.state = 'entering';
+            ssBoss.isCharging = false;
+            ssBoss.shieldTimer = 0;
+            ssBoss.vy = 0;
+            ssBoss.finalBlast = false;
+            ssPausedState = null;
             
             document.getElementById('ss-boss-hud').classList.add('hidden');
             
@@ -1496,12 +1512,28 @@ class ChiptuneEngine {
                 }
 
                 if (ssBoss.active) {
-                    ctx.drawImage(enemyImg, ssBoss.x, ssBoss.y, ssBoss.width, ssBoss.height);
-                    if (ssBoss.shield) {
+                    const bossDying = ssBoss.state === 'dying';
+                    const deathElapsed = bossDying ? ssTime - ssBoss.dyingStart : 0;
+                    // Loppuräjähdyksen jälkeen alusta ei enää piirretä
+                    if (!(bossDying && ssBoss.finalBlast)) {
+                        let ox = 0, oy = 0;
+                        if (bossDying) {
+                            // Alus tärisee ja vilkkuu räjähdysten aikana
+                            ox = (Math.random() - 0.5) * 10;
+                            oy = (Math.random() - 0.5) * 10;
+                            ctx.globalAlpha = Math.random() < 0.3 ? 0.35 : 1.0;
+                        }
+                        ctx.drawImage(enemyImg, ssBoss.x + ox, ssBoss.y + oy, ssBoss.width, ssBoss.height);
+                        ctx.globalAlpha = 1.0;
+                    }
+                    if (ssBoss.shield && !bossDying) {
+                        // Kilpi on ellipsi, joka ympäröi koko leveän aluksen
+                        ctx.beginPath();
+                        ctx.ellipse(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, ssBoss.width/2 + 15, ssBoss.height/2 + 15, 0, 0, Math.PI*2);
+                        ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+                        ctx.fill();
                         ctx.strokeStyle = '#3b82f6';
                         ctx.lineWidth = 4;
-                        ctx.beginPath();
-                        ctx.arc(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, ssBoss.width/2 + 15, 0, Math.PI*2);
                         ctx.stroke();
                     }
                 }
@@ -1564,13 +1596,30 @@ class ChiptuneEngine {
                     ctx.fillRect(p.x, p.y, p.size, p.size);
                 });
                 ctx.globalAlpha = 1.0;
+
+                // Bossin loppuräjähdys: iskuaalto ja valkoinen välähdys
+                if (ssBoss.active && ssBoss.state === 'dying' && ssBoss.finalBlast) {
+                    const t = Math.min(1, (ssTime - ssBoss.dyingStart - (SS_BOSS_DEATH_MS - SS_BOSS_FINAL_MS)) / SS_BOSS_FINAL_MS);
+                    const cx = ssBoss.x + ssBoss.width/2, cy = ssBoss.y + ssBoss.height/2;
+                    ctx.strokeStyle = '#fde047';
+                    ctx.lineWidth = 6;
+                    ctx.globalAlpha = Math.max(0, 1 - t);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 20 + t * 320, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.globalAlpha = Math.max(0, (1 - t * 2)) * 0.8;
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                    ctx.globalAlpha = 1.0;
+                }
                 
                 if (ssState === 'playing' && ssCurrentVerb) {
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '16px "Press Start 2P"';
                     ctx.textAlign = 'center';
                     const forms = ['1. MUOTO', '2. MUOTO', '3. MUOTO'];
-                    ctx.fillText(`AMMU: ${ssCurrentVerb.verb.finnish.toUpperCase()} -> ${forms[ssCurrentVerb.formIndex]}`, canvasWidth/2, 40);
+                    // Ensin suomennos, sitten haluttu muoto
+                    ctx.fillText(`${ssCurrentVerb.verb.finnish.toUpperCase()} -> ${forms[ssCurrentVerb.formIndex]}`, canvasWidth/2, 40);
                 }
             }
             
@@ -1588,6 +1637,7 @@ class ChiptuneEngine {
 
         function ssShoot() {
             if (ssState !== 'playing' && ssState !== 'boss') return;
+            if (ssBoss.active && ssBoss.state === 'dying') return;
             if (ssTime - ssLastShot < 200) return;
             
             audio.playLaser();
@@ -1656,6 +1706,101 @@ class ChiptuneEngine {
             });
         }
 
+        // ---- Bossin räjähdysanimaatio ----
+        const SS_BOSS_DEATH_MS = 3000;   // koko animaation kesto
+        const SS_BOSS_FINAL_MS = 900;    // loppuräjähdyksen kesto (osa kokonaiskestosta)
+
+        function ssInEllipse(px, py, cx, cy, rx, ry) {
+            const dx = (px - cx) / rx;
+            const dy = (py - cy) / ry;
+            return (dx * dx + dy * dy) <= 1;
+        }
+
+        function createSsBlast(x, y, count) {
+            const colors = ['#ef4444', '#f97316', '#fde047', '#ffffff'];
+            for (let i = 0; i < count; i++) {
+                ssParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.5) * 14,
+                    life: 1.0,
+                    decay: 0.02 + Math.random() * 0.02,
+                    size: Math.random() * 8 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+        }
+
+        function updateBossDeath() {
+            const elapsed = ssTime - ssBoss.dyingStart;
+
+            // Tausta liikkuu edelleen
+            ssStars.forEach(s => { s.x -= s.speed; if (s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
+            ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
+
+            // Pienet räjähdykset satunnaisissa kohdissa bossin päällä
+            if (!ssBoss.finalBlast && ssTime - ssBoss.lastBlast > 200) {
+                ssBoss.lastBlast = ssTime;
+                createSsBlast(ssBoss.x + Math.random() * ssBoss.width, ssBoss.y + Math.random() * ssBoss.height, 14);
+                audio.playExplosion();
+                triggerSsShake(250, 4 + (elapsed / SS_BOSS_DEATH_MS) * 8);
+            }
+
+            // Iso loppuräjähdys
+            if (!ssBoss.finalBlast && elapsed >= SS_BOSS_DEATH_MS - SS_BOSS_FINAL_MS) {
+                ssBoss.finalBlast = true;
+                createSsBlast(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, 160);
+                audio.playExplosion();
+                triggerSsShake(SS_BOSS_FINAL_MS, 14);
+            }
+
+            // Hiukkaset, tekstit ja pakokaasut jatkavat elämäänsä
+            for (let i = ssParticles.length - 1; i >= 0; i--) {
+                let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= (p.decay || 0.05);
+                if (p.life <= 0) ssParticles.splice(i, 1);
+            }
+            for (let i = ssExhausts.length - 1; i >= 0; i--) {
+                let e = ssExhausts[i]; e.x += e.vx; e.y += e.vy; e.life -= 0.05; e.size *= 0.9;
+                if (e.life <= 0) ssExhausts.splice(i, 1);
+            }
+            ssTexts.forEach(t => { t.y += t.vy; t.life -= 0.02; });
+            ssTexts = ssTexts.filter(t => t.life > 0);
+
+            // Animaation päätyttyä näytetään voittoruutu
+            if (elapsed >= SS_BOSS_DEATH_MS) {
+                ssBoss.active = false;
+                ssBoss.finalBlast = false;
+                document.getElementById('ss-boss-hud').classList.add('hidden');
+                ssGameOver(true);
+            }
+        }
+
+        // ---- Voiton jälkeinen cutscene ja paluu pelimoodin valintaan ----
+        function ssVictoryContinue() {
+            audio.playSelect();
+            hideOverlay();
+            startCutscene('cutscene_ss_victory', () => {
+                ssShowModeSelect();
+            });
+        }
+
+        function ssShowModeSelect() {
+            ssState = 'menu';
+            isBubblePlaying = false;
+            document.getElementById('main-menu-screen').classList.add('hidden');
+            gameCanvasWrapper.classList.add('hidden');
+            dictionarySection.classList.add('hidden');
+            startScreen.classList.add('hidden');
+            hideOverlay();
+            modeSelectScreen.classList.remove('hidden');
+
+            const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            if (btns.length > 0) btns[0].classList.add('menu-active');
+
+            audio.playBGM('brutaldesign-climbing-569924.mp3');
+        }
+
         function ssGameOver(win) {
             ssState = 'menu';
             audio.stopBGM();
@@ -1668,7 +1813,7 @@ class ChiptuneEngine {
                         <p class="text-yellow-300 font-pixel text-base">Sait bossin kukistettua!</p>
                         <p class="text-cyan-300 font-pixel text-base mt-2">Pisteet: ${score}</p>
                     </div>
-                    <button onclick="hideOverlay(); enterMainMenu();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Palaa valikkoon</button>
+                    <button onclick="ssVictoryContinue();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Jatka</button>
                 `);
             } else {
                 showOverlay(`
@@ -1866,9 +2011,10 @@ class ChiptuneEngine {
                 }
                 
                 if (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss')) {
+                    ssPausedState = ssState;
                     ssState = 'menu';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
-                                 <button onclick="ssState='playing'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
+                                 <button onclick="ssState=ssPausedState||'playing'; ssPausedState=null; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
                                  <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
                     return;
                 }
@@ -2187,7 +2333,7 @@ class ChiptuneEngine {
             
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
-            else if (mode === 'spaceshooter') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3";
+            else if (mode === 'spaceshooter') modeBGM = "alex-morgan-gaming-stream-arcade-session-578484.mp3";
             else if (mode === 'runner') modeBGM = "gh0stly-the-infinite-fall-271940.mp3"; 
             else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; 
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
@@ -3384,6 +3530,12 @@ class ChiptuneEngine {
             
             if (ssState !== 'playing' && ssState !== 'boss') return;
 
+            // Bossin räjähdysanimaatio (pelaaja ei liiku eikä ammu)
+            if (ssBoss.active && ssBoss.state === 'dying') {
+                updateBossDeath();
+                return;
+            }
+
             // Pelaajan liike
             if ((ssKeys['ArrowUp'] || ssKeys['w']) && ssPlayer.y > 60) ssPlayer.y -= ssPlayer.speed;
             if ((ssKeys['ArrowDown'] || ssKeys['s']) && ssPlayer.y < canvasHeight - ssPlayer.height) ssPlayer.y += ssPlayer.speed;
@@ -3568,33 +3720,49 @@ class ChiptuneEngine {
                     }
 
                     // Osumat pomoon
+                    const bossCx = ssBoss.x + ssBoss.width/2;
+                    const bossCy = ssBoss.y + ssBoss.height/2;
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
-                        if (Math.hypot(b.x - (ssBoss.x+ssBoss.width/2), b.y - (ssBoss.y+ssBoss.height/2)) < 90) {
+                        // Ammuksen kärki (ammukset lentävät oikealle)
+                        const tipX = b.x + b.width;
+                        const tipY = b.y + b.height/2;
+
+                        if (ssBoss.shield) {
+                            // Kilpi pysäyttää ammuksen heti kilven reunalla
+                            if (ssInEllipse(tipX, tipY, bossCx, bossCy, ssBoss.width/2 + 15, ssBoss.height/2 + 15)) {
+                                ssBullets.splice(j, 1);
+                                createSsParticle(tipX, tipY, '#3b82f6', 5);
+                            }
+                        } else if (ssInEllipse(tipX, tipY, bossCx, bossCy, ssBoss.width/2 * 0.9, ssBoss.height/2 * 0.9)) {
                             ssBullets.splice(j, 1);
-                            if (ssBoss.shield) { 
-                                createSsParticle(b.x, b.y, '#3b82f6', 5); 
-                            } else {
-                                audio.playHit(); ssBoss.hp--; createSsParticle(b.x, b.y, '#f59e0b', 10);
-                                document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
-                                
-                                // Bossin pakenemis-vaiheet
-                                if (ssBoss.hp <= 60 && ssBoss.phase === 1) { 
-                                    ssBoss.state = 'fleeing';
-                                    ssBoss.phase = 2;
-                                    break;
-                                } else if (ssBoss.hp <= 30 && ssBoss.phase === 2) { 
-                                    ssBoss.state = 'fleeing';
-                                    ssBoss.phase = 3;
-                                    break;
-                                } else if (ssBoss.hp <= 0 && ssBoss.phase === 3) {
-                                    ssBoss.active = false; 
-                                    audio.playExplosion(); 
-                                    createSsParticle(ssBoss.x + ssBoss.width/2, ssBoss.y + ssBoss.height/2, '#ef4444', 100);
-                                    document.getElementById('ss-boss-hud').classList.add('hidden'); 
-                                    ssGameOver(true);
-                                    break;
-                                }
+                            audio.playHit(); ssBoss.hp--; createSsParticle(tipX, tipY, '#f59e0b', 10);
+                            document.getElementById('ss-boss-hp-bar').style.width = (Math.max(0, ssBoss.hp) / ssBoss.maxHp * 100) + '%';
+                            
+                            // Bossin pakenemis-vaiheet
+                            if (ssBoss.hp <= 60 && ssBoss.phase === 1) { 
+                                ssBoss.state = 'fleeing';
+                                ssBoss.phase = 2;
+                                break;
+                            } else if (ssBoss.hp <= 30 && ssBoss.phase === 2) { 
+                                ssBoss.state = 'fleeing';
+                                ssBoss.phase = 3;
+                                break;
+                            } else if (ssBoss.hp <= 0 && ssBoss.phase === 3) {
+                                // Bossi räjähtää: voittoruutu tulee vasta animaation jälkeen
+                                ssBoss.state = 'dying';
+                                ssBoss.dyingStart = ssTime;
+                                ssBoss.lastBlast = 0;
+                                ssBoss.finalBlast = false;
+                                ssBoss.shield = false;
+                                ssBoss.isCharging = false;
+                                ssBullets.length = 0;
+                                ssEnemyBullets.length = 0;
+                                ssPowerUps.length = 0;
+                                ssHearts.length = 0;
+                                audio.playExplosion();
+                                triggerSsShake(500, 8);
+                                break;
                             }
                         }
                     }
@@ -3602,7 +3770,7 @@ class ChiptuneEngine {
             }
 
             for (let i = ssParticles.length - 1; i >= 0; i--) {
-                let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                let p = ssParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= (p.decay || 0.05);
                 if (p.life <= 0) ssParticles.splice(i, 1);
             }
         }
