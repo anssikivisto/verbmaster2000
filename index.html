@@ -16,6 +16,14 @@
         tailwind.config = {
             theme: {
                 extend: {
+                    colors: {
+                        // Vaporwave / outrun -paletti
+                        neon: { pink: '#ff2e97', hot: '#ff6ec7', cyan: '#22e6ff', yellow: '#ffd23f', orange: '#ff7a3d', mint: '#7affc8', violet: '#6b4fd8' },
+                        night: { 900: '#07011a', 800: '#0b0221', 700: '#140a33', 600: '#1d0f45', 500: '#2a1260' },
+                        // Korvataan Tailwindin siniset ja harmaat violeteilla sävyillä
+                        blue: { 800: '#2a1260', 900: '#1d0f45', 950: '#140a33' },
+                        slate: { 50: '#f5f3ff', 100: '#ece8ff', 200: '#d4cdf5', 300: '#bdb4e6', 400: '#9a8fcc', 500: '#7a6fb0', 600: '#5c5190', 700: '#433a70', 800: '#2d2554', 900: '#1c1638', 950: '#0f0a22' },
+                    },
                     fontFamily: {
                         pixel: ['"Press Start 2P"', 'monospace'],
                         sans: ['"Pixelify Sans"', '"VT323"', 'monospace'],
@@ -31,7 +39,7 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            background-color: #050508;
+            background-color: #07011a;
             image-rendering: pixelated;
         }
         
@@ -53,116 +61,180 @@
         }
 
         .pixel-shadow-gold {
-            text-shadow: 3px 3px 0px #78350f, 1px 1px 0px #000000;
+            text-shadow: 3px 3px 0px #a3105f, 1px 1px 0px #000000;
+        }
+
+        /* ==========================================
+           VAPORWAVE / OUTRUN -TEEMA (kovat pikselireunat, ei sumeaa hehkua)
+           ========================================== */
+        :root {
+            --night: #07011a;
+            --panel: #140a33;
+            --panel-2: #1d0f45;
+            --pink: #ff2e97;
+            --pink-dark: #a3105f;
+            --cyan: #22e6ff;
+            --cyan-dark: #0a8fb0;
+            --yellow: #ffd23f;
+            --orange: #ff7a3d;
+            --violet: #6b4fd8;
+            --violet-dark: #2a1260;
+            --lav: #bdb4e6;
         }
 
         .jrpg-box {
-            background: linear-gradient(180deg, #000080 0%, #000033 100%);
-            border: 4px solid #ffffff;
-            outline: 2px solid #ffd700;
-            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            background: linear-gradient(180deg, #1d0f45 0%, #140a33 100%);
+            border: 4px solid var(--pink);
+            outline: 2px solid var(--cyan);
+            box-shadow: inset 0 0 0 2px #000000, 6px 6px 0 0 var(--violet-dark);
             border-radius: 0px !important;
         }
 
         .jrpg-box-dark {
-            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
-            border: 4px solid #94a3b8;
-            outline: 2px solid #ffd700;
-            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            background: linear-gradient(180deg, #0f0a22 0%, #07011a 100%);
+            border: 4px solid #7a6fb0;
+            outline: 2px solid var(--pink);
+            box-shadow: inset 0 0 0 2px #000000, 6px 6px 0 0 var(--violet-dark);
             border-radius: 0px !important;
         }
 
         .jrpg-box-gold {
-            background: linear-gradient(180deg, #3b0764 0%, #1e1b4b 100%);
-            border: 4px solid #ffd700;
-            outline: 2px solid #ffffff;
-            box-shadow: inset 0 0 0 2px #000000, 0 6px 0 0 #000000;
+            background: linear-gradient(180deg, #2a1260 0%, #140a33 100%);
+            border: 4px solid var(--yellow);
+            outline: 2px solid var(--pink);
+            box-shadow: inset 0 0 0 2px #000000, 6px 6px 0 0 var(--violet-dark);
             border-radius: 0px !important;
         }
 
         .jrpg-btn {
             font-family: 'Press Start 2P', monospace;
-            background: #1e293b;
-            border: 3px solid #64748b;
-            border-right-color: #0f172a;
-            border-bottom-color: #0f172a;
+            background: var(--panel-2);
+            border: 3px solid var(--violet);
+            border-right-color: var(--violet-dark);
+            border-bottom-color: var(--violet-dark);
             color: #ffffff;
             text-shadow: 2px 2px 0px #000000;
             border-radius: 0px !important;
-            box-shadow: 2px 2px 0px #000000;
+            box-shadow: 3px 3px 0px #000000;
             transition: all 0.05s ease;
         }
 
         .jrpg-btn.menu-active, .jrpg-btn.menu-active:hover {
-            background: #0369a1 !important;
-            border-color: #7dd3fc !important;
-            border-right-color: #0284c7 !important;
-            border-bottom-color: #0284c7 !important;
-            color: #fef08a !important;
+            background: var(--pink) !important;
+            border-color: #ffb3dd !important;
+            border-right-color: var(--pink-dark) !important;
+            border-bottom-color: var(--pink-dark) !important;
+            color: #fff6c2 !important;
         }
 
         .jrpg-btn:hover:not(.menu-active):not(:disabled) {
-            background: #334155;
-            border-color: #94a3b8;
-            border-right-color: #1e293b;
-            border-bottom-color: #1e293b;
-            color: #fef08a;
+            background: #2a1660;
+            border-color: var(--cyan);
+            border-right-color: var(--cyan-dark);
+            border-bottom-color: var(--cyan-dark);
+            color: var(--yellow);
         }
 
         .jrpg-btn:active:not(:disabled) {
             transform: translate(2px, 2px);
             box-shadow: 0px 0px 0px #000000;
         }
-        
+
         .jrpg-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
-            box-shadow: 2px 2px 0px #000000;
+            box-shadow: 3px 3px 0px #000000;
         }
 
         .jrpg-btn-primary {
-            background: #0284c7;
-            border: 3px solid #38bdf8;
-            border-right-color: #0369a1;
-            border-bottom-color: #0369a1;
+            background: var(--cyan-dark);
+            border: 3px solid var(--cyan);
+            border-right-color: #066a85;
+            border-bottom-color: #066a85;
         }
 
         .jrpg-btn-primary:not(:disabled):hover:not(.menu-active) {
-            background: #0369a1;
-            border-color: #7dd3fc;
-            color: #fef08a;
+            background: #0aa5c8;
+            border-color: #a5f6ff;
+            color: #fff6c2;
         }
 
         .jrpg-btn-gold {
-            background: #b45309;
-            border: 3px solid #fbbf24;
-            border-right-color: #78350f;
-            border-bottom-color: #78350f;
+            background: #c2410c;
+            border: 3px solid var(--yellow);
+            border-right-color: #7c2d12;
+            border-bottom-color: #7c2d12;
             color: #ffffff;
         }
 
         .jrpg-btn-gold:not(:disabled):hover:not(.menu-active) {
-            background: #d97706;
-            border-color: #fef08a;
+            background: #ea580c;
+            border-color: #fff6c2;
         }
 
         .tab-active {
-            background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%) !important;
-            border-color: #ffd700 !important;
+            background: var(--pink) !important;
+            border-color: var(--yellow) !important;
             color: #ffffff !important;
             box-shadow: inset 0 0 0 2px #000000 !important;
+        }
+
+        /* Lukittu pelimoodi Valitse peli -ikkunassa */
+        .jrpg-btn.mode-locked {
+            opacity: 0.55;
+            filter: saturate(0.5);
+        }
+
+        /* DOS-tyylinen ikkunan otsikkopalkki */
+        .win-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, var(--pink) 0%, var(--orange) 100%);
+            color: #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.625rem;
+            padding: 0.4rem 0.6rem;
+            text-shadow: 2px 2px 0px #000000;
+            border: 2px solid #000000;
+        }
+
+        /* Alareunan ohjerivi */
+        .hint-line {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            line-height: 1.6;
+            color: var(--lav);
+            text-align: center;
+            opacity: 0.85;
+        }
+
+        /* Ikkunoiden taustan himmennys: shakkiruutu-dithering sumennuksen sijaan */
+        .modal-dim {
+            background-color: rgba(7, 1, 26, 0.80);
+            background-image:
+                linear-gradient(45deg, rgba(0,0,0,0.35) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.35) 75%),
+                linear-gradient(45deg, rgba(0,0,0,0.35) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.35) 75%);
+            background-size: 4px 4px;
+            background-position: 0 0, 2px 2px;
+        }
+
+        #group-selector {
+            background: var(--night) !important;
+            border-color: var(--cyan) !important;
+            border-radius: 0 !important;
         }
 
         ::-webkit-scrollbar {
             width: 12px;
         }
         ::-webkit-scrollbar-track {
-            background: #000033;
-            border: 2px solid #ffffff;
+            background: #0b0221;
+            border: 2px solid var(--violet);
         }
         ::-webkit-scrollbar-thumb {
-            background: #ffd700;
+            background: var(--pink);
             border: 2px solid #000000;
         }
 
@@ -251,7 +323,7 @@
     <img id="game-logo" src="logoo.png" alt="Pelin logo" class="fixed top-8 right-8 md:top-12 md:right-16 lg:top-16 lg:right-24 w-96 sm:w-[32rem] md:w-[40rem] lg:w-[48rem] z-[85] logo-slide-in pointer-events-none">
 
     <!-- GLOBAL OVERLAY PANEL -->
-    <div id="overlay-panel" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100] flex flex-col items-center justify-center p-4 text-center hidden">
+    <div id="overlay-panel" class="fixed inset-0 modal-dim z-[100] flex flex-col items-center justify-center p-4 text-center hidden">
         <div id="overlay-content" class="max-w-md w-full"></div>
     </div>
 
@@ -291,8 +363,9 @@
     </div>
 
     <!-- START / GROUP SELECT MODAL -->
-    <div id="start-screen" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
+    <div id="start-screen" class="fixed inset-0 modal-dim z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
         <div class="jrpg-box max-w-2xl w-full p-5 sm:p-7 flex flex-col gap-6 my-auto text-white">
+            <div class="win-title"><span>VERBIRYHMA.EXE</span><span>■</span></div>
             <div id="start-step-select" class="flex flex-col gap-5">
                 <div class="text-center">
                     <h2 class="text-xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow mt-2">VALITSE VERBIRYHMÄ</h2>
@@ -360,26 +433,34 @@
                     <i class="fa-solid fa-play"></i>
                 </button>
             </div>
+            <p class="hint-line">NUOLET: VALITSE &nbsp; ENTER: OK &nbsp; ESC: PÄÄVALIKKO</p>
         </div>
     </div>
 
     <!-- MODE SELECT MODAL -->
-    <div id="mode-select-screen" class="fixed inset-0 bg-black/90 z-[55] flex flex-col items-center justify-center p-4 hidden">
-        <div class="jrpg-box max-w-lg w-full p-6 sm:p-8 text-center flex flex-col gap-6">
-            <h2 class="text-2xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow">VALITSE PELI</h2>
-            <p class="text-lg text-cyan-200 font-sans">Miten haluat harjoitella?</p>
-            
-            <div class="flex flex-col gap-3">
-                <button onclick="launchSelectedMode('bubble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 menu-active"><i class="fa-solid fa-bullseye text-blue-300"></i> KUPLAPELI</button>
-                <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
-                <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
-                <!-- AVATTAVAT PELIMOODIT: näkyvät vasta kun pelaaja on avannut ne (checkUnlockedModes) -->
-                <button id="mode-btn-runner" onclick="launchSelectedMode('runner')" class="jrpg-btn py-4 text-sm sm:text-base hidden flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> SYNTH RUNNER</button>
-                <button id="mode-btn-spaceshooter" onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn py-4 text-sm sm:text-base hidden flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> SPACE SHOOTER</button>
-                <div class="border-t-2 border-dashed border-cyan-500/50 my-2"></div>
-                <button onclick="launchSelectedMode('cards')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-layer-group text-yellow-300"></i> SANAKORTIT</button>
-                <button onclick="launchSelectedMode('dictionary')" class="jrpg-btn py-4 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-book text-cyan-300"></i> KIRJASTO</button>
+    <div id="mode-select-screen" class="fixed inset-0 modal-dim z-[55] flex flex-col items-center p-4 overflow-y-auto hidden">
+        <div class="jrpg-box max-w-lg w-full p-5 sm:p-6 text-center flex flex-col gap-4 my-auto">
+            <div class="win-title"><span>PELIVALIKKO.EXE</span><span>■</span></div>
+            <h2 class="text-2xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow-gold">VALITSE PELI</h2>
+            <div>
+                <p class="text-lg text-cyan-200 font-sans">Miten haluat harjoitella?</p>
+                <p id="mode-select-group" class="font-pixel text-[0.625rem] text-neon-yellow mt-2 leading-relaxed"></p>
             </div>
+
+            <div class="flex flex-col gap-2.5">
+                <button onclick="launchSelectedMode('bubble')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 menu-active"><i class="fa-solid fa-bullseye text-blue-300"></i> KUPLAPELI</button>
+                <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
+                <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
+                <!-- AVATTAVAT PELIMOODIT: lukittuina himmeinä, avautuvat pisteillä (checkUnlockedModes) -->
+                <button id="mode-btn-runner" disabled onclick="launchSelectedMode('runner')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> <span>SYNTH RUNNER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 300 EXP</span></button>
+                <button id="mode-btn-spaceshooter" disabled onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> <span>SPACE SHOOTER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 600 EXP</span></button>
+                <div class="border-t-2 border-dashed border-cyan-500/50 my-1"></div>
+                <button onclick="launchSelectedMode('cards')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-layer-group text-yellow-300"></i> SANAKORTIT</button>
+                <button onclick="launchSelectedMode('dictionary')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-book text-cyan-300"></i> KIRJASTO</button>
+                <div class="border-t-2 border-dashed border-cyan-500/50 my-1"></div>
+                <button onclick="backToGroupSelect()" class="jrpg-btn py-2.5 text-xs sm:text-sm flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-arrow-left"></i> VAIHDA VERBIRYHMÄ</button>
+            </div>
+            <p class="hint-line">NUOLET: VALITSE &nbsp; ENTER: OK &nbsp; ESC: PÄÄVALIKKO</p>
         </div>
     </div>
 
@@ -387,11 +468,11 @@
     <div id="app-shell" class="h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden">
 
     <!-- HEADER / HUD -->
-    <header class="bg-black border-b-4 border-white">
+    <header class="bg-night-800 border-b-4 border-neon-pink shadow-[0_4px_0_0_#22e6ff]">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div>
-                    <h1 class="font-pixel text-sm sm:text-base text-yellow-300 pixel-shadow flex items-center gap-2">
+                    <h1 class="font-pixel text-sm sm:text-base text-yellow-300 pixel-shadow-gold flex items-center gap-2">
                         VERBMASTER2000
                     </h1>
                 </div>
@@ -436,7 +517,7 @@
             </select>
         </div>
 
-        <nav class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 gap-2 p-1.5 bg-black border-2 border-white">
+        <nav class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 gap-2 p-1.5 bg-night-800 border-2 border-neon-cyan">
             <button id="tab-bubble" onclick="switchMode('bubble')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm tab-active">
                 <span>KUPLAPELI</span>
             </button>
@@ -461,7 +542,7 @@
             </button>
         </nav>
 
-        <div id="game-canvas-wrapper" class="relative flex-1 min-h-0 w-full bg-black border-4 border-white outline outline-2 outline-yellow-400 overflow-hidden shadow-2xl flex flex-col">
+        <div id="game-canvas-wrapper" class="relative flex-1 min-h-0 w-full bg-black border-4 border-neon-pink outline outline-2 outline-neon-cyan overflow-hidden shadow-2xl flex flex-col">
             <div id="canvas-hud" class="absolute top-0 left-0 right-0 p-3 flex items-center justify-between z-10 pointer-events-none gap-2">
                 <div class="flex items-center gap-3">
                     <div class="jrpg-box bg-blue-950 px-3 py-2 flex items-center gap-2">
@@ -1306,22 +1387,25 @@ class ChiptuneEngine {
                 localStorage.setItem('vm2000_unlocked_runner', 'true');
                 checkUnlockedModes();
                 pauseGameForCutscene('cutscene_300', (prevBGM) => {
-                    alert("UUSI PELIMOODI AVATTU: Synth Runner!\nLöydät sen nyt ylävalikosta.");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SYNTH RUNNER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
+                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    });
                 });
             } else if (currentTotal >= 600 && !localStorage.getItem('vm2000_ms_600')) {
                 localStorage.setItem('vm2000_ms_600', 'true');
                 localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
                 checkUnlockedModes();
                 pauseGameForCutscene('cutscene_600', (prevBGM) => {
-                    alert("UUSI PELIMOODI AVATTU: Space Shooter!\nLöydät sen nyt ylävalikosta.");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SPACE SHOOTER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
+                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    });
                 });
             } else if (currentTotal >= 1000 && !localStorage.getItem('vm2000_ms_1000')) {
                 localStorage.setItem('vm2000_ms_1000', 'true');
                 pauseGameForCutscene('cutscene_1000', (prevBGM) => {
-                    alert("Lopputaistelu avattu! (Odottaa toteutusta)");
-                    resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    pixelAlert("Lopputaistelu avattu!<br>(Odottaa toteutusta)", () => {
+                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
+                    });
                 });
             }
         }
@@ -1341,11 +1425,39 @@ class ChiptuneEngine {
                 tabSs.classList.add('hidden');
             }
 
-            // Sama myös "VALITSE PELI" -ikkunan painikkeille
-            const modeBtnRunner = document.getElementById('mode-btn-runner');
-            if (modeBtnRunner) modeBtnRunner.classList.toggle('hidden', localStorage.getItem('vm2000_unlocked_runner') !== 'true');
-            const modeBtnSs = document.getElementById('mode-btn-spaceshooter');
-            if (modeBtnSs) modeBtnSs.classList.toggle('hidden', localStorage.getItem('vm2000_unlocked_spaceshooter') !== 'true');
+            // "VALITSE PELI" -ikkunan painikkeet: lukittuna näkyvät himmeinä + vaadittu EXP
+            setModeButtonLock('mode-btn-runner', localStorage.getItem('vm2000_unlocked_runner') === 'true');
+            setModeButtonLock('mode-btn-spaceshooter', localStorage.getItem('vm2000_unlocked_spaceshooter') === 'true');
+        }
+
+        function setModeButtonLock(btnId, unlocked) {
+            const b = document.getElementById(btnId);
+            if (!b) return;
+            b.disabled = !unlocked;
+            b.classList.toggle('mode-locked', !unlocked);
+            b.classList.remove('hidden');
+            const lock = b.querySelector('.mode-lock');
+            if (lock) lock.classList.toggle('hidden', unlocked);
+        }
+
+        function updateModeSelectInfo() {
+            const sel = document.getElementById('group-selector');
+            const el = document.getElementById('mode-select-group');
+            if (!sel || !el || !sel.selectedOptions[0]) return;
+            const name = sel.selectedOptions[0].textContent.replace(/^[^0-9A-Za-zÄÖÅäöå]+/, '');
+            el.textContent = 'VERBIRYHMÄ: ' + name;
+        }
+
+        function backToGroupSelect() {
+            audio.playSelect();
+            modeSelectScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            document.getElementById('start-step-preview').classList.add('hidden');
+            document.getElementById('start-step-preview').classList.remove('flex');
+            document.getElementById('start-step-select').classList.remove('hidden');
+            const btns = document.querySelectorAll('#start-step-select .jrpg-btn');
+            btns.forEach(b => b.classList.remove('menu-active'));
+            if (btns.length > 0) btns[0].classList.add('menu-active');
         }
 
         // ==========================================
@@ -1857,6 +1969,7 @@ class ChiptuneEngine {
             startScreen.classList.add('hidden');
             hideOverlay();
             checkUnlockedModes();
+            updateModeSelectInfo();
             modeSelectScreen.classList.remove('hidden');
 
             const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
@@ -2092,9 +2205,7 @@ class ChiptuneEngine {
                 const splash = document.getElementById('splash-screen');
                 const mainMenu = document.getElementById('main-menu-screen');
                 if (splash.classList.contains('hidden') && mainMenu.classList.contains('hidden')) {
-                    if (confirm('Haluatko siirtyä takaisin päävalikkoon?')) {
-                        enterMainMenu();
-                    }
+                    pixelConfirm('Haluatko siirtyä takaisin päävalikkoon?', () => enterMainMenu());
                 }
                 return;
             }
@@ -2190,13 +2301,12 @@ class ChiptuneEngine {
         function newGame() {
             audio.playSelect();
             if (localStorage.getItem('vm2000_totalscore')) {
-                const confirmNew = confirm("Haluatko varmasti aloittaa uuden pelin? Aiemmat pisteet ja tasot nollataan.");
-                if (confirmNew) {
+                pixelConfirm("Haluatko varmasti aloittaa uuden pelin?<br>Aiemmat pisteet ja tasot nollataan.", () => {
                     localStorage.clear();
                     resetTotalScore();
                     if (!audio.ctx) audio.init();
                     startCutscene('intro_part1', startWelcomeScreen);
-                }
+                });
             } else {
                 if (!audio.ctx) audio.init();
                 startCutscene('intro_part1', startWelcomeScreen);
@@ -2362,6 +2472,7 @@ class ChiptuneEngine {
             changeVerbGroup(selectedGroupForStart);
             startScreen.classList.add('hidden');
             checkUnlockedModes();
+            updateModeSelectInfo();
             modeSelectScreen.classList.remove('hidden');
 
             const btns = document.querySelectorAll('#mode-select-screen .jrpg-btn');
@@ -2400,7 +2511,7 @@ class ChiptuneEngine {
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
             else if (mode === 'spaceshooter') modeBGM = "alex-morgan-gaming-stream-arcade-session-578484.mp3";
-            else if (mode === 'runner') modeBGM = "psychronic-singularity-drive-392053.mp3"; 
+            else if (mode === 'runner') modeBGM = "gh0stly-the-infinite-fall-271940.mp3"; 
             else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; 
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
             else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
@@ -2565,6 +2676,42 @@ class ChiptuneEngine {
             overlayPanel.classList.add('hidden');
         }
 
+        // Pikselityyliset vahvistus- ja ilmoitusdialogit (korvaavat selaimen confirm/alert)
+        function pixelConfirm(message, onYes, onNo) {
+            window._pxConfirmYes = onYes || null;
+            window._pxConfirmNo = onNo || null;
+            showOverlay(`
+                <div class="jrpg-box p-5 flex flex-col gap-5 text-center">
+                    <div class="win-title"><span>VAHVISTA.EXE</span><span>■</span></div>
+                    <p class="font-sans text-lg sm:text-xl text-cyan-200 leading-relaxed">${message}</p>
+                    <div class="flex flex-col gap-3">
+                        <button onclick="pixelConfirmAnswer(false)" class="jrpg-btn py-3 text-sm sm:text-base menu-active">EI (TAKAISIN)</button>
+                        <button onclick="pixelConfirmAnswer(true)" class="jrpg-btn jrpg-btn-gold py-3 text-sm sm:text-base">KYLLÄ</button>
+                    </div>
+                </div>`);
+        }
+        function pixelConfirmAnswer(yes) {
+            const cb = yes ? window._pxConfirmYes : window._pxConfirmNo;
+            window._pxConfirmYes = null; window._pxConfirmNo = null;
+            hideOverlay();
+            if (cb) cb();
+        }
+        function pixelAlert(message, onClose) {
+            window._pxAlertCb = onClose || null;
+            showOverlay(`
+                <div class="jrpg-box p-5 flex flex-col gap-5 text-center">
+                    <div class="win-title"><span>ILMOITUS.EXE</span><span>■</span></div>
+                    <p class="font-sans text-lg sm:text-xl text-cyan-200 leading-relaxed">${message}</p>
+                    <button onclick="pixelAlertClose()" class="jrpg-btn jrpg-btn-primary py-3 text-sm sm:text-base menu-active">OK (SULJE)</button>
+                </div>`);
+        }
+        function pixelAlertClose() {
+            const cb = window._pxAlertCb;
+            window._pxAlertCb = null;
+            hideOverlay();
+            if (cb) cb();
+        }
+
         function showDifficultyModal() {
             isBubblePlaying = false;
             overlayPanel.classList.add('hidden'); 
@@ -2624,45 +2771,261 @@ class ChiptuneEngine {
         let lastBubbleSpawn = 0;
         let time = 0;
 
+        // ==========================================
+        // VAPORWAVE / OUTRUN -TAUSTA
+        // Staattiset kerrokset (taivas, aurinko/kuu, kaupunkisiluetti) piirretään kerran
+        // pieneen pikselipuskuriin ja skaalataan ylös ilman pehmennystä.
+        // Dynaamiset osat (tähdet, ikkunat, liikkuva ruudukko) piirretään joka ruudulla.
+        // ==========================================
+        const BG_THEMES = {
+            // kuplapeli: pinkki-oranssi auringonlasku
+            bubble: {
+                sky: ['#07011a','#10042e','#1b0a4a','#2d0f63','#4b1478','#6e1a82','#951f88','#bd2a8e','#e0409a'],
+                ground: ['#1c0a4a','#10062e','#07011a'],
+                body: 'sun', bodyColors: ['#fff27a','#ffd23f','#ff9d3a','#ff5e6c','#ff2e97'], stripes: true,
+                city: ['#74258f','#3a1470'], windowDim: '#7a3a9a', windowLit: '#ffd23f', seed: 7,
+                gridH: ['#5a1e8c','#a3105f','#ff2e97'], gridV: ['#1a6a8a','#22a8c8','#22e6ff'], horizon: '#ff6ec7', stars: ['#ffffff','#bdb4e6','#22e6ff']
+            },
+            // kirjainsotku: violetti yö ja kuu
+            scramble: {
+                sky: ['#03010f','#07052a','#0d0a45','#150f5e','#1f1478','#2b1a8f','#3d24a0','#5634b4','#7348c8'],
+                ground: ['#150a40','#0c0528','#05010f'],
+                body: 'moon', bodyColors: ['#f4f0ff','#dcd4ff','#bdb4e6','#9a8fcc','#7a6fb0'], stripes: false,
+                city: ['#4a3aa0','#271a70'], windowDim: '#4a3aa6', windowLit: '#bdb4e6', seed: 21,
+                gridH: ['#2d2554','#4a3aa6','#6b4fd8'], gridV: ['#2d4a8a','#2e78c8','#22e6ff'], horizon: '#9a8fff', stars: ['#ffffff','#bdb4e6','#7aa8ff']
+            },
+            // kirjoitus: minttu/terminaali
+            typing: {
+                sky: ['#01100f','#022220','#03332f','#044a44','#066860','#088a7e','#10a898','#2cc4ac','#5fe8c0'],
+                ground: ['#05302c','#021a18','#010a09'],
+                body: 'sun', bodyColors: ['#eafff5','#b6ffe0','#7affc8','#3cc7b0','#12a394'], stripes: true,
+                city: ['#0f7068','#06453f'], windowDim: '#0f7a6e', windowLit: '#b6ffe0', seed: 33,
+                gridH: ['#07605a','#12a394','#7affc8'], gridV: ['#07605a','#12a394','#7affc8'], horizon: '#b6ffe0', stars: ['#ffffff','#b6ffe0','#7affc8']
+            },
+            // sanakortit: pastellivaporwave
+            cards: {
+                sky: ['#2b1a5e','#3d2477','#533090','#6f3fa8','#9050bd','#b562cf','#d777da','#f290d6','#ffb3dd'],
+                ground: ['#3a2275','#241250','#12082e'],
+                body: 'sun', bodyColors: ['#fff0c9','#ffe0a3','#ffc58a','#ff9fae','#ff80c0'], stripes: true,
+                city: ['#9a62c4','#5e3896'], windowDim: '#a870d0', windowLit: '#fff0c9', seed: 45,
+                gridH: ['#8f5ac0','#c279d6','#ffb3dd'], gridV: ['#6a8ad0','#8ab0f0','#c8e0ff'], horizon: '#ffd0ee', stars: ['#ffffff','#ffd0ee','#c8e0ff']
+            }
+        };
+
+        const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+        let bgCache = { key: null, w: 0, h: 0, canvas: null, P: 4, bw: 0, bh: 0, hor: 0, stars: [], blinkers: [] };
+
+        function bgPack(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+            return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+        }
+
+        function bgRng(seed) {
+            let a = seed | 0;
+            return function () {
+                a = (a + 0x6D2B79F5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function buildBgStatic(key) {
+            const th = BG_THEMES[key];
+            const P = Math.max(2, Math.round(canvasHeight / 170));
+            const bw = Math.ceil(canvasWidth / P);
+            const bh = Math.ceil(canvasHeight / P);
+            const hor = Math.floor(bh * 0.62);
+
+            const c = document.createElement('canvas');
+            c.width = bw; c.height = bh;
+            const g = c.getContext('2d');
+            const img = g.createImageData(bw, bh);
+            const px = new Uint32Array(img.data.buffer);
+
+            // Dithering-apuri: valitsee kahden värin väliltä Bayer-matriisilla
+            const dither = (cols, t, x, y) => {
+                const n = cols.length;
+                const f = Math.min(Math.max(t, 0), 0.9999) * (n - 1);
+                const i = Math.floor(f);
+                const frac = f - i;
+                const thr = (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+                return frac > thr ? cols[i + 1] : cols[i];
+            };
+
+            const sky = th.sky.map(bgPack);
+            const ground = th.ground.map(bgPack);
+
+            // Taivas
+            for (let y = 0; y < hor; y++) {
+                const t = y / (hor - 1);
+                for (let x = 0; x < bw; x++) px[y * bw + x] = dither(sky, t, x, y);
+            }
+            // Maa
+            for (let y = hor; y < bh; y++) {
+                const t = (y - hor) / Math.max(1, bh - hor - 1);
+                for (let x = 0; x < bw; x++) px[y * bw + x] = dither(ground, t, x, y);
+            }
+
+            // Aurinko tai kuu
+            const bodyCols = th.bodyColors.map(bgPack);
+            const isMoon = th.body === 'moon';
+            const R = Math.floor(Math.min(bw, hor) * (isMoon ? 0.15 : 0.30));
+            const cx = Math.floor(bw * (isMoon ? 0.72 : 0.5));
+            const cy = isMoon ? Math.floor(hor * 0.34) : Math.floor(hor - R * 0.28);
+            for (let y = Math.max(0, cy - R); y <= Math.min(hor - 1, cy + R); y++) {
+                for (let x = cx - R; x <= cx + R; x++) {
+                    if (x < 0 || x >= bw) continue;
+                    const dx = x - cx, dy = y - cy;
+                    if (dx * dx + dy * dy > R * R) continue;
+                    if (th.stripes && dy > R * 0.05) {
+                        const period = Math.max(4, Math.round(R * 0.2));
+                        const gap = Math.round((dy / R) * period * 0.8);
+                        if (((y - cy) % period) < gap) continue;
+                    }
+                    const t = (y - (cy - R)) / (2 * R);
+                    px[y * bw + x] = dither(bodyCols, t, x, y);
+                }
+            }
+            // Kuun kraatterit
+            if (isMoon) {
+                const crater = bgPack('#9a8fcc');
+                [[-0.35, -0.2, 0.18], [0.2, 0.25, 0.14], [-0.1, 0.45, 0.1]].forEach(([ox, oy, r]) => {
+                    const rr = Math.max(2, Math.round(R * r));
+                    for (let y = -rr; y <= rr; y++) for (let x = -rr; x <= rr; x++) {
+                        if (x * x + y * y <= rr * rr) {
+                            const X = cx + Math.round(R * ox) + x, Y = cy + Math.round(R * oy) + y;
+                            if (X >= 0 && X < bw && Y >= 0 && Y < hor) px[Y * bw + X] = crater;
+                        }
+                    }
+                });
+            }
+
+            // Kaupunkisiluetti: kaksi kerrosta (kaukainen vaaleampi, lähin tummempi)
+            const rng = bgRng(th.seed);
+            const blinkers = [];
+            const layers = [
+                { color: bgPack(th.city[0]), minH: bh * 0.05, rangeH: bh * 0.10, wMin: 3, wMax: 8, winChance: 0.0 },
+                { color: bgPack(th.city[1]), minH: bh * 0.035, rangeH: bh * 0.12, wMin: 4, wMax: 10, winChance: 0.22 }
+            ];
+            const winDim = bgPack(th.windowDim);
+            layers.forEach((L, li) => {
+                let x = li === 0 ? -2 : -5;
+                while (x < bw) {
+                    const w = L.wMin + Math.floor(rng() * (L.wMax - L.wMin + 1));
+                    let h = Math.floor(L.minH + rng() * L.rangeH);
+                    const tall = rng() < 0.12;
+                    if (tall) h = Math.floor(h * 1.7);
+                    const top = hor - h;
+                    for (let yy = Math.max(0, top); yy < hor; yy++) {
+                        for (let xx = Math.max(0, x); xx < Math.min(bw, x + w); xx++) px[yy * bw + xx] = L.color;
+                    }
+                    // porrastettu yläosa
+                    if (rng() < 0.45 && w > 4) {
+                        const h2 = 2 + Math.floor(rng() * 3);
+                        for (let yy = Math.max(0, top - h2); yy < top; yy++) {
+                            for (let xx = Math.max(0, x + 2); xx < Math.min(bw, x + w - 2); xx++) px[yy * bw + xx] = L.color;
+                        }
+                    }
+                    // antenni
+                    if (tall) {
+                        const ax = x + Math.floor(w / 2);
+                        const ah = 3 + Math.floor(rng() * 4);
+                        for (let yy = Math.max(0, top - ah); yy < top; yy++) if (ax >= 0 && ax < bw) px[yy * bw + ax] = L.color;
+                        if (li === 1 && ax >= 0 && ax < bw && blinkers.length < 60) blinkers.push({ x: ax, y: Math.max(0, top - ah), kind: 'red' });
+                    }
+                    // ikkunat (vain lähin kerros)
+                    if (L.winChance > 0) {
+                        for (let wy = top + 2; wy < hor - 1; wy += 3) {
+                            for (let wx = x + 1; wx < x + w - 1; wx += 2) {
+                                if (wx < 0 || wx >= bw) continue;
+                                if (rng() < L.winChance) {
+                                    px[wy * bw + wx] = winDim;
+                                    if (blinkers.length < 60 && rng() < 0.25) blinkers.push({ x: wx, y: wy, kind: 'win' });
+                                }
+                            }
+                        }
+                    }
+                    x += w + (rng() < 0.3 ? 1 : 0);
+                }
+            });
+
+            g.putImageData(img, 0, 0);
+
+            // Tähdet taivaalle (dynaamiset)
+            const starRng = bgRng(th.seed * 31 + 5);
+            const stars = [];
+            for (let i = 0; i < 55; i++) {
+                stars.push({ x: Math.floor(starRng() * bw), y: Math.floor(starRng() * hor * 0.66), ph: starRng() * 6.28, c: Math.floor(starRng() * th.stars.length) });
+            }
+
+            bgCache = { key, w: canvasWidth, h: canvasHeight, canvas: c, P, bw, bh, hor, stars, blinkers };
+        }
+
         function drawBackground() {
-            const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-            grad.addColorStop(0, '#000022');
-            grad.addColorStop(0.6, '#1a103c');
-            grad.addColorStop(1, '#000000');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            ctx.fillStyle = '#ffffff';
-            for(let i=0; i<50; i++) {
-                const x = (Math.sin(i * 123.45) * 0.5 + 0.5) * canvasWidth;
-                const y = (Math.cos(i * 67.89) * 0.5 + 0.5) * (canvasHeight * 0.6);
-                const size = Math.abs(Math.sin(time * 0.002 + i)) * 2;
-                ctx.fillRect(x, y, size, size);
+            const key = BG_THEMES[gameMode] ? gameMode : 'bubble';
+            if (!bgCache.canvas || bgCache.key !== key || bgCache.w !== canvasWidth || bgCache.h !== canvasHeight) {
+                buildBgStatic(key);
             }
+            const th = BG_THEMES[key];
+            const { P, bw, bh, hor } = bgCache;
 
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
-            ctx.lineWidth = 1;
-            const horizonY = canvasHeight * 0.65;
-            
-            ctx.beginPath();
-            ctx.moveTo(0, horizonY);
-            ctx.lineTo(canvasWidth, horizonY);
-            ctx.stroke();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(bgCache.canvas, 0, 0, bw * P, bh * P);
 
-            for(let i=-5; i<=5; i++) {
-                ctx.beginPath();
-                ctx.moveTo(canvasWidth/2, horizonY);
-                ctx.lineTo(canvasWidth/2 + i * 200, canvasHeight);
-                ctx.stroke();
+            // Tähdet (välkkyvät)
+            bgCache.stars.forEach(s => {
+                const v = Math.sin(time * 0.003 + s.ph);
+                if (v < -0.35) return;
+                ctx.fillStyle = v > 0.6 ? th.stars[0] : th.stars[s.c];
+                ctx.fillRect(s.x * P, s.y * P, P, P);
+            });
+
+            // Vilkkuvat ikkunat ja antennivalot
+            const blinkStep = Math.floor(time / 600);
+            bgCache.blinkers.forEach((b, i) => {
+                if (b.kind === 'red') {
+                    if ((blinkStep + i) % 2 === 0) { ctx.fillStyle = '#ff3b4a'; ctx.fillRect(b.x * P, b.y * P, P, P); }
+                } else if ((blinkStep * 7 + i * 13) % 5 < 2) {
+                    ctx.fillStyle = th.windowLit; ctx.fillRect(b.x * P, b.y * P, P, P);
+                }
+            });
+
+            // Horisonttiviiva
+            ctx.fillStyle = th.horizon;
+            ctx.fillRect(0, hor * P, bw * P, P);
+
+            // Liikkuva ruudukko (portaittain, retro)
+            const step = Math.floor(time / 80);
+            const phase = (step % 10) / 10;
+            const rows = bh - hor;
+            const N = 14;
+            for (let k = 0; k < N; k++) {
+                const d = (k + phase) / N;
+                const y = hor + 1 + Math.floor(d * d * (rows - 1));
+                if (y >= bh) continue;
+                const tone = d < 0.3 ? 0 : (d < 0.65 ? 1 : 2);
+                ctx.fillStyle = th.gridH[tone];
+                ctx.fillRect(0, y * P, bw * P, d > 0.7 ? P * 2 : P);
             }
-            
-            for(let i=1; i<10; i++) {
-                const y = horizonY + Math.pow(i, 2) * 2;
-                if (y < canvasHeight) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(canvasWidth, y);
-                    ctx.stroke();
+            const cx = Math.floor(bw / 2);
+            const lines = 8;
+            for (let tone = 0; tone < 3; tone++) {
+                const y0 = hor + 1 + Math.floor(rows * (tone === 0 ? 0.14 : (tone === 1 ? 0.3 : 0.62)));
+                const y1 = hor + 1 + Math.floor(rows * (tone === 0 ? 0.3 : (tone === 1 ? 0.62 : 1)));
+                ctx.fillStyle = th.gridV[tone];
+                for (let i = -lines; i <= lines; i++) {
+                    const xb = i * bw * 0.12;
+                    for (let y = y0; y < y1 && y < bh; y++) {
+                        const x = Math.round(cx + xb * ((y - hor) / rows));
+                        const xp = Math.round(cx + xb * ((y - 1 - hor) / rows));
+                        let lo = x, hi = x;
+                        if (x > xp) lo = xp + 1; else if (x < xp) hi = xp - 1;
+                        if (hi < 0 || lo >= bw) continue;
+                        lo = Math.max(lo, 0); hi = Math.min(hi, bw - 1);
+                        ctx.fillRect(lo * P, y * P, (hi - lo + 1) * P, P);
+                    }
                 }
             }
         }
@@ -3982,12 +4345,17 @@ class ChiptuneEngine {
             const x = canvasWidth / 2 - w / 2;
             const y = canvasHeight - 90;
             
-            ctx.fillStyle = 'rgba(0, 0, 50, 0.85)';
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 4;
-            
+            // kova pikselivarjo + violetti paneeli + pinkki/syaani kehys
+            ctx.fillStyle = '#2a1260';
+            ctx.fillRect(x + 5, y + 5, w, h);
+            ctx.fillStyle = 'rgba(20, 10, 51, 0.94)';
             ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#ff2e97';
+            ctx.lineWidth = 4;
             ctx.strokeRect(x, y, w, h);
+            ctx.strokeStyle = '#22e6ff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 5, y + 5, w - 10, h - 10);
             
             ctx.fillStyle = '#000';
             ctx.font = fontSize1 + 'px "Press Start 2P"';
@@ -4526,7 +4894,7 @@ class ChiptuneEngine {
             stage.style.left = Math.floor((vw - w) / 2) + 'px';
             stage.style.top = Math.floor((vh - h) / 2) + 'px';
 
-            document.documentElement.style.fontSize = Math.max(5, 16 * h / GAME_REF_HEIGHT) + 'px';
+            document.documentElement.style.fontSize = Math.max(6, Math.round(16 * h / GAME_REF_HEIGHT)) + 'px';
 
             resizeCanvas();
         }
