@@ -220,6 +220,18 @@
             background-position: 0 0, 2px 2px;
         }
 
+        #ss-boss-hud {
+            background: rgba(20, 10, 51, 0.92) !important;
+            border-color: var(--pink) !important;
+            border-radius: 0 !important;
+            box-shadow: 4px 4px 0 var(--violet-dark);
+        }
+        #ss-boss-hud > div:first-child { color: #ff6ec7 !important; text-shadow: 2px 2px 0 #000; }
+        #ss-boss-hp-bar {
+            background-color: var(--pink) !important;
+            background-image: repeating-linear-gradient(90deg, transparent 0, transparent 9px, #140a33 9px, #140a33 11px);
+        }
+
         #group-selector {
             background: var(--night) !important;
             border-color: var(--cyan) !important;
@@ -1352,7 +1364,7 @@ class ChiptuneEngine {
             
             isBubblePlaying = false; 
             if (wasSS) { ssPausedState = ssState; ssState = 'menu'; }
-            if (wasRunner) trGameState = 'PAUSED';
+            if (wasRunner) { trPausedState = trGameState; trGameState = 'PAUSED'; }
             
             startCutscene(sceneId, () => {
                 document.getElementById('game-canvas-wrapper').classList.remove('hidden');
@@ -1371,7 +1383,8 @@ class ChiptuneEngine {
                 ssState = ssPausedState || 'playing';
                 ssPausedState = null;
             } else if (prevMode === 'runner' && wasRunner) {
-                trGameState = 'CHASE'; // Yksinkertaistettu palautus
+                trGameState = trPausedState || 'CHASE';
+                trPausedState = null;
             } else if (prevMode === 'bubble' && wasBubble) {
                 isBubblePlaying = true;
             }
@@ -1619,6 +1632,7 @@ class ChiptuneEngine {
             ssBoss.vy = 0;
             ssBoss.finalBlast = false;
             ssPausedState = null;
+            ssWarp = 1; ssBgPhaseSeen = 1; ssBgFlash = 0; ssBgLastT = 0; ssBgOff = [0, 0, 0];
             
             document.getElementById('ss-boss-hud').classList.add('hidden');
             
@@ -1644,28 +1658,233 @@ class ChiptuneEngine {
             ssLastHeartSpawn = ssTime;
         }
 
+        // ==========================================
+        // SPACE SHOOTER: PIKSELITAUSTA (vaporwave-avaruus)
+        // ==========================================
+        let ssBg = { key: '' };
+        let ssWarp = 1, ssBgOff = [0, 0, 0], ssBgLastT = 0, ssBgPhaseSeen = 1, ssBgFlash = 0;
+
+        function updateSsWarp() {
+            let target = 1;
+            if (ssState === 'boss' && ssBoss.active) {
+                if (ssBoss.state === 'dying') target = 0.5;
+                else if (ssBoss.state === 'fleeing') target = 3.2;
+                else target = ssBoss.phase >= 3 ? 2.4 : (ssBoss.phase === 2 ? 2.0 : 1.6);
+            }
+            ssWarp += (target - ssWarp) * 0.04;
+        }
+
+        function buildSsBg() {
+            const P = Math.max(2, Math.round(canvasHeight / 170));
+            const bw = Math.ceil(canvasWidth / P), bh = Math.ceil(canvasHeight / P);
+
+            // taivas
+            const sky = document.createElement('canvas'); sky.width = bw; sky.height = bh;
+            const sg = sky.getContext('2d');
+            const im = sg.createImageData(bw, bh);
+            const px = new Uint32Array(im.data.buffer);
+            const cols = ['#03010f', '#07031d', '#0d0535', '#150a4a', '#220d5e', '#33106b', '#4a1275', '#5a1478'].map(bgPack);
+            for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) px[y * bw + x] = bgDither(cols, y / (bh - 1), x, y);
+            sg.putImageData(im, 0, 0);
+
+            // sumut (dither-pilvet, saumaton vaakasuunnassa)
+            const makeNebula = (seed, count, rMin, rMax, strength) => {
+                const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+                const g = c.getContext('2d');
+                const img = g.createImageData(bw, bh);
+                const p32 = new Uint32Array(img.data.buffer);
+                const rng = bgRng(seed);
+                const palette = ['#ff2e97', '#22e6ff', '#6b4fd8', '#b8269a'].map(bgPack);
+                for (let b = 0; b < count; b++) {
+                    const cx = rng() * bw, cy = rng() * bh, r = (rMin + rng() * (rMax - rMin)) * bh;
+                    const col = palette[Math.floor(rng() * palette.length)];
+                    const str = strength * (0.6 + rng() * 0.4);
+                    const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(bh - 1, Math.ceil(cy + r));
+                    for (let y = y0; y <= y1; y++) {
+                        for (let x = 0; x < bw; x++) {
+                            let dx = Math.abs(x - cx); dx = Math.min(dx, bw - dx);
+                            const d = Math.sqrt(dx * dx + (y - cy) * (y - cy)) / r;
+                            if (d >= 1) continue;
+                            const v = str * Math.pow(1 - d, 1.4);
+                            const thr = (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+                            if (v > thr) p32[y * bw + x] = col;
+                        }
+                    }
+                }
+                g.putImageData(img, 0, 0);
+                return c;
+            };
+            const neb = [makeNebula(5, 5, 0.28, 0.42, 0.36), makeNebula(9, 4, 0.16, 0.26, 0.4)];
+
+            // rengasplaneetta
+            const R = Math.floor(bh * 0.15);
+            const rx = Math.floor(R * 1.75), ry = Math.floor(R * 0.4);
+            const PW = rx * 2 + 4, PH = Math.max(R * 2 + 4, ry * 2 + 4);
+            const pl = document.createElement('canvas'); pl.width = PW; pl.height = PH;
+            const pg = pl.getContext('2d');
+            const pim = pg.createImageData(PW, PH);
+            const pp = new Uint32Array(pim.data.buffer);
+            const planetCols = ['#ff9ad5', '#d94fb0', '#9a2d9a', '#5a1a80', '#2a1260'].map(bgPack);
+            const ringCols = ['#7a2a9a', '#ff6ec7', '#ffd23f'].map(bgPack);
+            const pcx = PW / 2, pcy = PH / 2;
+            for (let y = 0; y < PH; y++) {
+                for (let x = 0; x < PW; x++) {
+                    const dx = x - pcx + 0.5, dy = y - pcy + 0.5;
+                    const inPlanet = dx * dx + dy * dy <= R * R;
+                    const rv = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+                    const inRing = rv <= 1 && rv >= 0.46;
+                    if (inRing && (dy > 0 || !inPlanet)) {
+                        pp[y * PW + x] = bgDither(ringCols, (Math.sqrt(rv) - 0.68) / 0.32, x, y);
+                    } else if (inPlanet) {
+                        const nx = dx / R, ny = dy / R, nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+                        const lum = Math.max(0, -0.5 * nx - 0.55 * ny + 0.65 * nz);
+                        const t = 1 - lum + Math.sin(dy * 0.45) * 0.05;
+                        pp[y * PW + x] = bgDither(planetCols, t, x, y);
+                    }
+                }
+            }
+            pg.putImageData(pim, 0, 0);
+
+            // raidallinen jättiplaneetta/aurinko (kaukana, haalea)
+            const Rs = Math.floor(bh * 0.5), D = Rs * 2 + 1;
+            const sp = document.createElement('canvas'); sp.width = D; sp.height = D;
+            const spg = sp.getContext('2d');
+            const sim = spg.createImageData(D, D);
+            const s32 = new Uint32Array(sim.data.buffer);
+            const sunCols = ['#ff9d3a', '#ff5e6c', '#ff2e97', '#b8269a', '#6b1a8a'].map(bgPack);
+            const period = Math.max(5, Math.round(Rs * 0.14));
+            for (let y = 0; y < D; y++) {
+                const dy = y - Rs;
+                for (let x = 0; x < D; x++) {
+                    const dx = x - Rs;
+                    if (dx * dx + dy * dy > Rs * Rs) continue;
+                    if (dy > -Rs * 0.15) {
+                        const gapN = Math.round(((dy + Rs * 0.15) / (Rs * 1.15)) * period * 0.8);
+                        if ((y % period) < gapN) continue;
+                    }
+                    s32[y * D + x] = bgDither(sunCols, y / D, x, y);
+                }
+            }
+            spg.putImageData(sim, 0, 0);
+
+            // asteroidit (etualan siluetit)
+            const debris = [];
+            for (let i = 0; i < 4; i++) {
+                const r = bgRng(100 + i * 17);
+                const w = 9 + Math.floor(r() * 6), h = 6 + Math.floor(r() * 4);
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                const g = c.getContext('2d');
+                for (let y = 0; y < h; y++) {
+                    const ww = Math.max(3, Math.round(w * (0.55 + r() * 0.45) * (1 - Math.abs(y - h / 2) / (h * 0.9))));
+                    const off = Math.floor((w - ww) / 2);
+                    g.fillStyle = '#1a0b3d'; g.fillRect(off, y, ww, 1);
+                    g.fillStyle = '#2a1260'; g.fillRect(off, y, Math.min(2, ww), 1);
+                }
+                debris.push(c);
+            }
+            const dr = bgRng(321), debrisPos = [];
+            for (let i = 0; i < 6; i++) debrisPos.push({ sprite: i % 4, base: dr() * 1400, y: 0.08 + dr() * 0.84, speed: 0.12 + dr() * 0.14, scale: 2 + Math.floor(dr() * 3) });
+
+            ssBg = { key: canvasWidth + 'x' + canvasHeight, P: P, bw: bw, bh: bh, sky: sky, neb: neb, planet: pl, sunPlanet: sp, debris: debris, debrisPos: debrisPos };
+        }
+
+        function drawSsBackground() {
+            const key = canvasWidth + 'x' + canvasHeight;
+            if (ssBg.key !== key) buildSsBg();
+            const B = ssBg, P = B.P;
+            const dt = Math.min(50, Math.max(0, ssTime - ssBgLastT));
+            ssBgLastT = ssTime;
+            ssBgOff[0] += dt * 0.006 * ssWarp;
+            ssBgOff[1] += dt * 0.014 * ssWarp;
+            ssBgOff[2] += dt * ssWarp;
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(B.sky, 0, 0, B.bw * P, B.bh * P);
+
+            // jättiplaneetta alareunassa
+            const sw = B.sunPlanet.width * P;
+            ctx.globalAlpha = 0.6;
+            ctx.drawImage(B.sunPlanet, canvasWidth * 0.14 - sw / 2, canvasHeight * 1.02 - sw / 2 + Math.sin(ssTime * 0.0004) * 4, sw, sw);
+            ctx.globalAlpha = 1;
+
+            // sumut
+            const tw = B.bw * P;
+            for (let i = 0; i < 2; i++) {
+                const o = ((ssBgOff[i] % tw) + tw) % tw;
+                ctx.globalAlpha = 0.85;
+                ctx.drawImage(B.neb[i], -o, 0, tw, B.bh * P);
+                if (tw - o < canvasWidth) ctx.drawImage(B.neb[i], tw - o, 0, tw, B.bh * P);
+                ctx.globalAlpha = 1;
+            }
+
+            // rengasplaneetta ajelehtii hitaasti
+            const pw = B.planet.width * P;
+            const span = canvasWidth + pw * 2;
+            const ppx = canvasWidth + pw - ((ssBgOff[2] * 0.0065 + canvasWidth * 0.4) % span);
+            ctx.drawImage(B.planet, ppx - pw / 2, canvasHeight * 0.26 - (B.planet.height * P) / 2, pw, B.planet.height * P);
+
+            // tähdet kolmessa kerroksessa
+            const streak = ssWarp > 1.5;
+            ssStars.forEach(s => {
+                let size, col;
+                if (s.speed < 1.1) { size = 2; col = '#7a6fb0'; }
+                else if (s.speed < 1.8) { size = P; col = '#bdb4e6'; }
+                else { size = Math.max(P, Math.round(P * 1.5)); col = (Math.floor(s.x * 7 + s.y) % 3 === 0) ? '#22e6ff' : '#ffffff'; }
+                if (Math.sin(ssTime * 0.004 + s.y) < -0.85) return;
+                ctx.fillStyle = col;
+                const len = streak ? Math.round(s.speed * ssWarp * 4) : size;
+                ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.max(size, len), size);
+            });
+
+            // tähdenlento
+            const ph = (ssTime % 9000) / 9000;
+            if (ph < 0.07) {
+                const q = ph / 0.07;
+                const hx = canvasWidth * 0.88 - canvasWidth * 0.5 * q, hy = canvasHeight * 0.08 + canvasHeight * 0.34 * q;
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(hx), Math.round(hy), P * 2, P * 2);
+                for (let k = 1; k < 9; k++) {
+                    ctx.globalAlpha = 1 - k / 9;
+                    ctx.fillStyle = k < 4 ? '#22e6ff' : '#ff6ec7';
+                    ctx.fillRect(Math.round(hx + k * P * 2.2), Math.round(hy - k * P * 0.95), P, P);
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            // etualan asteroidit (matala kontrasti)
+            const loopW = canvasWidth + 240;
+            B.debrisPos.forEach(d => {
+                const x = (((d.base - ssBgOff[2] * d.speed) % loopW) + loopW) % loopW - 120;
+                const spr = B.debris[d.sprite];
+                ctx.globalAlpha = 0.85;
+                ctx.drawImage(spr, Math.round(x), Math.round(d.y * canvasHeight), spr.width * d.scale, spr.height * d.scale);
+            });
+            ctx.globalAlpha = 1;
+
+            // boss-vaiheen tunnelma: punertava sävy, vinjetti ja vaiheenvaihdon välähdys
+            if (ssState === 'boss' && ssBoss.active) {
+                if (ssBoss.phase !== ssBgPhaseSeen) { ssBgFlash = 1; ssBgPhaseSeen = ssBoss.phase; }
+                ctx.fillStyle = 'rgba(255, 30, 110, ' + (0.04 + 0.03 * ssBoss.phase) + ')';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                const vg = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, canvasHeight * 0.35, canvasWidth / 2, canvasHeight / 2, canvasWidth * 0.62);
+                vg.addColorStop(0, 'rgba(20, 0, 30, 0)'); vg.addColorStop(1, 'rgba(20, 0, 30, 0.45)');
+                ctx.fillStyle = vg; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            } else {
+                ssBgPhaseSeen = 1;
+            }
+            if (ssBgFlash > 0.02) {
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + (ssBgFlash * 0.45) + ')';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                ssBgFlash *= 0.9;
+            }
+        }
+
         function drawSpaceShooter() {
             ctx.save();
             if (ssShakeTime > 0) {
                 ctx.translate((Math.random()-0.5)*ssShakeMag, (Math.random()-0.5)*ssShakeMag);
             }
             
-            ctx.fillStyle = '#050510';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-            
-            ssNebulas.forEach(n => {
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
-                ctx.fillStyle = n.color;
-                ctx.fill();
-            });
-            
-            ctx.fillStyle = '#ffffff';
-            ssStars.forEach(s => {
-                ctx.globalAlpha = Math.random() > 0.8 ? 0.5 : 1.0;
-                ctx.fillRect(s.x, s.y, 2, 2);
-            });
-            ctx.globalAlpha = 1.0;
+            drawSsBackground();
             
             if (ssState === 'playing' || ssState === 'boss') {
                 ssExhausts.forEach(e => {
@@ -1714,13 +1933,15 @@ class ChiptuneEngine {
                     }
                 }
 
-                ctx.fillStyle = '#fef08a';
                 ssBullets.forEach(b => {
+                    ctx.fillStyle = '#22e6ff';
                     ctx.fillRect(b.x, b.y, b.width, b.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(b.x + 4, b.y + 2, Math.max(2, b.width - 8), Math.max(2, b.height - 4));
                 });
 
                 ssEnemyBullets.forEach(b => {
-                    ctx.fillStyle = b.isEnergyBall ? '#a855f7' : '#ef4444';
+                    ctx.fillStyle = b.isEnergyBall ? '#ff7a3d' : '#ff2e97';
                     if (b.isEnergyBall) {
                         ctx.beginPath();
                         ctx.arc(b.x, b.y, b.width/2, 0, Math.PI*2);
@@ -1731,8 +1952,8 @@ class ChiptuneEngine {
                 });
 
                 ssTargets.forEach(t => {
-                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-                    ctx.strokeStyle = '#38bdf8';
+                    ctx.fillStyle = 'rgba(20, 10, 51, 0.92)';
+                    ctx.strokeStyle = '#22e6ff';
                     ctx.lineWidth = 2;
                     ctx.fillRect(t.x, t.y, t.width, t.height);
                     ctx.strokeRect(t.x, t.y, t.width, t.height);
@@ -1790,12 +2011,18 @@ class ChiptuneEngine {
                 }
                 
                 if (ssState === 'playing' && ssCurrentVerb) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '16px "Press Start 2P"';
-                    ctx.textAlign = 'center';
                     const forms = ['1. MUOTO', '2. MUOTO', '3. MUOTO'];
                     // Ensin suomennos, sitten haluttu muoto
-                    ctx.fillText(`${ssCurrentVerb.verb.finnish.toUpperCase()} -> ${forms[ssCurrentVerb.formIndex]}`, canvasWidth/2, 40);
+                    const label = `${ssCurrentVerb.verb.finnish.toUpperCase()} -> ${forms[ssCurrentVerb.formIndex]}`;
+                    ctx.font = '16px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    const tw = ctx.measureText(label).width + 36, px0 = canvasWidth / 2 - tw / 2, py0 = 12, ph0 = 40;
+                    ctx.fillStyle = '#2a1260'; ctx.fillRect(px0 + 4, py0 + 4, tw, ph0);
+                    ctx.fillStyle = 'rgba(20, 10, 51, 0.94)'; ctx.fillRect(px0, py0, tw, ph0);
+                    ctx.strokeStyle = '#ff2e97'; ctx.lineWidth = 3; ctx.strokeRect(px0 + 1.5, py0 + 1.5, tw - 3, ph0 - 3);
+                    ctx.strokeStyle = '#22e6ff'; ctx.lineWidth = 1; ctx.strokeRect(px0 + 5.5, py0 + 5.5, tw - 11, ph0 - 11);
+                    ctx.fillStyle = '#000000'; ctx.fillText(label, canvasWidth / 2 + 2, py0 + 27);
+                    ctx.fillStyle = '#fff6c2'; ctx.fillText(label, canvasWidth / 2, py0 + 25);
                 }
             }
             
@@ -1911,7 +2138,7 @@ class ChiptuneEngine {
             const elapsed = ssTime - ssBoss.dyingStart;
 
             // Tausta liikkuu edelleen
-            ssStars.forEach(s => { s.x -= s.speed; if (s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
+            ssStars.forEach(s => { s.x -= s.speed * ssWarp; if (s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
             ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
 
             // Pienet räjähdykset satunnaisissa kohdissa bossin päällä
@@ -2154,6 +2381,8 @@ class ChiptuneEngine {
                                 createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 20, '#ffe600', 2);
                                 createTrEnergyParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 30, '#ffe600');
                                 audio.playCorrect();
+                                spawnTrPlayerShot();
+                                trErrorStreak = 0;
                                 
                                 setTimeout(() => {
                                     applyTrSupercharge();
@@ -2165,6 +2394,9 @@ class ChiptuneEngine {
                                 createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h/2, 20, '#ff007f');
                                 audio.playWrong();
                                 combo = 0;
+                                trErrorStreak++;
+                                trGlitch = 8;
+                                trFlashError = 12;
                                 updateHUD();
                                 setTimeout(() => {
                                     trTypingCurrent = "";
@@ -2181,9 +2413,10 @@ class ChiptuneEngine {
 
             if (e.key === 'Escape') {
                 if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'TRANSITION')) {
+                    trPausedState = trGameState;
                     trGameState = 'PAUSED';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
-                                 <button onclick="trGameState='CHASE'; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
+                                 <button onclick="trGameState=trPausedState||'CHASE'; trPausedState=null; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
                                  <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
                     return;
                 }
@@ -2511,7 +2744,7 @@ class ChiptuneEngine {
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
             else if (mode === 'spaceshooter') modeBGM = "alex-morgan-gaming-stream-arcade-session-578484.mp3";
-            else if (mode === 'runner') modeBGM = "gh0stly-the-infinite-fall-271940.mp3"; 
+            else if (mode === 'runner') modeBGM = "psychronic-singularity-drive-392053.mp3"; 
             else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; 
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
             else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
@@ -3089,26 +3322,1464 @@ class ChiptuneEngine {
         // SYNTH RUNNER LOGIIKKA
         // ==========================================
         
-        function initTrStars() {
-            trStars = [];
-            for (let i = 0; i < 90; i++) {
-                trStars.push({
-                    x: Math.random() * canvasWidth,
-                    y: Math.random() * (canvasHeight * 0.65),
-                    size: Math.random() * 2.2 + 0.8,
-                    color: Math.random() > 0.4 ? '#00f0ff' : '#ff77ff'
-                });
-            }
+        // ==========================================
+        // RUNNER-SPRITET (GIF / PNG)
+        // ==========================================
+        // OHJE: Peli korvaa Synth Runnerin vanhat laatikkohahmot alla olevilla kuvatiedostoilla.
+        //  - Tiedostot ovat pelin juurikansiossa (samassa kansiossa kuin index.html).
+        //  - Tiedosto voi olla animoitu GIF tai PNG. Vaihda kuva muuttamalla 'src'-arvoa.
+        //  - Jos tiedostoa ei löydy tai se ei lataudu, peli käyttää automaattisesti vanhoja piirrettyjä hahmoja.
+        //  - drawH   = hahmon piirtokorkeus pikseleinä (leveys lasketaan kuvan kuvasuhteesta).
+        //  - anchorX = vaakaankkuri hitboxin sisällä (0 = vasen reuna, 0.5 = keskikohta, 1 = oikea reuna).
+        //  - offsetX / offsetY = hienosäätö pikseleinä (positiivinen offsetY siirtää hahmoa alaspäin).
+        //  - flipX   = true peilaa kuvan vaakasuunnassa (jos hahmo katsoo väärään suuntaan).
+        //  - bossShoot.playFrames = kuinka monta ruutua ampumakuvaa näytetään laukauksen jälkeen.
+        //  - bossShoot.muzzleX = mistä kohtaa kuvaa (0 = vasen reuna, 1 = oikea reuna) luoti lähtee.
+        //  - GIF-animaatio toimii, kun peli ajetaan palvelimelta (esim. GitHub Pages tai paikallinen palvelin).
+        //    Avattaessa suoraan tiedostona (file://) selain estää GIF-kehysten lukemisen,
+        //    jolloin näkyy GIFin ensimmäinen kuva (peli toimii silti normaalisti).
+        const RUNNER_SPRITES = {
+            player:    { src: 'motogif.gif',    drawH: 72,  anchorX: 0.5, offsetX: 0, offsetY: 6,  flipX: false },
+            bossMove:  { src: 'turbogif.gif',   drawH: 150, anchorX: 0.5, offsetX: 0, offsetY: 10, flipX: false },
+            bossShoot: { src: 'turboshoot.gif', drawH: 150, anchorX: 0.5, offsetX: 0, offsetY: 10, flipX: false, playFrames: 50, muzzleX: 0.92 }
+        };
+        // Musiikin tahtiin sykkivä tausta (toimii vain kun peli ajetaan palvelimelta). false = pois päältä.
+        const RUNNER_MUSIC_REACTIVE = true;
 
-            trCitySilhouette = [];
-            let curX = 0;
-            while (curX < canvasWidth * 2.5) {
-                let w = Math.random() * 50 + 35;
-                let h = Math.random() * 110 + 60;
-                trCitySilhouette.push({ x: curX, w: w, h: h, y: canvasHeight - h - 40 });
-                curX += w + Math.random() * 10;
+        function lzwDecodeGif(minCode, data, npix) {
+            const out = new Uint8Array(npix);
+            const clear = 1 << minCode, eoi = clear + 1;
+            const prefix = new Uint16Array(4096), suffix = new Uint8Array(4096), stack = new Uint8Array(4097);
+            for (let i = 0; i < clear; i++) suffix[i] = i;
+            let size = minCode + 1, mask = (1 << size) - 1, next = eoi + 1;
+            let acc = 0, bits = 0, dp = 0, op = 0, old = -1, first = 0;
+            while (op < npix) {
+                while (bits < size) {
+                    if (dp >= data.length) return out;
+                    acc |= data[dp++] << bits; bits += 8;
+                }
+                let code = acc & mask; acc >>>= size; bits -= size;
+                if (code === clear) { size = minCode + 1; mask = (1 << size) - 1; next = eoi + 1; old = -1; continue; }
+                if (code === eoi) break;
+                if (old === -1) { out[op++] = suffix[code]; old = code; first = code; continue; }
+                const inCode = code; let sp = 0;
+                if (code >= next) { stack[sp++] = first; code = old; }
+                while (code >= clear) { stack[sp++] = suffix[code]; code = prefix[code]; }
+                first = suffix[code];
+                stack[sp++] = first;
+                if (next < 4096) {
+                    prefix[next] = old; suffix[next] = first; next++;
+                    if ((next & mask) === 0 && next < 4096) { size++; mask = (1 << size) - 1; }
+                }
+                old = inCode;
+                while (sp > 0 && op < npix) out[op++] = stack[--sp];
+            }
+            return out;
+        }
+
+        // Pieni GIF-dekooderi: palauttaa kehykset canvaseina + viiveet (ms)
+        function decodeGif(buffer) {
+            const b = new Uint8Array(buffer);
+            if (b[0] !== 0x47 || b[1] !== 0x49 || b[2] !== 0x46) throw new Error('not a gif');
+            let p = 6;
+            const u16 = () => { const v = b[p] | (b[p + 1] << 8); p += 2; return v; };
+            const W = u16(), H = u16();
+            const pf = b[p++]; p += 2;
+            let gct = null;
+            if (pf & 0x80) { const n = 1 << ((pf & 7) + 1); gct = b.subarray(p, p + n * 3); p += n * 3; }
+            const full = document.createElement('canvas'); full.width = W; full.height = H;
+            const fctx = full.getContext('2d');
+            const frames = []; let total = 0, gce = null;
+            let prevDisposal = 0, prevRect = null, restoreData = null;
+            while (p < b.length) {
+                const t = b[p++];
+                if (t === 0x3B) break;
+                if (t === 0x21) {
+                    const label = b[p++];
+                    let first = true, sz;
+                    while ((sz = b[p++]) !== 0) {
+                        if (label === 0xF9 && first) {
+                            const fl = b[p];
+                            gce = { disposal: (fl >> 2) & 7, trans: (fl & 1) ? b[p + 3] : -1, delay: (b[p + 1] | (b[p + 2] << 8)) * 10 };
+                        }
+                        first = false;
+                        p += sz;
+                    }
+                } else if (t === 0x2C) {
+                    const ix = u16(), iy = u16(), iw = u16(), ih = u16();
+                    const fl = b[p++];
+                    let ct = gct;
+                    if (fl & 0x80) { const n = 1 << ((fl & 7) + 1); ct = b.subarray(p, p + n * 3); p += n * 3; }
+                    const interlaced = !!(fl & 0x40);
+                    const minCode = b[p++];
+                    const chunks = []; let len = 0, sz;
+                    while ((sz = b[p++]) !== 0) { chunks.push(b.subarray(p, p + sz)); len += sz; p += sz; }
+                    const data = new Uint8Array(len); let o = 0;
+                    chunks.forEach(c => { data.set(c, o); o += c.length; });
+                    const idx = lzwDecodeGif(minCode, data, iw * ih);
+
+                    if (prevDisposal === 2 && prevRect) fctx.clearRect(prevRect.x, prevRect.y, prevRect.w, prevRect.h);
+                    else if (prevDisposal === 3 && restoreData) fctx.putImageData(restoreData, 0, 0);
+                    const g = gce || { disposal: 0, trans: -1, delay: 100 };
+                    restoreData = (g.disposal === 3) ? fctx.getImageData(0, 0, W, H) : null;
+
+                    // rivijärjestys (lomitettu GIF)
+                    const rowMap = new Int32Array(ih);
+                    if (interlaced) {
+                        let r = 0;
+                        [[0, 8], [4, 8], [2, 4], [1, 2]].forEach(([start, step]) => { for (let y = start; y < ih; y += step) rowMap[r++] = y; });
+                    } else {
+                        for (let y = 0; y < ih; y++) rowMap[y] = y;
+                    }
+                    const tmp = document.createElement('canvas'); tmp.width = iw; tmp.height = ih;
+                    const tctx = tmp.getContext('2d');
+                    const img = tctx.createImageData(iw, ih);
+                    for (let y = 0; y < ih; y++) {
+                        const dstY = rowMap[y];
+                        for (let x = 0; x < iw; x++) {
+                            const ci = idx[y * iw + x];
+                            const di = (dstY * iw + x) * 4;
+                            if (ci === g.trans || !ct) { img.data[di + 3] = 0; continue; }
+                            img.data[di] = ct[ci * 3]; img.data[di + 1] = ct[ci * 3 + 1]; img.data[di + 2] = ct[ci * 3 + 2]; img.data[di + 3] = 255;
+                        }
+                    }
+                    tctx.putImageData(img, 0, 0);
+                    fctx.drawImage(tmp, ix, iy);
+
+                    const snap = document.createElement('canvas'); snap.width = W; snap.height = H;
+                    snap.getContext('2d').drawImage(full, 0, 0);
+                    const delay = g.delay < 20 ? 100 : g.delay;
+                    frames.push({ canvas: snap, delay: delay });
+                    total += delay;
+                    prevDisposal = g.disposal; prevRect = { x: ix, y: iy, w: iw, h: ih }; gce = null;
+                } else {
+                    break;
+                }
+            }
+            return { w: W, h: H, frames: frames, total: total };
+        }
+
+        class GifSprite {
+            constructor(cfg) {
+                this.cfg = cfg; this.img = null; this.staticReady = false; this.failed = false;
+                this.frames = null; this.total = 0; this.w = 0; this.h = 0; this.startTime = 0;
+            }
+            load() {
+                const img = new Image();
+                img.onload = () => {
+                    this.staticReady = true;
+                    if (!this.frames) { this.w = img.naturalWidth; this.h = img.naturalHeight; }
+                };
+                img.onerror = () => { this.failed = true; };
+                img.src = this.cfg.src;
+                this.img = img;
+                if (/\.gif(\?|$)/i.test(this.cfg.src) && window.fetch) {
+                    fetch(this.cfg.src)
+                        .then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.arrayBuffer(); })
+                        .then(buf => {
+                            const g = decodeGif(buf);
+                            if (g.frames.length > 0 && g.w > 0 && g.h > 0) {
+                                this.frames = g.frames; this.total = g.total; this.w = g.w; this.h = g.h;
+                            }
+                        })
+                        .catch(() => { /* file:// tai puuttuva tiedosto: käytetään staattista kuvaa */ });
+                }
+            }
+            get ready() { return !!this.frames || (this.staticReady && this.img && this.img.naturalWidth > 0); }
+            restart(now) { this.startTime = now; }
+            source(now) {
+                if (this.frames && this.frames.length > 1 && this.total > 0) {
+                    let t = (now - this.startTime) % this.total;
+                    if (t < 0) t += this.total;
+                    for (let i = 0; i < this.frames.length; i++) {
+                        if (t < this.frames[i].delay) return this.frames[i].canvas;
+                        t -= this.frames[i].delay;
+                    }
+                    return this.frames[this.frames.length - 1].canvas;
+                }
+                if (this.frames) return this.frames[0].canvas;
+                return this.img;
             }
         }
+
+        const trSprites = {
+            player: new GifSprite(RUNNER_SPRITES.player),
+            bossMove: new GifSprite(RUNNER_SPRITES.bossMove),
+            bossShoot: new GifSprite(RUNNER_SPRITES.bossShoot)
+        };
+        let trSpritesLoading = false;
+        function loadRunnerSprites() {
+            if (trSpritesLoading) return;
+            trSpritesLoading = true;
+            Object.values(trSprites).forEach(s => s.load());
+        }
+
+        // Hahmon piirtoalue hitboxin perusteella (asetukset RUNNER_SPRITES-oliosta)
+        function trSpriteRect(sprite, hx, hy, hw, hh) {
+            const cfg = sprite.cfg;
+            const dh = cfg.drawH;
+            const dw = dh * (sprite.w / sprite.h);
+            return { x: hx + hw * cfg.anchorX + cfg.offsetX - dw / 2, y: hy + hh + cfg.offsetY - dh, w: dw, h: dh };
+        }
+
+        const trTintCanvas = document.createElement('canvas');
+        function drawSpriteSource(src, dx, dy, dw, dh, opt) {
+            opt = opt || {};
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            if (opt.alpha !== undefined) ctx.globalAlpha = opt.alpha;
+            ctx.translate(dx + dw / 2, dy + dh / 2);
+            if (opt.rot) ctx.rotate(opt.rot);
+            if (opt.flip) ctx.scale(-1, 1);
+            if (opt.tint) {
+                const tw = Math.max(1, Math.round(dw)), th = Math.max(1, Math.round(dh));
+                if (trTintCanvas.width !== tw || trTintCanvas.height !== th) { trTintCanvas.width = tw; trTintCanvas.height = th; }
+                const tctx = trTintCanvas.getContext('2d');
+                tctx.clearRect(0, 0, tw, th);
+                tctx.imageSmoothingEnabled = false;
+                tctx.globalCompositeOperation = 'source-over';
+                tctx.globalAlpha = 1;
+                tctx.drawImage(src, 0, 0, tw, th);
+                tctx.globalCompositeOperation = 'source-atop';
+                tctx.globalAlpha = (opt.tintAlpha === undefined) ? 0.7 : opt.tintAlpha;
+                tctx.fillStyle = opt.tint;
+                tctx.fillRect(0, 0, tw, th);
+                tctx.globalCompositeOperation = 'source-over';
+                tctx.globalAlpha = 1;
+                ctx.drawImage(trTintCanvas, -dw / 2, -dh / 2, dw, dh);
+            } else {
+                ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
+            }
+            ctx.restore();
+        }
+
+        // Musiikin analysaattori (vain http/https): sykäyttää taustaa bassoon
+        let trAnalyser = null, trAnalyserData = null, trBeat = 0;
+        function setupRunnerAnalyser() {
+            if (!RUNNER_MUSIC_REACTIVE || trAnalyser) return;
+            try {
+                if (!/^https?:$/.test(location.protocol)) return;
+                if (!audio.ctx || audio.ctx.state !== 'running' || !audio.bgmPlayer) return;
+                if (window._vmAnalyserTried) return;
+                window._vmAnalyserTried = true;
+                const src = audio.ctx.createMediaElementSource(audio.bgmPlayer);
+                src.connect(audio.ctx.destination);
+                const an = audio.ctx.createAnalyser();
+                an.fftSize = 256; an.smoothingTimeConstant = 0.6;
+                src.connect(an);
+                trAnalyserData = new Uint8Array(an.frequencyBinCount);
+                trAnalyser = an;
+            } catch (e) { trAnalyser = null; }
+        }
+
+        // ==========================================
+        // RUNNER: PIKSELITAUSTA (taivas, aurinko, kolmikerroksinen kaupunki, ruudukko)
+        // ==========================================
+        const TR_LAYERS = [
+            { seed: 11, color: '#4a1170', rim: '#7a2a9a', wMin: 3, wMax: 8,  hMin: 0.10, hMax: 0.34, win: 0.0,  speed: 0.08 },
+            { seed: 23, color: '#2b0a55', rim: '#4b1b86', wMin: 4, wMax: 10, hMin: 0.10, hMax: 0.40, win: 0.22, speed: 0.18 },
+            { seed: 37, color: '#190638', rim: '#33106b', wMin: 6, wMax: 14, hMin: 0.08, hMax: 0.32, win: 0.28, speed: 0.35 }
+        ];
+        let trBg = { key: '' };
+
+        function bgDither(cols, t, x, y) {
+            const n = cols.length;
+            const f = Math.min(Math.max(t, 0), 0.9999) * (n - 1);
+            const i = Math.floor(f);
+            const frac = f - i;
+            const thr = (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+            return frac > thr ? cols[i + 1] : cols[i];
+        }
+
+        function paintTrBuilding(g, x, w, H, type, L, li, hor, wseed, blinkers) {
+            const wr = bgRng(wseed);
+            const top = hor - H;
+            const accents = ['#ff2e97', '#22e6ff', '#ff6ec7'];
+            const winCols = ['#ffd23f', '#ffd23f', '#22e6ff', '#ff6ec7'];
+            g.fillStyle = L.color; g.fillRect(x, top, w, H);
+            g.fillStyle = L.rim; g.fillRect(x, top, w, 1);
+            if (type === 'stepped') {
+                const sw = Math.max(2, w - 4);
+                g.fillStyle = L.color; g.fillRect(x + 2, top - 3, sw, 3);
+                g.fillStyle = L.rim; g.fillRect(x + 2, top - 3, sw, 1);
+            } else if (type === 'antenna') {
+                const ax = x + (w >> 1), ah = 4 + Math.floor(wr() * 6);
+                g.fillStyle = L.color; g.fillRect(ax, top - ah, 1, ah);
+                if (li >= 1) blinkers.push({ kind: 'red', x: ax, y: top - ah, li: li, id: blinkers.length });
+            } else if (type === 'dome') {
+                const r = Math.max(2, w >> 1), cx = x + (w >> 1);
+                g.fillStyle = L.color;
+                for (let dy = 1; dy <= r; dy++) {
+                    const half = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)));
+                    g.fillRect(cx - half, top - dy, half * 2 + (w & 1 ? 1 : 0), 1);
+                }
+            } else if (type === 'billboard' && li >= 1) {
+                const sy = top + 3 + Math.floor(wr() * 4), sh = 3 + Math.floor(wr() * 3), sw = Math.max(2, w - 2);
+                const col = accents[Math.floor(wr() * 3)];
+                g.fillStyle = col; g.fillRect(x + 1, sy, sw, sh);
+                blinkers.push({ kind: 'sign', x: x + 1, y: sy, w: sw, h: sh, fill: L.color, li: li, id: blinkers.length });
+            } else if (type === 'twin') {
+                g.fillStyle = L.rim; g.fillRect(x + (w >> 1), top + 1, 1, H - 1);
+                g.fillStyle = L.color; g.fillRect(x - 2, top + Math.floor(H * 0.4), w + 4, 1);
+            }
+            if (li >= 1) {
+                for (let wy = top + 3; wy < hor - 2; wy += 3) {
+                    for (let wx = x + 1; wx < x + w - 1; wx += 2) {
+                        const roll = wr();
+                        if (roll < L.win) {
+                            const col = winCols[Math.floor(wr() * winCols.length)];
+                            g.fillStyle = col; g.fillRect(wx, wy, 1, 1);
+                            if (wr() < 0.12 && blinkers.length < 160) blinkers.push({ kind: 'win', x: wx, y: wy, fill: L.color, li: li, id: blinkers.length });
+                        } else if (roll < L.win + 0.22) {
+                            g.fillStyle = L.rim; g.fillRect(wx, wy, 1, 1);
+                        }
+                    }
+                }
+                if (li === 2 && wr() < 0.3) {
+                    g.fillStyle = accents[Math.floor(wr() * 3)];
+                    g.fillRect(x, top + 2, 1, Math.max(1, H - 4));
+                }
+            }
+        }
+
+        function paintTrLayer(L, li, bw, bh, hor, blinkers) {
+            const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+            const g = c.getContext('2d');
+            const rng = bgRng(L.seed);
+            const types = ['slab', 'slab', 'slab', 'stepped', 'stepped', 'antenna', 'antenna', 'dome', 'billboard', 'twin'];
+            let x = 0;
+            while (x < bw) {
+                const w = L.wMin + Math.floor(rng() * (L.wMax - L.wMin + 1));
+                let H = Math.max(6, Math.floor(hor * (L.hMin + rng() * (L.hMax - L.hMin))));
+                if (rng() < 0.14) H = Math.floor(H * 1.5);
+                const type = types[Math.floor(rng() * types.length)];
+                const wseed = Math.floor(rng() * 1e9);
+                const copies = (x + w > bw) ? [x, x - bw] : [x];
+                copies.forEach((ox, ci) => paintTrBuilding(g, ox, w, H, type, L, li, hor, wseed, ci === 0 ? blinkers : []));
+                x += w + (rng() < 0.3 ? 1 + Math.floor(rng() * 2) : 0);
+            }
+            return c;
+        }
+
+        function buildRunnerBg() {
+            const P = Math.max(2, Math.round(canvasHeight / 170));
+            const bw = Math.ceil(canvasWidth / P), bh = Math.ceil(canvasHeight / P);
+            const hor = Math.floor(bh * 0.86);
+
+            // Taivas + maa (dithering)
+            const sky = document.createElement('canvas'); sky.width = bw; sky.height = bh;
+            const sg = sky.getContext('2d');
+            const img = sg.createImageData(bw, bh);
+            const px = new Uint32Array(img.data.buffer);
+            const skyCols = ['#05010f', '#0c0224', '#16053a', '#26074f', '#3d0a63', '#5d0c75', '#8a1080', '#bd1a8a', '#e8309a'].map(bgPack);
+            const gndCols = ['#1c0a4a', '#0a0314', '#05010f'].map(bgPack);
+            for (let y = 0; y < hor; y++) {
+                const t = y / (hor - 1);
+                for (let x = 0; x < bw; x++) px[y * bw + x] = bgDither(skyCols, t, x, y);
+            }
+            for (let y = hor; y < bh; y++) {
+                const t = (y - hor) / Math.max(1, bh - hor - 1);
+                for (let x = 0; x < bw; x++) px[y * bw + x] = bgDither(gndCols, t, x, y);
+            }
+            sg.putImageData(img, 0, 0);
+
+            // Aurinko: raidat liukuvat alas (esirenderöidyt vaiheet)
+            const R = Math.floor(Math.min(bw, hor) * 0.26);
+            const D = 2 * R + 1;
+            const sunCols = ['#fff27a', '#ffd23f', '#ff9d3a', '#ff5e6c', '#ff2e97'].map(bgPack);
+            const period = Math.max(4, Math.round(R * 0.22));
+            const sunFrames = [];
+            for (let ph = 0; ph < period; ph++) {
+                const c = document.createElement('canvas'); c.width = D; c.height = D;
+                const cg = c.getContext('2d');
+                const im = cg.createImageData(D, D);
+                const p32 = new Uint32Array(im.data.buffer);
+                for (let y = 0; y < D; y++) {
+                    const dy = y - R;
+                    for (let x = 0; x < D; x++) {
+                        const dx = x - R;
+                        if (dx * dx + dy * dy > R * R) continue;
+                        if (dy > -R * 0.1) {
+                            const gapN = Math.round(((dy + R * 0.1) / (R * 1.1)) * period * 0.85);
+                            const idx = (((y - ph) % period) + period) % period;
+                            if (idx < gapN) continue;
+                        }
+                        p32[y * D + x] = bgDither(sunCols, y / D, x, y);
+                    }
+                }
+                cg.putImageData(im, 0, 0);
+                sunFrames.push(c);
+            }
+
+            // Kaupunkikerrokset
+            const blinkers = [];
+            const layers = TR_LAYERS.map((L, li) => ({ canvas: paintTrLayer(L, li, bw, bh, hor, blinkers), speed: L.speed }));
+
+            // Usva horisontissa
+            const haze = document.createElement('canvas'); haze.width = bw; haze.height = bh;
+            const hg = haze.getContext('2d');
+            const him = hg.createImageData(bw, bh);
+            const h32 = new Uint32Array(him.data.buffer);
+            const hazeCol = bgPack('#e8309a');
+            const HZ = 18;
+            for (let y = hor - HZ; y < hor; y++) {
+                const t = (y - (hor - HZ)) / HZ;
+                for (let x = 0; x < bw; x++) {
+                    const thr = (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+                    if (t > thr) h32[y * bw + x] = hazeCol;
+                }
+            }
+            hg.putImageData(him, 0, 0);
+
+            // Tähdet
+            const sr = bgRng(77), stars = [];
+            const starCols = ['#ffffff', '#22e6ff', '#ff6ec7'];
+            for (let i = 0; i < 70; i++) stars.push({ x: Math.floor(sr() * bw), y: Math.floor(sr() * hor * 0.62), ph: sr() * 6.28, c: starCols[Math.floor(sr() * 3)] });
+
+            trBg = { key: canvasWidth + 'x' + canvasHeight, P: P, bw: bw, bh: bh, hor: hor, sky: sky, sunFrames: sunFrames, sunR: R, sunCx: bw >> 1, sunCy: Math.floor(hor * 0.60), layers: layers, haze: haze, stars: stars, blinkers: blinkers };
+        }
+
+        // ---- Ympäristö: liikenne, nopeusviivat, valonheittimet ----
+        function updateRunnerAmbient(scroll) {
+            if (trBg.key !== canvasWidth + 'x' + canvasHeight) return;
+            const P = trBg.P;
+            for (let i = 0; i < 3; i++) trBgScroll[i] += scroll * TR_LAYERS[i].speed;
+            trGroundScroll += scroll;
+
+            // musiikin tahti
+            if (trAnalyser) {
+                trAnalyser.getByteFrequencyData(trAnalyserData);
+                let s = 0; for (let i = 0; i < 4; i++) s += trAnalyserData[i];
+                const lvl = s / (4 * 255);
+                trBeat += (Math.max(0, (lvl - 0.45) * 2.2) - trBeat) * 0.35;
+            } else {
+                trBeat *= 0.9;
+            }
+
+            // liikenne
+            trTrafficTimer--;
+            if (trTrafficTimer <= 0 && trTraffic.length < 5) {
+                trTrafficTimer = 90 + Math.random() * 200;
+                const r = Math.random();
+                const dir = Math.random() < 0.5 ? -1 : 1;
+                if (r < 0.2) {
+                    trTraffic.push({ type: 'blimp', dir: -1, par: 0.1, y: canvasHeight * (0.12 + Math.random() * 0.14), x: canvasWidth + 80, vx: -0.35 });
+                } else if (r < 0.6) {
+                    trTraffic.push({ type: 'drone', dir: dir, par: 0.25, y: canvasHeight * (0.2 + Math.random() * 0.3), x: dir < 0 ? canvasWidth + 20 : -20, vx: dir * (0.9 + Math.random() * 0.8) });
+                } else {
+                    trTraffic.push({ type: 'car', dir: dir, par: 0.2, y: trBg.hor * P - P * (14 + Math.random() * 30), x: dir < 0 ? canvasWidth + 30 : -30, vx: dir * (1.8 + Math.random() * 1.4) });
+                }
+            }
+            for (let i = trTraffic.length - 1; i >= 0; i--) {
+                const t = trTraffic[i];
+                t.x += t.vx - scroll * t.par;
+                if (t.x < -140 || t.x > canvasWidth + 160) trTraffic.splice(i, 1);
+            }
+
+            // nopeusviivat
+            if (scroll > 0 && trSpeedLines.length < 14 && Math.random() < 0.5) {
+                trSpeedLines.push({ x: canvasWidth + 10, y: Math.random() * canvasHeight * 0.92, len: 30 + Math.random() * 90, v: scroll * (2 + Math.random() * 2.2), c: Math.random() < 0.5 ? '#22e6ff' : '#ff6ec7' });
+            }
+            for (let i = trSpeedLines.length - 1; i >= 0; i--) {
+                const s = trSpeedLines[i];
+                s.x -= s.v;
+                if (s.x + s.len < 0) trSpeedLines.splice(i, 1);
+            }
+        }
+
+        function drawTrTile(canvas, off) {
+            const P = trBg.P, w = trBg.bw * P, h = trBg.bh * P;
+            const o = ((off % w) + w) % w;
+            ctx.drawImage(canvas, -o, 0, w, h);
+            if (w - o < canvasWidth) ctx.drawImage(canvas, w - o, 0, w, h);
+        }
+
+        function drawTrBlinkers(li, now) {
+            const P = trBg.P, w = trBg.bw * P;
+            const o = (((trBgScroll[li]) % w) + w) % w;
+            const step = Math.floor(now / 380);
+            for (let i = 0; i < trBg.blinkers.length; i++) {
+                const b = trBg.blinkers[i];
+                if (b.li !== li) continue;
+                let on;
+                if (b.kind === 'red') on = ((step + b.id) % 2) === 0;
+                else if (b.kind === 'sign') on = ((Math.floor(now / 140) + b.id * 3) % 11) > 1;
+                else on = ((step * 7 + b.id * 13) % 5) >= 2;
+                for (let k = 0; k < 2; k++) {
+                    const sx = b.x * P - o + k * w;
+                    if (sx < -b.x - 40 || sx > canvasWidth + 20) continue;
+                    if (b.kind === 'red') {
+                        if (on) { ctx.fillStyle = '#ff3b4a'; ctx.fillRect(sx, b.y * P, P, P); }
+                    } else if (!on) {
+                        ctx.fillStyle = b.fill;
+                        ctx.fillRect(sx, b.y * P, (b.w || 1) * P, (b.h || 1) * P);
+                    }
+                }
+            }
+        }
+
+        function drawTrTraffic(kinds, now) {
+            const P = trBg.P;
+            const snap = v => Math.round(v / P) * P;
+            trTraffic.forEach(t => {
+                if (kinds.indexOf(t.type) < 0) return;
+                const x = snap(t.x), y = snap(t.y);
+                if (t.type === 'drone') {
+                    ctx.fillStyle = '#bdb4e6'; ctx.fillRect(x, y, P * 3, P);
+                    ctx.fillStyle = '#7a6fb0'; ctx.fillRect(x - P, y - P, P * 5, P);
+                    if (Math.floor(now / 250) % 2) { ctx.fillStyle = '#22e6ff'; ctx.fillRect(x + P, y + P, P, P); }
+                } else if (t.type === 'car') {
+                    const d = t.dir;
+                    ctx.fillStyle = '#2b0a55'; ctx.fillRect(x, y, P * 6, P * 2);
+                    ctx.fillStyle = '#4b1b86'; ctx.fillRect(x + P, y - P, P * 3, P);
+                    ctx.fillStyle = '#22e6ff'; ctx.fillRect(x, y + P * 2, P * 6, P);
+                    ctx.fillStyle = '#ffd23f'; ctx.fillRect(d < 0 ? x : x + P * 5, y, P, P);
+                    ctx.fillStyle = '#ff2e97'; ctx.fillRect(d < 0 ? x + P * 5 : x, y, P, P);
+                } else if (t.type === 'blimp') {
+                    ctx.fillStyle = '#3a1470'; ctx.fillRect(x + P * 2, y, P * 18, P * 5);
+                    ctx.fillRect(x, y + P, P * 22, P * 3);
+                    ctx.fillStyle = '#4b1b86'; ctx.fillRect(x + P * 2, y, P * 18, P);
+                    ctx.fillStyle = '#ff2e97'; ctx.fillRect(x + P * 5, y + P * 2, P * 12, P * 2);
+                    ctx.fillStyle = '#fff6c2';
+                    const off = Math.floor(now / 160) % 12;
+                    ctx.fillRect(x + P * 5 + off * P, y + P * 2, P, P * 2 > 0 ? P : P);
+                    ctx.fillStyle = '#2b0a55'; ctx.fillRect(x + P * 20, y - P, P * 2, P); ctx.fillRect(x + P * 20, y + P * 5, P * 2, P);
+                }
+            });
+        }
+
+        function drawTrSearchlights(now) {
+            const P = trBg.P;
+            const baseY = (trBg.hor - 12) * P;
+            const w = trBg.bw * P;
+            const o = (((trBgScroll[0]) % w) + w) % w;
+            [[0.22, 0.0, '#ff6ec7'], [0.78, 2.1, '#22e6ff']].forEach(([fx, ph, col]) => {
+                const bx = ((fx * w - o) % w + w) % w;
+                const ang = -Math.PI / 2 + Math.sin(now * 0.0007 + ph) * 0.55;
+                const len = canvasHeight * 0.75;
+                ctx.save();
+                ctx.globalAlpha = 0.09;
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.moveTo(bx, baseY);
+                ctx.lineTo(bx + Math.cos(ang - 0.07) * len, baseY + Math.sin(ang - 0.07) * len);
+                ctx.lineTo(bx + Math.cos(ang + 0.07) * len, baseY + Math.sin(ang + 0.07) * len);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function drawTrGroundGrid() {
+            const P = trBg.P, bw = trBg.bw, bh = trBg.bh, hor = trBg.hor;
+            const rows = bh - hor;
+            // vaakaviivat
+            const hc = ['#3a1470', '#a3105f', '#ff2e97'];
+            for (let k = 0; k < 8; k++) {
+                const d = (k + 1) / 8;
+                const y = hor + 1 + Math.floor(d * d * (rows - 1));
+                ctx.fillStyle = hc[d < 0.35 ? 0 : (d < 0.7 ? 1 : 2)];
+                ctx.fillRect(0, y * P, bw * P, P);
+            }
+            // pystyviivat (liikkuvat)
+            const vc = ['#0a8fb0', '#22a8c8', '#22e6ff'];
+            const cx = bw >> 1, S = bw * 0.09;
+            const off = (trGroundScroll / P * 0.9) % S;
+            for (let tone = 0; tone < 3; tone++) {
+                const y0 = hor + 1 + Math.floor(rows * (tone === 0 ? 0 : (tone === 1 ? 0.34 : 0.68)));
+                const y1 = hor + 1 + Math.floor(rows * (tone === 0 ? 0.34 : (tone === 1 ? 0.68 : 1)));
+                ctx.fillStyle = vc[tone];
+                for (let i = -14; i <= 14; i++) {
+                    const wx = i * S - off;
+                    for (let y = y0; y < y1 && y < bh; y++) {
+                        const d = (y - hor) / rows;
+                        const x = Math.round(cx + wx * (0.1 + 0.9 * d));
+                        const xp = Math.round(cx + wx * (0.1 + 0.9 * ((y - 1 - hor) / rows)));
+                        let lo = x, hi = x;
+                        if (x > xp) lo = xp + 1; else if (x < xp) hi = xp - 1;
+                        if (hi < 0 || lo >= bw) continue;
+                        lo = Math.max(lo, 0); hi = Math.min(hi, bw - 1);
+                        ctx.fillRect(lo * P, y * P, (hi - lo + 1) * P, P);
+                    }
+                }
+            }
+            // horisonttiviiva
+            ctx.fillStyle = '#ff6ec7';
+            ctx.fillRect(0, hor * P, bw * P, P);
+        }
+
+        // ==========================================
+        // RUNNER: PIIRTOFUNKTIOT (alustat, esteet, hahmot, käyttöliittymä)
+        // ==========================================
+        function trHash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+        function drawTrRoofProps(p, x, y, w, now) {
+            if (p.isArena || w < 120) return;
+            const r = bgRng(Math.floor(p.xSeed * 1000) + 5);
+            const count = w > 260 ? 3 : 2;
+            for (let k = 0; k < count; k++) {
+                const px = x + 28 + r() * (w - 80);
+                const kind = Math.floor(r() * 5);
+                if (kind === 0) {            // ilmastointiyksikkö
+                    ctx.fillStyle = '#2a1260'; ctx.fillRect(px, y - 9, 18, 9);
+                    ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 9, 18, 2);
+                    ctx.fillStyle = '#0a0314'; ctx.fillRect(px + 3, y - 6, 12, 1); ctx.fillRect(px + 3, y - 3, 12, 1);
+                } else if (kind === 1) {     // antenni
+                    ctx.fillStyle = '#7a6fb0'; ctx.fillRect(px, y - 22, 2, 22); ctx.fillRect(px - 4, y - 16, 10, 2);
+                    if (Math.floor(now / 400 + px) % 2) { ctx.fillStyle = '#ff3b4a'; ctx.fillRect(px - 1, y - 25, 4, 4); }
+                } else if (kind === 2) {     // vesisäiliö
+                    ctx.fillStyle = '#2a1260'; ctx.fillRect(px + 1, y - 6, 2, 6); ctx.fillRect(px + 11, y - 6, 2, 6);
+                    ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 16, 14, 10);
+                    ctx.fillStyle = '#7a2a9a'; ctx.fillRect(px - 1, y - 18, 16, 3);
+                } else if (kind === 3) {     // neonkyltti
+                    const on = ((Math.floor(now / 120) + Math.floor(px)) % 13) > 1;
+                    ctx.fillStyle = '#14052b'; ctx.fillRect(px, y - 26, 8, 26);
+                    ctx.fillStyle = on ? (r() < 0.5 ? '#ff2e97' : '#22e6ff') : '#3a1470';
+                    ctx.fillRect(px + 1, y - 25, 6, 24);
+                    ctx.fillStyle = on ? '#fff6c2' : '#4b1b86'; ctx.fillRect(px + 3, y - 24, 2, 22);
+                } else {                     // putket
+                    ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 6, 24, 4);
+                    ctx.fillStyle = '#7a2a9a'; ctx.fillRect(px, y - 6, 24, 1); ctx.fillRect(px + 20, y - 12, 4, 8);
+                }
+            }
+        }
+
+        function drawTrPlatform(p, now) {
+            const x = Math.floor(p.x), w = Math.floor(p.w), y = Math.floor(p.y);
+            if (x > canvasWidth || x + w < 0) return;
+            const H = canvasHeight - y;
+            const vx0 = Math.max(0, x), vx1 = Math.min(canvasWidth, x + w);
+            // runko
+            ctx.fillStyle = p.isArena ? '#0d0420' : '#14052b';
+            ctx.fillRect(vx0, y, vx1 - vx0, H);
+            ctx.fillStyle = '#1d0f45';
+            for (let fy = y + 40; fy < canvasHeight; fy += 52) ctx.fillRect(vx0, fy, vx1 - vx0, 2);
+            if (x >= -4) { ctx.fillStyle = '#2a1260'; ctx.fillRect(x, y, 3, H); }
+            if (x + w <= canvasWidth + 4) { ctx.fillStyle = '#07011a'; ctx.fillRect(x + w - 4, y, 4, H); }
+            // ikkunat (vain näkyvä osa)
+            const cw = 12, ch = 16, gx = 22, gy = 30;
+            const firstCol = Math.max(0, Math.floor((vx0 - x - 14) / gx));
+            for (let col = firstCol; ; col++) {
+                const wx = x + 14 + col * gx;
+                if (wx > vx1) break;
+                if (wx + cw < vx0 || wx + cw > x + w - 10) continue;
+                for (let row = 0, wy = y + 26; wy + ch < canvasHeight; row++, wy += gy) {
+                    const hv = trHash(p.xSeed + col * 7.3 + row * 3.1);
+                    const lit = hv > 0.62;
+                    if (lit) {
+                        const cv = trHash(p.xSeed + col * 1.7 + row * 9.9);
+                        const color = cv < 0.55 ? '#ffd23f' : (cv < 0.8 ? '#22e6ff' : '#ff6ec7');
+                        ctx.globalAlpha = 0.2; ctx.fillStyle = color; ctx.fillRect(wx - 2, wy - 2, cw + 4, ch + 4);
+                        ctx.globalAlpha = 1; ctx.fillStyle = color; ctx.fillRect(wx, wy, cw, ch);
+                        ctx.fillStyle = '#fff6c2'; ctx.fillRect(wx + 2, wy + 2, cw - 6, 3);
+                    } else {
+                        ctx.fillStyle = '#0a0220'; ctx.fillRect(wx, wy, cw, ch);
+                        ctx.fillStyle = '#1d0f45'; ctx.fillRect(wx, wy, cw, 1);
+                    }
+                }
+            }
+            // katon reuna
+            if (p.mover) {
+                for (let sx = vx0 - (vx0 - x) % 16; sx < vx1; sx += 16) {
+                    ctx.fillStyle = ((sx - x) / 16) % 2 === 0 ? '#ffd23f' : '#0a0314';
+                    ctx.fillRect(Math.max(sx, vx0), y, Math.min(16, vx1 - Math.max(sx, vx0)), 5);
+                }
+                ctx.fillStyle = '#ff7a3d'; ctx.fillRect(vx0, y + 5, vx1 - vx0, 2);
+            } else {
+                ctx.fillStyle = '#22e6ff'; ctx.fillRect(vx0, y, vx1 - vx0, 4);
+                ctx.fillStyle = '#ff2e97'; ctx.fillRect(vx0, y + 4, vx1 - vx0, 2);
+            }
+            // reunavalot
+            for (let lx = x + 10; lx < x + w - 10; lx += 28) {
+                if (lx < -6 || lx > canvasWidth) continue;
+                const on = ((Math.floor(now / 300) + Math.floor((lx - x) / 28)) % 3) !== 0;
+                ctx.fillStyle = on ? '#fff6c2' : '#7a6fb0';
+                ctx.fillRect(lx, y - 2, 4, 2);
+            }
+            drawTrRoofProps(p, x, y, w, now);
+            // portin nimilappu
+            if (p.gateInfo && !p.gateInfo.gate.resolved) {
+                const txt = p.gateInfo.text;
+                ctx.font = '12px "Press Start 2P"';
+                const tw = ctx.measureText(txt).width + 22;
+                const px = x + w / 2 - tw / 2, py = y - 52;
+                trPanel(px, py, tw, 30, '#22e6ff', '#ff2e97');
+                ctx.fillStyle = '#fff6c2'; ctx.textAlign = 'center';
+                ctx.fillText(txt, x + w / 2, py + 20);
+            }
+        }
+
+        function trPanel(x, y, w, h, border, inner) {
+            ctx.fillStyle = '#2a1260'; ctx.fillRect(x + 4, y + 4, w, h);
+            ctx.fillStyle = 'rgba(20, 10, 51, 0.94)'; ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = border || '#ff2e97'; ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+            ctx.strokeStyle = inner || '#22e6ff'; ctx.lineWidth = 1; ctx.strokeRect(x + 5.5, y + 5.5, w - 11, h - 11);
+        }
+
+        function trText(str, x, y, color, size, align) {
+            ctx.font = size + 'px "Press Start 2P"';
+            ctx.textAlign = align || 'left';
+            ctx.fillStyle = '#000000'; ctx.fillText(str, x + 2, y + 2);
+            ctx.fillStyle = color; ctx.fillText(str, x, y);
+        }
+
+        function trSegBar(x, y, w, h, frac, color, segs) {
+            ctx.fillStyle = '#07011a'; ctx.fillRect(x, y, w, h);
+            const gap = 2, sw = (w - 4 - gap * (segs - 1)) / segs;
+            const lit = Math.round(Math.min(1, Math.max(0, frac)) * segs);
+            for (let i = 0; i < segs; i++) {
+                ctx.fillStyle = i < lit ? color : '#2a1260';
+                ctx.fillRect(Math.round(x + 2 + i * (sw + gap)), y + 2, Math.max(1, Math.floor(sw)), h - 4);
+            }
+            ctx.strokeStyle = '#ff2e97'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+        }
+
+        const TR_HEART = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
+        function trPixelHeart(x, y, s, color, shine) {
+            for (let r = 0; r < TR_HEART.length; r++) for (let c = 0; c < 7; c++) {
+                if (TR_HEART[r][c] === 'X') { ctx.fillStyle = (shine && r === 1 && c === 1) ? '#fff6c2' : color; ctx.fillRect(x + c * s, y + r * s, s, s); }
+            }
+        }
+
+        function drawTrBossFallback(bx, by) {
+            ctx.fillStyle = '#ff007f'; ctx.fillRect(bx, by, trBoss.w, trBoss.h);
+            ctx.fillStyle = '#4b0a2e'; ctx.fillRect(bx + 8, by + 10, trBoss.w - 16, 22);
+            ctx.fillStyle = '#ffe600'; ctx.fillRect(bx + trBoss.w - 26, by + 16, 16, 8);
+            ctx.fillStyle = '#22e6ff'; ctx.fillRect(bx, by + trBoss.h - 8, trBoss.w, 8);
+        }
+
+        function drawTrPlayerFallback(px, py) {
+            ctx.fillStyle = '#00f0ff'; ctx.fillRect(px, py, trPlayer.w, trPlayer.h);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(px + trPlayer.w - 12, py + 8, 8, 6);
+            ctx.fillStyle = '#ff007f'; ctx.fillRect(px, py + trPlayer.h - 6, trPlayer.w, 6);
+        }
+
+        function drawRunner() {
+            const now = performance.now();
+            if (trBg.key !== canvasWidth + 'x' + canvasHeight) buildRunnerBg();
+            const B = trBg, P = B.P;
+
+            ctx.save();
+            if (trScreenShake > 0.3) ctx.translate((Math.random() - 0.5) * trScreenShake, (Math.random() - 0.5) * trScreenShake);
+            ctx.imageSmoothingEnabled = false;
+
+            // taivas
+            ctx.drawImage(B.sky, 0, 0, B.bw * P, B.bh * P);
+            B.stars.forEach(s => {
+                const v = Math.sin(now * 0.003 + s.ph);
+                if (v < -0.3) return;
+                ctx.fillStyle = s.c; ctx.fillRect(s.x * P, s.y * P, P, P);
+            });
+            // aurinko (sykkii musiikin tahtiin)
+            const sc = 1 + trBeat * 0.07;
+            const sf = B.sunFrames[Math.floor(now / 120) % B.sunFrames.length];
+            const sw = (2 * B.sunR + 1) * P * sc;
+            ctx.drawImage(sf, B.sunCx * P - sw / 2, B.sunCy * P - sw / 2, sw, sw);
+
+            drawTrSearchlights(now);
+            drawTrTraffic(['blimp'], now);
+            drawTrTile(B.layers[0].canvas, trBgScroll[0]);
+            ctx.globalAlpha = 0.55; ctx.drawImage(B.haze, 0, 0, B.bw * P, B.bh * P); ctx.globalAlpha = 1;
+            drawTrTile(B.layers[1].canvas, trBgScroll[1]);
+            drawTrBlinkers(1, now);
+            drawTrTraffic(['drone', 'car'], now);
+            drawTrTile(B.layers[2].canvas, trBgScroll[2]);
+            drawTrBlinkers(2, now);
+            drawTrGroundGrid();
+
+            // nopeusviivat
+            trSpeedLines.forEach(s => { ctx.fillStyle = s.c; ctx.globalAlpha = 0.45; ctx.fillRect(Math.round(s.x), Math.round(s.y / P) * P, s.len, P); });
+            ctx.globalAlpha = 1;
+
+            // alustat
+            trPlatforms.forEach(p => drawTrPlatform(p, now));
+
+            // laserportit
+            trObstacles.forEach(o => {
+                if (o.x > canvasWidth + 20 || o.x < -40) return;
+                const f = Math.floor(now / 90) % 2;
+                ctx.fillStyle = '#4b1b86'; ctx.fillRect(o.x, o.y + o.h - 8, o.w, 8);
+                ctx.fillStyle = '#7a2a9a'; ctx.fillRect(o.x, o.y + o.h - 8, o.w, 2);
+                ctx.fillStyle = f ? '#ff2e97' : '#ff6ec7'; ctx.fillRect(o.x + 4, o.y, 4, o.h - 8);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(o.x + 5, o.y, 2, o.h - 8);
+                ctx.fillStyle = '#ff6ec7'; ctx.fillRect(o.x + 2, o.y - 3, 8, 4);
+            });
+
+            // checkpointit
+            trCheckpoints.forEach(cp => {
+                const c = cp.active ? '#22e6ff' : '#4b1b86';
+                ctx.fillStyle = '#7a6fb0'; ctx.fillRect(cp.x - 1, cp.y - 22, 2, 28);
+                ctx.fillStyle = c; ctx.fillRect(cp.x + 1, cp.y - 22, 14, 4); ctx.fillRect(cp.x + 1, cp.y - 18, 10, 4); ctx.fillRect(cp.x + 1, cp.y - 14, 6, 4);
+                if (cp.active) { ctx.fillStyle = '#fff6c2'; ctx.fillRect(cp.x + 1, cp.y - 22, 14, 1); }
+            });
+
+            // sydämet
+            trHearts.forEach(h => {
+                const bob = Math.round(Math.sin(h.pulse) * 3);
+                trPixelHeart(Math.round(h.x - 10), Math.round(h.y - 9 + bob), 3, '#ff2e97', true);
+            });
+
+            // pomon ammukset
+            trBossProjectiles.forEach(bp => {
+                ctx.fillStyle = '#ff2e97'; ctx.fillRect(bp.x, bp.y, bp.w, bp.h);
+                ctx.fillStyle = '#fff6c2'; ctx.fillRect(bp.x + 6, bp.y + 2, bp.w - 12, bp.h - 4);
+                ctx.fillStyle = 'rgba(255, 46, 151, 0.5)'; ctx.fillRect(bp.x - 14, bp.y + 2, 12, bp.h - 4);
+                ctx.fillStyle = 'rgba(255, 46, 151, 0.25)'; ctx.fillRect(bp.x - 26, bp.y + 3, 10, bp.h - 6);
+            });
+
+            // pomo
+            const br = getTrBossRect();
+            const bossVisible = br.x + br.w > -20 && br.x < canvasWidth + 20;
+            if (bossVisible) {
+                const hurt = trBoss.state === 'hurt';
+                const flash = trBoss.hitFlash > 0 || (hurt && trGlobalFrames % 6 < 3);
+                if (br.spr) {
+                    drawSpriteSource(br.spr.source(now), br.x, br.y, br.w, br.h, { flip: br.spr.cfg.flipX, tint: flash ? '#ffffff' : null, tintAlpha: 0.8 });
+                } else {
+                    drawTrBossFallback(br.x, br.y);
+                }
+            }
+
+            // jälkikuvat tuplahypystä
+            trAfterimages.forEach(a => {
+                if (trSprites.player.ready) {
+                    const r = trSpriteRect(trSprites.player, a.x, a.y, trPlayer.w, trPlayer.h);
+                    drawSpriteSource(trSprites.player.source(now), r.x, r.y, r.w, r.h, { flip: RUNNER_SPRITES.player.flipX, tint: '#ff2e97', tintAlpha: 0.8, alpha: a.life * 0.45 });
+                } else {
+                    ctx.globalAlpha = a.life * 0.4; ctx.fillStyle = '#ff2e97'; ctx.fillRect(a.x, a.y, trPlayer.w, trPlayer.h); ctx.globalAlpha = 1;
+                }
+            });
+
+            // pelaaja
+            const blink = trInvuln > 0 && Math.floor(trInvuln / 4) % 2 === 0;
+            if (trGameState !== 'GAMEOVER' && trGameState !== 'RESPAWNING' && !blink) {
+                if (trSprites.player.ready) {
+                    const r = trSpriteRect(trSprites.player, trPlayer.x, trPlayer.y, trPlayer.w, trPlayer.h);
+                    const air = !trPlayer.grounded && (trGameState === 'CHASE' || trGameState === 'TRANSITION');
+                    const rot = air ? Math.max(-0.3, Math.min(0.3, trPlayer.vy * 0.025)) : 0;
+                    drawSpriteSource(trSprites.player.source(now), r.x, r.y, r.w, r.h, { flip: RUNNER_SPRITES.player.flipX, rot: rot, tint: trFlashError > 0 ? '#ff2e97' : null, tintAlpha: 0.6 });
+                } else {
+                    drawTrPlayerFallback(trPlayer.x, trPlayer.y);
+                }
+            }
+
+            // pelaajan laukaukset
+            trPlayerShots.forEach(s => {
+                ctx.fillStyle = 'rgba(255, 230, 0, 0.35)'; ctx.fillRect(s.x - 40, s.y - 2, 38, 4);
+                ctx.fillStyle = '#ffe600'; ctx.fillRect(s.x - 12, s.y - 3, 22, 6);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - 6, s.y - 1, 12, 2);
+            });
+
+            // superhyökkäys: säde
+            if (trGameState === 'SUPER_ATTACK' && trSuperAttackTimer > 80) {
+                const by = trPlayer.y + trPlayer.h / 2;
+                ctx.fillStyle = '#ffe600'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 14, canvasWidth, 28);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 6, canvasWidth, 12);
+                ctx.fillStyle = '#ff2e97'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 18, canvasWidth, 4); ctx.fillRect(trPlayer.x + trPlayer.w, by + 14, canvasWidth, 4);
+            }
+
+            // hiukkaset
+            trEnergyParticles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size)); });
+            trParticles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size)); });
+            ctx.globalAlpha = 1;
+
+            // glitch-välähdys osumasta
+            if (trGlitch > 0) {
+                for (let i = 0; i < 7; i++) {
+                    ctx.globalAlpha = 0.35;
+                    ctx.fillStyle = i % 2 ? '#ff2e97' : '#22e6ff';
+                    const gy = Math.random() * canvasHeight, gh = 4 + Math.random() * 18;
+                    ctx.fillRect((Math.random() - 0.5) * 30, gy, canvasWidth, gh);
+                }
+                ctx.globalAlpha = 1;
+            }
+            ctx.restore();
+            drawTrUI();
+        }
+
+        function drawTrUI() {
+            const gs = trGameState;
+            // vasen paneeli: kierros, pisteet, sydämet, jahtipalkki
+            trPanel(14, 12, 300, 98, '#ff2e97', '#22e6ff');
+            trText('RND ' + trRound + '/3', 30, 36, '#22e6ff', 11);
+            trText('PTS ' + score, 300, 36, '#ffd23f', 11, 'right');
+            for (let i = 0; i < trMaxLives; i++) trPixelHeart(30 + i * 26, 44, 3, i < trPlayerLives ? '#ff2e97' : '#2a1260', i < trPlayerLives);
+            if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
+                const goal = trRoundGoals[trRound - 1];
+                trText('SUPERLATAUS', 30, 84, '#ffe600', 8);
+                trSegBar(150, 72, 150, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
+            } else {
+                trText('TURBO', 30, 84, '#ff6ec7', 8);
+                const full = trChaseProgress >= 100;
+                trSegBar(110, 72, 190, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
+            }
+
+            // pomon HP-palkki (taistelu)
+            if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
+                const goal = trRoundGoals[trRound - 1];
+                const bx = Math.max(322, canvasWidth / 2 - 170);
+                trText('TURBO THRASHER', canvasWidth / 2, 30, '#ff6ec7', 10, 'center');
+                trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trVerbsCompleted) / goal, '#ff2e97', Math.max(goal, 5) * 2);
+            }
+
+            // taistelun kirjoituspaneeli
+            if (trTargetVerb && gs === 'COMBAT') {
+                const pw = Math.min(540, canvasWidth * 0.5), ph = 128, px = canvasWidth / 2 - pw / 2, py = 122;
+                trPanel(px, py, pw, ph, '#ffe600', '#ff2e97');
+                const tenseName = trTargetTense === 1 ? 'PERUSMUOTO (1. MUOTO)' : (trTargetTense === 2 ? 'IMPERFEKTI (2. MUOTO)' : 'PERFEKTI (3. MUOTO)');
+                trText(trTargetVerb.finnish.toUpperCase() + ' -> ' + tenseName, canvasWidth / 2, py + 34, '#22e6ff', 11, 'center');
+                const n = trTypingExpected.length;
+                const bw = 28, gap = 6;
+                const total = n * bw + (n - 1) * gap;
+                let sx = canvasWidth / 2 - total / 2;
+                const shake = trTypingFeedback === 'error' ? (Math.random() - 0.5) * 6 : 0;
+                const col = trTypingFeedback === 'success' ? '#ffe600' : (trTypingFeedback === 'error' ? '#ff2e97' : '#ffffff');
+                for (let i = 0; i < n; i++) {
+                    const bx = sx + i * (bw + gap) + shake;
+                    ctx.fillStyle = '#07011a'; ctx.fillRect(bx, py + 56, bw, 42);
+                    ctx.strokeStyle = (i === trTypingCurrent.length && !trTypingFeedback) ? '#ffe600' : col;
+                    ctx.lineWidth = 2; ctx.strokeRect(bx + 1, py + 57, bw - 2, 40);
+                    if (i < trTypingCurrent.length) {
+                        trText(trTypingCurrent[i], bx + bw / 2, py + 86, col, 18, 'center');
+                    } else if (i === 0 && trErrorStreak >= 2 && !trTypingFeedback) {
+                        trText(trTypingExpected[0].toUpperCase(), bx + bw / 2, py + 86, '#4b1b86', 18, 'center');
+                    }
+                }
+            }
+
+            // portin kehote
+            if (trGate && !trGate.resolved && gs === 'CHASE') {
+                const u = trGate.upper;
+                if (u && u.x < canvasWidth && u.x + u.w > 0) {
+                    const txt = 'PORTTI: ' + trGate.prompt;
+                    ctx.font = '11px "Press Start 2P"';
+                    const tw = ctx.measureText(txt).width + 30;
+                    trPanel(canvasWidth / 2 - tw / 2, 124, tw, 34, '#22e6ff', '#ff2e97');
+                    trText(txt, canvasWidth / 2, 146, '#ffd23f', 11, 'center');
+                }
+            }
+
+            // viestit
+            const overlayState = (gs === 'START' || gs === 'GAMEOVER' || gs === 'VICTORY');
+            if (trMessageTimer > 0 || overlayState) {
+                if (overlayState) { ctx.fillStyle = 'rgba(7, 1, 26, 0.82)'; ctx.fillRect(0, 0, canvasWidth, canvasHeight); }
+                const mw = Math.min(canvasWidth - 40, 640), mh = overlayState ? 150 : 110;
+                const mx = canvasWidth / 2 - mw / 2, my = canvasHeight / 2 - mh / 2;
+                trPanel(mx, my, mw, mh, gs === 'GAMEOVER' ? '#ff3b4a' : '#ff2e97', '#22e6ff');
+                const bigCol = gs === 'GAMEOVER' ? '#ff3b4a' : (gs === 'SUPER_ATTACK' ? '#ffe600' : '#22e6ff');
+                trText(trBigMessage, canvasWidth / 2, my + 52, bigCol, 18, 'center');
+                trText(trSmallMessage, canvasWidth / 2, my + 86, '#ffffff', 10, 'center');
+                if (gs === 'START') trText('VÄLILYÖNTI: HYPPY (2x = TUPLAHYPPY)   ESC: TAUKO', canvasWidth / 2, my + 120, '#bdb4e6', 8, 'center');
+            }
+        }
+
+        // ---- Uudet runnerin globaalit ----
+        let trBgScroll = [0, 0, 0], trGroundScroll = 0;
+        let trTraffic = [], trTrafficTimer = 30, trSpeedLines = [], trAfterimages = [];
+        let trObstacles = [], trPlayerShots = [];
+        let trGate = null, trGateCooldown = 6;
+        let trCoyote = 0, trJumpBuffer = 0, trInvuln = 0, trHitStop = 0, trGlitch = 0, trErrorStreak = 0;
+        let trWasGrounded = false, trPausedState = null, trBossShootAnimUntil = 0;
+        trBoss.hitFlash = 0;
+
+        function initTrStars() {
+            trBgScroll = [0, 0, 0]; trGroundScroll = 0;
+            trTraffic = []; trSpeedLines = []; trAfterimages = [];
+            buildRunnerBg();
+        }
+
+        function getTrBossRect() {
+            const shooting = trGlobalFrames < trBossShootAnimUntil;
+            let spr = null;
+            if (shooting && trSprites.bossShoot.ready) spr = trSprites.bossShoot;
+            else if (trSprites.bossMove.ready) spr = trSprites.bossMove;
+            else if (trSprites.bossShoot.ready) spr = trSprites.bossShoot;
+            const by = trBoss.y + trBoss.offsetY;
+            if (!spr) return { spr: null, x: trBoss.x, y: by, w: trBoss.w, h: trBoss.h };
+            const r = trSpriteRect(spr, trBoss.x, by, trBoss.w, trBoss.h);
+            r.spr = spr;
+            return r;
+        }
+
+        function fireTrBossProjectile(atPlayerHeight) {
+            const r = getTrBossRect();
+            const mx = r.spr ? r.x + r.w * (RUNNER_SPRITES.bossShoot.muzzleX || 0.9) : trBoss.x + trBoss.w;
+            const my = atPlayerHeight ? trPlayer.y + trPlayer.h / 2 - 4 : trBoss.y + trBoss.offsetY + trBoss.h / 2 - 4;
+            trBossProjectiles.push({ x: Math.max(mx, -10), y: my, w: 24, h: 8, vx: 9 });
+            trBossShootAnimUntil = trGlobalFrames + (RUNNER_SPRITES.bossShoot.playFrames || 40);
+            trSprites.bossShoot.restart(performance.now());
+            audio.playLaser();
+        }
+
+        function trTakeHit(title, sub) {
+            if (trInvuln > 0) return false;
+            trPlayerLives--;
+            trInvuln = 70; trFlashError = 15; trScreenShake = 10; trGlitch = 12;
+            createTrParticles(trPlayer.x, trPlayer.y + trPlayer.h / 2, 22, '#ff007f');
+            audio.playWrong();
+            if (trPlayerLives <= 0) {
+                trGameState = 'GAMEOVER';
+                showTrMessage("GAME OVER", "Sait osuman ja elämät loppuivat!", 9999);
+            } else {
+                showTrMessage(title, sub + ' Elämiä jäljellä: ' + trPlayerLives, 50);
+            }
+            return true;
+        }
+
+        function generateTrSafeStartPlatform() {
+            trPlatforms = [];
+            trHearts = [];
+            trCheckpoints = [];
+            trObstacles = [];
+            trGate = null; trGateCooldown = 6;
+
+            let startPlat = {
+                x: 0, y: canvasHeight * 0.65, w: 600, h: canvasHeight - (canvasHeight * 0.65),
+                isArena: false, id: 1, xSeed: Math.random() * 1000
+            };
+            trPlatforms.push(startPlat);
+
+            trPlayer.x = 250;
+            trPlayer.y = startPlat.y - trPlayer.h - 5;
+            trPlayer.vy = 0;
+            trPlayer.jumps = 0;
+            trCoyote = 0; trJumpBuffer = 0; trInvuln = 60;
+
+            trActiveCheckpoint = {
+                platId: startPlat.id,
+                relX: 250,
+                y: startPlat.y - 30
+            };
+        }
+
+        function pickTrGateForms() {
+            const pool = activeVerbs.length ? activeVerbs : VERB_DATA;
+            const verb = pool[Math.floor(Math.random() * pool.length)];
+            const forms = [verb.base, verb.past, verb.participle].map(f => f.split('/')[0].trim());
+            const tenseIdx = 1 + Math.floor(Math.random() * 2);   // 1 = 2. muoto, 2 = 3. muoto
+            const correct = forms[tenseIdx];
+            let wrongs = forms.filter((f, i) => i !== tenseIdx && f.toLowerCase() !== correct.toLowerCase());
+            if (wrongs.length === 0) {
+                const other = VERB_DATA.filter(v => v !== verb && [v.base, v.past, v.participle][tenseIdx].split('/')[0].trim().toLowerCase() !== correct.toLowerCase());
+                const o = other[Math.floor(Math.random() * other.length)];
+                wrongs = [o.base.split('/')[0].trim()];
+            }
+            const wrong = wrongs[Math.floor(Math.random() * wrongs.length)];
+            return { verb: verb, tenseIdx: tenseIdx, correct: correct, wrong: wrong };
+        }
+
+        function generateTrGate(last, diff) {
+            const f = pickTrGateForms();
+            const minY = canvasHeight * 0.4, maxY = canvasHeight * 0.8;
+            const gap = 70 + Math.random() * 50;
+            const w = 210 + Math.random() * 60;
+            let yU = last.y - 40 - Math.random() * 25;
+            if (yU < minY) yU = minY;
+            let yL = yU + 100 + Math.random() * 20;
+            if (yL > maxY) { yL = maxY; yU = Math.max(minY, yL - 100); }
+            const startX = last.x + last.w + gap;
+            const upperCorrect = Math.random() < 0.5;
+            const gate = {
+                resolved: false, correct: f.correct, wrong: f.wrong,
+                prompt: f.verb.finnish.toUpperCase() + ' -> ' + (f.tenseIdx === 1 ? '2. MUOTO' : '3. MUOTO'),
+                upper: null, lower: null
+            };
+            const mk = (y, isCorrect) => ({
+                x: startX, y: y, w: w, h: canvasHeight - y, isArena: false,
+                id: trGlobalFrames + Math.random() * 1000, xSeed: Math.random() * 1000,
+                gateInfo: { gate: gate, text: isCorrect ? f.correct : f.wrong, isCorrect: isCorrect }
+            });
+            const up = mk(yU, upperCorrect), lo = mk(yL, !upperCorrect);
+            gate.upper = up; gate.lower = lo;
+            trPlatforms.push(up);
+            trPlatforms.push(lo);
+            trGate = gate;
+            trGateCooldown = 12 + Math.floor(Math.random() * 6);
+        }
+
+        function resolveTrGate(p) {
+            const g = p.gateInfo.gate;
+            if (g.resolved) return;
+            g.resolved = true;
+            if (p.gateInfo.isCorrect) {
+                addScore(10); combo++;
+                createTrParticles(p.x + p.w / 2, p.y - 10, 26, '#ffe600', 1.4);
+                showTrMessage("OIKEIN!", g.correct, 50);
+                audio.playCorrect();
+            } else {
+                combo = 0;
+                trGlitch = 14;
+                createTrParticles(p.x + p.w / 2, p.y - 10, 20, '#ff007f', 1.2);
+                showTrMessage("VÄÄRIN!", 'Oikea muoto: ' + g.correct, 70);
+                audio.playWrong();
+                fireTrBossProjectile(true);
+            }
+        }
+
+        function generateTrNextPlatform() {
+            if (trPlatforms.length === 0) return;
+            let last = trPlatforms[trPlatforms.length - 1];
+            const diff = Math.min(1.5, (trRound - 1) * 0.5 + trChaseProgress / 100);
+
+            trGateCooldown--;
+            if (trGateCooldown <= 0 && trChaseProgress > 12 && trChaseProgress < 82 && trGameState === 'CHASE' && Math.random() < 0.5) {
+                generateTrGate(last, diff);
+                return;
+            }
+
+            let gap = 55 + diff * 25 + Math.random() * (80 + diff * 45);
+            let w = Math.max(105, Math.random() * (200 - diff * 35) + 130 - diff * 12);
+            let heightChange = Math.random() * (140 + diff * 40) - (70 + diff * 20);
+            let y = last.y + heightChange;
+
+            let minY = canvasHeight * 0.4;
+            let maxY = canvasHeight * 0.8;
+            let mover = null;
+            if (trRound >= 2 && Math.random() < 0.18 && !last.mover) {
+                const amp = 26 + Math.random() * 18;
+                minY += amp; maxY -= amp;
+                w = 115 + Math.random() * 55;
+                mover = { baseY: 0, amp: amp, phase: Math.random() * 6.28, speed: 0.03 };
+            }
+            if (y < minY) y = minY;
+            if (y > maxY) y = maxY;
+            if (mover) mover.baseY = y;
+
+            let startX = last.x + last.w + gap;
+            let newPlat = {
+                x: startX, y: y, w: w, h: canvasHeight - y,
+                isArena: false,
+                id: trGlobalFrames + Math.random() * 1000,
+                xSeed: Math.random() * 1000,
+                mover: mover
+            };
+            trPlatforms.push(newPlat);
+
+            // laserportti jatkuvalle alustalle
+            const obstacleChance = trRound === 1 ? (trChaseProgress > 20 ? 0.14 : 0) : 0.2 + diff * 0.1;
+            if (!mover && !last.gateInfo && w >= 190 && Math.random() < obstacleChance) {
+                trObstacles.push({ plat: newPlat, offX: w * (0.4 + Math.random() * 0.25), w: 12, h: 36, x: 0, y: 0 });
+            }
+
+            if (trHeartsSpawned < trHeartsTarget && Math.random() > 0.4) {
+                trHearts.push({
+                    x: newPlat.x + w / 2,
+                    y: newPlat.y - 35,
+                    active: true,
+                    pulse: Math.random() * Math.PI
+                });
+                trHeartsSpawned++;
+            }
+
+            if (Math.random() > 0.65 && !mover && (trCheckpoints.length === 0 || last.x - trCheckpoints[trCheckpoints.length - 1].x > 500)) {
+                trCheckpoints.push({
+                    x: newPlat.x + 40,
+                    y: newPlat.y - 25,
+                    platId: newPlat.id,
+                    active: false
+                });
+            }
+        }
+
+        // Hyppy: coyote time, hyppypuskuri ja tuplahyppy
+        function tryTrJump() {
+            const p = trPlayer;
+            if (p.grounded || (p.jumps === 0 && trCoyote > 0)) {
+                p.vy = p.jumpPower; p.jumps = 1; p.grounded = false; trCoyote = 0;
+                createTrParticles(p.x + p.w / 2, p.y + p.h, 6, '#00f0ff');
+                return true;
+            }
+            if (p.jumps === 0) p.jumps = 1;   // putosi reunalta: ensimmäinen hyppy on käytetty
+            if (p.jumps === 1) {
+                p.vy = p.doubleJumpPower; p.jumps = 2;
+                createTrParticles(p.x + p.w / 2, p.y + p.h, 16, '#ff007f', 1.5);
+                return true;
+            }
+            return false;
+        }
+
+        function handleTrJump() {
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                if (trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                    trGameState = 'START';
+                    showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
+                } else {
+                    initTrGameRun();
+                }
+                return;
+            }
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (!tryTrJump()) trJumpBuffer = 7;
+            }
+        }
+
+        function spawnTrPlayerShot() {
+            trPlayerShots.push({ x: trPlayer.x + trPlayer.w, y: trPlayer.y + trPlayer.h / 2, vx: 20 });
+        }
+
+        function updateRunner() {
+            if (trHitStop > 0) { trHitStop--; return; }
+            trGlobalFrames++;
+            if (trMessageTimer > 0) trMessageTimer--;
+            if (trFeedbackTimer > 0) trFeedbackTimer--;
+            if (trScreenShake > 0) trScreenShake *= 0.9;
+            if (trFlashError > 0) trFlashError--;
+            if (trGlitch > 0) trGlitch--;
+            if (trInvuln > 0) trInvuln--;
+            if (trBoss.hitFlash > 0) trBoss.hitFlash--;
+
+            if (trGameState === 'CHASE') trScrollSpeed = 5.5 + (trRound - 1) * 0.5 + (trChaseProgress / 100) * 0.7;
+            let bgScrollSpeed = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
+
+            updateRunnerAmbient(bgScrollSpeed);
+
+            for (let i = trParticles.length - 1; i >= 0; i--) {
+                let p = trParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.035;
+                if (p.life <= 0) trParticles.splice(i, 1);
+            }
+
+            for (let i = trEnergyParticles.length - 1; i >= 0; i--) {
+                let p = trEnergyParticles[i];
+                p.x += (trPlayer.x + trPlayer.w / 2 - p.x) * 0.15;
+                p.y += (trPlayer.y + trPlayer.h / 2 - p.y) * 0.15;
+                p.life -= 0.04;
+                if (p.life <= 0) trEnergyParticles.splice(i, 1);
+            }
+
+            for (let i = trAfterimages.length - 1; i >= 0; i--) {
+                trAfterimages[i].life -= 0.12;
+                if (trAfterimages[i].life <= 0) trAfterimages.splice(i, 1);
+            }
+
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING') {
+                return;
+            }
+
+            let currentScrollSpeed = bgScrollSpeed;
+
+            if (trGameState !== 'SUPER_ATTACK' && trGameState !== 'COMBAT') {
+                trPlayer.vy += trPlayer.gravity;
+                trPlayer.y += trPlayer.vy;
+            }
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlayer.x > 255) trPlayer.x -= 2;
+                if (trPlayer.x < 245) trPlayer.x += 2;
+                if (trPlayer.jumps === 2 && !trPlayer.grounded && trGlobalFrames % 2 === 0) {
+                    trAfterimages.push({ x: trPlayer.x, y: trPlayer.y, life: 1 });
+                }
+            }
+
+            if (trPlayer.y > canvasHeight + 40 && (trGameState === 'CHASE' || trGameState === 'TRANSITION')) {
+                triggerTrSetback();
+            }
+
+            if (trGameState === 'CHASE') {
+                trChaseProgress += 0.07;
+                if (trChaseProgress >= 100) {
+                    trChaseProgress = 100;
+                    transitionTrToCombat();
+                }
+
+                let targetBossX = -150 + (trChaseProgress / 100) * (trPlayer.x - 100 - (-150));
+                trBoss.x += (targetBossX - trBoss.x) * 0.1;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.1) * 12;
+
+                trBossShootTimer--;
+                if (trBossShootTimer <= 0 && trBoss.x > -50) {
+                    fireTrBossProjectile(false);
+                    trBossShootTimer = Math.random() * 50 + 50;
+                }
+            }
+
+            if (trGameState === 'TRANSITION') {
+                let arenaPlat = trPlatforms.find(p => p.isArena);
+
+                if (arenaPlat) {
+                    let dist = arenaPlat.x - 0;
+                    if (dist > 0) {
+                        currentScrollSpeed = Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035));
+                    } else {
+                        currentScrollSpeed = 0;
+                        trGameState = 'COMBAT';
+                        trVerbsCompleted = 0;
+                        trErrorStreak = 0;
+                        setupTrNextVerb();
+                    }
+                }
+
+                trBoss.x += ((trPlayer.x - 120) - trBoss.x) * 0.05;
+                trBoss.y = trArenaY - trBoss.h;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.07) * 18;
+            }
+
+            if (trGameState === 'COMBAT') {
+                currentScrollSpeed = 0;
+                trBoss.y = trArenaY - trBoss.h;
+                trBoss.offsetY = Math.sin(trGlobalFrames * 0.04) * 25;
+            }
+
+            if (trGameState === 'SUPER_ATTACK') {
+                currentScrollSpeed = 0;
+                trSuperAttackTimer--;
+
+                if (trSuperAttackTimer > 80) {
+                    trScreenShake = 10;
+                    if (trSuperAttackTimer % 10 === 0) audio.playHit();
+                }
+
+                trBoss.state = 'hurt';
+
+                trBoss.x -= 8;
+                if (trBoss.x < -150) trBoss.x = -150;
+
+                createTrParticles(trBoss.x + trBoss.w, trBoss.y + trBoss.h / 2, 2, '#ffe600', 3);
+
+                if (trSuperAttackTimer <= 0) {
+                    trBoss.state = 'normal';
+                    if (trRound >= 3) {
+                        trGameState = 'VICTORY';
+                        showTrMessage("VOITTO!", "TURBO THRASHER ON LYÖTY!", 9999);
+                        createTrParticles(trBoss.x + trBoss.w / 2, trBoss.y + trBoss.h / 2, 120, '#ff007f', 3);
+                        audio.playExplosion();
+                    } else {
+                        trRound++;
+                        trChaseProgress = 0;
+                        trHeartsSpawned = 0;
+                        trHeartsTarget = Math.floor(Math.random() * 2) + 1;
+                        trPlatforms = trPlatforms.filter(p => !p.isArena);
+                        generateTrSafeStartPlatform();
+                        trGameState = 'CHASE';
+                        showTrMessage("SE JATKUU!", "Jatka pakoa!", 90);
+                    }
+                }
+            }
+
+            // alustat (liikkuvat alustat, törmäys, laskeutuminen)
+            trPlayer.grounded = false;
+            for (let i = trPlatforms.length - 1; i >= 0; i--) {
+                let p = trPlatforms[i];
+                p.x -= currentScrollSpeed;
+                if (p.mover) p.y = p.mover.baseY + Math.sin(trGlobalFrames * p.mover.speed + p.mover.phase) * p.mover.amp;
+
+                if (trPlayer.vy > 0 &&
+                    trPlayer.x + trPlayer.w > p.x + 4 &&
+                    trPlayer.x < p.x + p.w - 4 &&
+                    trPlayer.y + trPlayer.h >= p.y &&
+                    trPlayer.y + trPlayer.h <= p.y + trPlayer.vy + 12)
+                {
+                    trPlayer.y = p.y - trPlayer.h;
+                    trPlayer.vy = 0;
+                    trPlayer.grounded = true;
+                    trPlayer.jumps = 0;
+                    if (p.gateInfo && trGameState === 'CHASE') resolveTrGate(p);
+                }
+
+                if (p.x + p.w < -120) trPlatforms.splice(i, 1);
+            }
+            if (trGate && !trGate.resolved && trGate.upper.x + trGate.upper.w < 0) trGate.resolved = true;
+
+            // coyote time, hyppypuskuri ja laskeutumispöly
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlayer.grounded) {
+                    trCoyote = 6;
+                    if (!trWasGrounded) createTrParticles(trPlayer.x + trPlayer.w / 2, trPlayer.y + trPlayer.h, 7, '#bdb4e6', 0.7);
+                    if (trJumpBuffer > 0) { tryTrJump(); trJumpBuffer = 0; }
+                } else if (trCoyote > 0) {
+                    trCoyote--;
+                }
+                if (trJumpBuffer > 0) trJumpBuffer--;
+            }
+            trWasGrounded = trPlayer.grounded;
+
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (trPlatforms.length === 0) {
+                    generateTrSafeStartPlatform();
+                } else {
+                    let lastPlat = trPlatforms[trPlatforms.length - 1];
+                    if (!lastPlat.isArena && lastPlat.x + lastPlat.w < canvasWidth + 250) {
+                        generateTrNextPlatform();
+                    }
+                }
+            }
+
+            // laserportit
+            for (let i = trObstacles.length - 1; i >= 0; i--) {
+                const o = trObstacles[i];
+                if (!trPlatforms.includes(o.plat)) { trObstacles.splice(i, 1); continue; }
+                o.x = o.plat.x + o.offX;
+                o.y = o.plat.y - o.h;
+                if ((trGameState === 'CHASE' || trGameState === 'TRANSITION') && trInvuln <= 0 &&
+                    trPlayer.x + trPlayer.w - 5 > o.x && trPlayer.x + 5 < o.x + o.w &&
+                    trPlayer.y + trPlayer.h - 3 > o.y && trPlayer.y + 3 < o.y + o.h) {
+                    trTakeHit("OSUMA!", "Laserportti!");
+                }
+            }
+
+            for (let i = trHearts.length - 1; i >= 0; i--) {
+                let h = trHearts[i];
+                h.x -= currentScrollSpeed;
+                h.pulse += 0.08;
+
+                if (h.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
+                    trPlayer.x < h.x + 18 && trPlayer.x + trPlayer.w > h.x - 18 &&
+                    trPlayer.y < h.y + 18 && trPlayer.y + trPlayer.h > h.y - 18)
+                {
+                    h.active = false;
+                    if (trPlayerLives < trMaxLives) trPlayerLives++;
+                    createTrParticles(h.x, h.y, 20, '#ff007f', 1.2);
+                    showTrMessage("+1 ELÄMÄ!", "Sydän kerätty", 45);
+                    audio.playCorrect();
+                }
+
+                if (h.x < -50 || !h.active) trHearts.splice(i, 1);
+            }
+
+            trCheckpoints.forEach(cp => {
+                cp.x -= currentScrollSpeed;
+                if (!cp.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
+                    trPlayer.x + trPlayer.w > cp.x - 15 && trPlayer.x < cp.x + 15) {
+                    cp.active = true;
+                    trActiveCheckpoint = { platId: cp.platId, relX: cp.x, y: cp.y };
+                    createTrParticles(cp.x, cp.y, 25, '#00f0ff', 1.4);
+                    showTrMessage("CHECKPOINT!", "Tallennuspiste aktivoitu", 50);
+                    audio.playSelect();
+                }
+            });
+
+            for (let i = trBossProjectiles.length - 1; i >= 0; i--) {
+                let bp = trBossProjectiles[i];
+                bp.x += bp.vx;
+
+                if ((trGameState === 'CHASE' || trGameState === 'TRANSITION') && trInvuln <= 0 &&
+                    bp.x < trPlayer.x + trPlayer.w && bp.x + bp.w > trPlayer.x &&
+                    bp.y < trPlayer.y + trPlayer.h && bp.y + bp.h > trPlayer.y)
+                {
+                    trBossProjectiles.splice(i, 1);
+                    trTakeHit("OSUMA!", "Turbo osui!");
+                    continue;
+                }
+
+                if (bp.x > canvasWidth + 100) trBossProjectiles.splice(i, 1);
+            }
+
+            // pelaajan laukaukset taistelussa
+            for (let i = trPlayerShots.length - 1; i >= 0; i--) {
+                const s = trPlayerShots[i];
+                s.x += s.vx;
+                const br = getTrBossRect();
+                if (s.x >= br.x + br.w * 0.55 || s.x > canvasWidth) {
+                    trPlayerShots.splice(i, 1);
+                    trBoss.hitFlash = 8;
+                    createTrParticles(br.x + br.w * 0.6, br.y + br.h * 0.5, 12, '#ffe600', 1.6);
+                    audio.playHit();
+                }
+            }
+        }
+
 
         function createTrParticles(x, y, count, color, speedScale = 1) {
             for (let i = 0; i < count; i++) {
@@ -3144,98 +4815,8 @@ class ChiptuneEngine {
             trMessageTimer = duration;
         }
 
-        function generateTrSafeStartPlatform() {
-            trPlatforms = [];
-            trHearts = [];
-            trCheckpoints = [];
-            
-            let startPlat = {
-                x: 0, y: canvasHeight * 0.65, w: 600, h: canvasHeight - (canvasHeight * 0.65),
-                isArena: false, id: 1, xSeed: Math.random() * 1000
-            };
-            trPlatforms.push(startPlat);
 
-            trPlayer.x = 250;
-            trPlayer.y = startPlat.y - trPlayer.h - 5;
-            trPlayer.vy = 0;
-            trPlayer.jumps = 0;
 
-            trActiveCheckpoint = {
-                platId: startPlat.id,
-                relX: 250,
-                y: startPlat.y - 30
-            };
-        }
-
-        function generateTrNextPlatform() {
-            if (trPlatforms.length === 0) return;
-
-            let last = trPlatforms[trPlatforms.length - 1];
-
-            let gap = Math.random() * 110 + 60;
-            let w = Math.random() * 200 + 130; 
-            
-            let heightChange = (Math.random() * 140) - 70;
-            let y = last.y + heightChange;
-            
-            let minY = canvasHeight * 0.4;
-            let maxY = canvasHeight * 0.8;
-            if (y < minY) y = minY;
-            if (y > maxY) y = maxY;
-
-            let startX = last.x + last.w + gap;
-            let newPlat = {
-                x: startX, y: y, w: w, h: canvasHeight - y,
-                isArena: false,
-                id: trGlobalFrames + Math.random() * 1000,
-                xSeed: Math.random() * 1000
-            };
-            trPlatforms.push(newPlat);
-
-            if (trHeartsSpawned < trHeartsTarget && Math.random() > 0.4) {
-                trHearts.push({
-                    x: newPlat.x + w / 2,
-                    y: newPlat.y - 35,
-                    active: true,
-                    pulse: Math.random() * Math.PI
-                });
-                trHeartsSpawned++;
-            }
-
-            if (Math.random() > 0.65 && (trCheckpoints.length === 0 || last.x - trCheckpoints[trCheckpoints.length - 1].x > 500)) {
-                trCheckpoints.push({
-                    x: newPlat.x + 40,
-                    y: newPlat.y - 25,
-                    platId: newPlat.id,
-                    active: false
-                });
-            }
-        }
-
-        function handleTrJump() {
-            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                if (trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                    trGameState = 'START';
-                    showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
-                } else {
-                    initTrGameRun();
-                }
-                return;
-            }
-
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                if (trPlayer.jumps === 0 && trPlayer.grounded) {
-                    trPlayer.vy = trPlayer.jumpPower;
-                    trPlayer.jumps = 1;
-                    trPlayer.grounded = false;
-                    createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h, 6, '#00f0ff');
-                } else if (trPlayer.jumps === 1) {
-                    trPlayer.vy = trPlayer.doubleJumpPower;
-                    trPlayer.jumps = 2;
-                    createTrParticles(trPlayer.x + trPlayer.w/2, trPlayer.y + trPlayer.h, 16, '#ff007f', 1.5);
-                }
-            }
-        }
 
         function handleTrJumpRelease() {
             if (trPlayer.vy < -2) {
@@ -3270,6 +4851,7 @@ class ChiptuneEngine {
                 trTypingExpected = trTargetVerb.participle.split('/')[0].trim();
             }
             trTypingCurrent = "";
+            trErrorStreak = trErrorStreak || 0;
         }
 
         function applyTrSupercharge() {
@@ -3285,6 +4867,7 @@ class ChiptuneEngine {
                 trSuperAttackTimer = 120;
                 showTrMessage("SUPERLATAUS VALMIS!", "VASTAISKU!", 120);
                 trScreenShake = 15;
+                trHitStop = 5;
             }
         }
 
@@ -3300,7 +4883,8 @@ class ChiptuneEngine {
             }
 
             trGameState = 'RESPAWNING';
-            showTrMessage("PUTOSIT!", `Elämiä jäljellä: ${trPlayerLives}`, 70);
+            trGlitch = 14; trScreenShake = 8;
+            showTrMessage("PUTOSIT!", `Elämiä jäljellä: ${trPlayerLives}`, 55);
 
             setTimeout(() => {
                 let respawnPlat = null;
@@ -3318,14 +4902,17 @@ class ChiptuneEngine {
                 }
                 
                 trChaseProgress = Math.max(0, trChaseProgress - 15);
+                trInvuln = 60;
                 trGameState = 'CHASE';
-            }, 900);
+            }, 650);
         }
 
         function transitionTrToCombat() {
             trGameState = 'TRANSITION';
             trHearts = [];
             trCheckpoints = [];
+            trObstacles = [];
+            trGate = null;
             showTrMessage("TURBO ON HENGÄSTYNYT!", "Aika kerätä superlataus!", 90);
             
             let last = trPlatforms.length > 0 ? trPlatforms[trPlatforms.length - 1] : { x: 0, y: trArenaY, w: 400, h: 20 };
@@ -3346,6 +4933,8 @@ class ChiptuneEngine {
         }
 
         function initTrGame() {
+            loadRunnerSprites();
+            setupRunnerAnalyser();
             initTrStars();
             trGameState = 'START';
             showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
@@ -3359,9 +4948,19 @@ class ChiptuneEngine {
             trHeartsSpawned = 0;
             trHeartsTarget = Math.floor(Math.random() * 2) + 1;
             trBoss.x = -150;
+            trBoss.state = 'normal';
+            trBoss.hitFlash = 0;
             
             trBossProjectiles = [];
             trBossShootTimer = 0;
+            trBossShootAnimUntil = 0;
+            trScrollSpeed = 5.5;
+            trPlayerShots = [];
+            trAfterimages = [];
+            trInvuln = 0; trHitStop = 0; trGlitch = 0; trErrorStreak = 0;
+            trCoyote = 0; trJumpBuffer = 0; trWasGrounded = false; trPausedState = null;
+            trFlashError = 0;
+            trBgScroll = [0, 0, 0];
             
             trVerbsCompleted = 0;
             trMessageTimer = 0;
@@ -3374,577 +4973,8 @@ class ChiptuneEngine {
             trGameState = 'CHASE';
         }
 
-        function updateRunner() {
-            trGlobalFrames++;
-            if (trMessageTimer > 0) trMessageTimer--;
-            if (trFeedbackTimer > 0) trFeedbackTimer--;
-            if (trScreenShake > 0) trScreenShake *= 0.9;
 
-            let bgScrollSpeed = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
-            
-            trCitySilhouette.forEach(b => {
-                b.x -= bgScrollSpeed * 0.18;
-                if (b.x + b.w < 0) {
-                    let maxX = Math.max(...trCitySilhouette.map(s => s.x + s.w));
-                    b.x = maxX;
-                    b.h = Math.random() * 110 + 60;
-                    b.y = canvasHeight - b.h - 40;
-                    b.w = Math.random() * 50 + 35;
-                }
-            });
 
-            for (let i = trParticles.length - 1; i >= 0; i--) {
-                let p = trParticles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.035;
-                if (p.life <= 0) trParticles.splice(i, 1);
-            }
-
-            for (let i = trEnergyParticles.length - 1; i >= 0; i--) {
-                let p = trEnergyParticles[i];
-                p.x += (trPlayer.x + trPlayer.w/2 - p.x) * 0.15;
-                p.y += (trPlayer.y + trPlayer.h/2 - p.y) * 0.15;
-                p.life -= 0.04;
-                if (p.life <= 0) trEnergyParticles.splice(i, 1);
-            }
-
-            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING') {
-                return;
-            }
-
-            let currentScrollSpeed = bgScrollSpeed;
-
-            if (trGameState !== 'SUPER_ATTACK' && trGameState !== 'COMBAT') {
-                trPlayer.vy += trPlayer.gravity;
-                trPlayer.y += trPlayer.vy;
-            }
-
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                if (trPlayer.x > 255) trPlayer.x -= 2;
-                if (trPlayer.x < 245) trPlayer.x += 2;
-            }
-
-            if (trPlayer.y > canvasHeight + 40 && (trGameState === 'CHASE' || trGameState === 'TRANSITION')) {
-                triggerTrSetback();
-            }
-
-            if (trGameState === 'CHASE') {
-                trChaseProgress += 0.07; 
-                if (trChaseProgress >= 100) {
-                    trChaseProgress = 100;
-                    transitionTrToCombat();
-                }
-
-                let targetBossX = -150 + (trChaseProgress / 100) * (trPlayer.x - 100 - (-150));
-                trBoss.x += (targetBossX - trBoss.x) * 0.1;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.1) * 12;
-
-                trBossShootTimer--;
-                if (trBossShootTimer <= 0 && trBoss.x > -50) { 
-                    trBossProjectiles.push({
-                        x: trBoss.x + trBoss.w,
-                        y: trBoss.y + trBoss.offsetY + trBoss.h / 2 - 4,
-                        w: 24, h: 8,
-                        vx: 9
-                    });
-                    trBossShootTimer = Math.random() * 50 + 50;
-                    audio.playLaser();
-                }
-            }
-
-            if (trGameState === 'TRANSITION') {
-                let arenaPlat = trPlatforms.find(p => p.isArena);
-                
-                if (arenaPlat) {
-                    let dist = arenaPlat.x - 0;
-                    if (dist > 0) {
-                        currentScrollSpeed = Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035));
-                    } else {
-                        currentScrollSpeed = 0;
-                        trGameState = 'COMBAT';
-                        trVerbsCompleted = 0;
-                        setupTrNextVerb();
-                    }
-                }
-                
-                trBoss.x += ((trPlayer.x - 120) - trBoss.x) * 0.05; 
-                trBoss.y = trArenaY - trBoss.h;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.07) * 18; 
-            }
-
-            if (trGameState === 'COMBAT') {
-                currentScrollSpeed = 0;
-                trBoss.y = trArenaY - trBoss.h;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.04) * 25; 
-            }
-
-            if (trGameState === 'SUPER_ATTACK') {
-                currentScrollSpeed = 0;
-                trSuperAttackTimer--;
-                
-                if (trSuperAttackTimer > 80) {
-                    trScreenShake = 10;
-                    if (trSuperAttackTimer % 10 === 0) audio.playHit();
-                }
-                
-                trBoss.state = 'hurt';
-                
-                trBoss.x -= 8;
-                if (trBoss.x < -150) trBoss.x = -150;
-
-                createTrParticles(trBoss.x + trBoss.w, trBoss.y + trBoss.h/2, 2, '#ffe600', 3);
-
-                if (trSuperAttackTimer <= 0) {
-                    trBoss.state = 'normal';
-                    if (trRound >= 3) {
-                        trGameState = 'VICTORY';
-                        showTrMessage("VOITTO!", "TURBO THRASHER ON LYÖTY!", 9999);
-                        createTrParticles(trBoss.x + trBoss.w/2, trBoss.y + trBoss.h/2, 120, '#ff007f', 3);
-                        audio.playExplosion();
-                    } else {
-                        trRound++;
-                        trChaseProgress = 0;
-                        trHeartsSpawned = 0;
-                        trHeartsTarget = Math.floor(Math.random() * 2) + 1;
-                        trPlatforms = trPlatforms.filter(p => !p.isArena);
-                        generateTrSafeStartPlatform();
-                        trGameState = 'CHASE';
-                        showTrMessage("SE JATKUU!", "Jatka pakoa!", 90);
-                    }
-                }
-            }
-
-            trPlayer.grounded = false;
-            for (let i = trPlatforms.length - 1; i >= 0; i--) {
-                let p = trPlatforms[i];
-                p.x -= currentScrollSpeed;
-
-                if (trPlayer.vy > 0 && 
-                    trPlayer.x + trPlayer.w > p.x + 4 && 
-                    trPlayer.x < p.x + p.w - 4 &&
-                    trPlayer.y + trPlayer.h >= p.y && 
-                    trPlayer.y + trPlayer.h <= p.y + trPlayer.vy + 12) 
-                {
-                    trPlayer.y = p.y - trPlayer.h;
-                    trPlayer.vy = 0;
-                    trPlayer.grounded = true;
-                    trPlayer.jumps = 0;
-                }
-
-                if (p.x + p.w < -120) trPlatforms.splice(i, 1);
-            }
-
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                if (trPlatforms.length === 0) {
-                    generateTrSafeStartPlatform();
-                } else {
-                    let lastPlat = trPlatforms[trPlatforms.length - 1];
-                    if (!lastPlat.isArena && lastPlat.x + lastPlat.w < canvasWidth + 250) {
-                        generateTrNextPlatform();
-                    }
-                }
-            }
-
-            for (let i = trHearts.length - 1; i >= 0; i--) {
-                let h = trHearts[i];
-                h.x -= currentScrollSpeed;
-                h.pulse += 0.08;
-
-                if (h.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
-                    trPlayer.x < h.x + 18 && trPlayer.x + trPlayer.w > h.x - 18 &&
-                    trPlayer.y < h.y + 18 && trPlayer.y + trPlayer.h > h.y - 18) 
-                {
-                    h.active = false;
-                    if (trPlayerLives < trMaxLives) trPlayerLives++;
-                    createTrParticles(h.x, h.y, 20, '#ff007f', 1.2);
-                    showTrMessage("+1 ELÄMÄ!", "Sydän kerätty", 45);
-                    audio.playCorrect();
-                }
-
-                if (h.x < -50 || !h.active) trHearts.splice(i, 1);
-            }
-
-            trCheckpoints.forEach(cp => {
-                cp.x -= currentScrollSpeed;
-                if (!cp.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
-                    trPlayer.x + trPlayer.w > cp.x - 15 && trPlayer.x < cp.x + 15) {
-                    cp.active = true;
-                    trActiveCheckpoint = { platId: cp.platId, relX: cp.x, y: cp.y };
-                    createTrParticles(cp.x, cp.y, 25, '#00f0ff', 1.4);
-                    showTrMessage("CHECKPOINT!", "Tallennuspiste aktivoitu", 50);
-                    audio.playSelect();
-                }
-            });
-
-            for (let i = trBossProjectiles.length - 1; i >= 0; i--) {
-                let bp = trBossProjectiles[i];
-                bp.x += bp.vx; 
-                
-                if ((trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
-                    bp.x < trPlayer.x + trPlayer.w && bp.x + bp.w > trPlayer.x &&
-                    bp.y < trPlayer.y + trPlayer.h && bp.y + bp.h > trPlayer.y) 
-                {
-                    createTrParticles(trPlayer.x, trPlayer.y + trPlayer.h/2, 22, '#ff007f');
-                    trFlashError = 15;
-                    trScreenShake = 10;
-                    trPlayerLives--;
-                    trBossProjectiles.splice(i, 1);
-                    audio.playWrong();
-
-                    if (trPlayerLives <= 0) {
-                        trGameState = 'GAMEOVER';
-                        showTrMessage("GAME OVER", "Sait osuman ja elämät loppuivat!", 9999);
-                    } else {
-                        showTrMessage("OSUMA!", `Elämiä jäljellä: ${trPlayerLives}`, 50);
-                    }
-                    continue;
-                }
-
-                if (bp.x > canvasWidth + 100) trBossProjectiles.splice(i, 1); 
-            }
-        }
-
-        function drawRunner() {
-            ctx.save();
-            if (trScreenShake > 0) {
-                let dx = (Math.random() - 0.5) * trScreenShake;
-                let dy = (Math.random() - 0.5) * trScreenShake;
-                ctx.translate(dx, dy);
-            }
-
-            // Sky
-            let skyGrad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-            skyGrad.addColorStop(0, '#0c021a');
-            skyGrad.addColorStop(0.55, '#29004d');
-            skyGrad.addColorStop(0.85, '#7a0055');
-            skyGrad.addColorStop(1, '#ff3377');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            // Stars
-            trStars.forEach(s => {
-                ctx.fillStyle = s.color;
-                ctx.globalAlpha = Math.random() > 0.95 ? 0.3 : 0.85;
-                ctx.fillRect(s.x, s.y, s.size, s.size);
-            });
-            ctx.globalAlpha = 1.0;
-
-            // Sun
-            let sunX = canvasWidth / 2;
-            let sunY = canvasHeight * 0.52;
-            let sunRadius = 65;
-            let sunGrad = ctx.createLinearGradient(sunX, sunY - sunRadius, sunX, sunY + sunRadius);
-            sunGrad.addColorStop(0, '#ffe600');
-            sunGrad.addColorStop(0.5, '#ff007f');
-            sunGrad.addColorStop(1, '#7a0055');
-
-            ctx.fillStyle = sunGrad;
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = '#ff007f';
-            ctx.beginPath();
-            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.fillStyle = '#29004d';
-            for (let i = 0; i < 6; i++) {
-                let lineY = sunY + 10 + (i * 8);
-                let lineHeight = 2 + (i * 0.8);
-                ctx.fillRect(sunX - sunRadius, lineY, sunRadius * 2, lineHeight);
-            }
-            ctx.restore();
-
-            // Background Cityscape
-            ctx.fillStyle = '#120224';
-            trCitySilhouette.forEach(b => {
-                ctx.fillRect(b.x, b.y, b.w, b.h);
-            });
-
-            // Synth Grid Ground horizon line
-            ctx.strokeStyle = '#00f0ff';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, canvasHeight - 35);
-            ctx.lineTo(canvasWidth, canvasHeight - 35);
-            ctx.stroke();
-
-            // Buildings
-            trPlatforms.forEach(p => {
-                ctx.fillStyle = p.isArena ? '#0a0314' : '#14052b';
-                ctx.fillRect(p.x, p.y, p.w, canvasHeight - p.y);
-                
-                ctx.fillStyle = '#00f0ff';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#00f0ff';
-                ctx.fillRect(p.x, p.y, p.w, 4);
-                ctx.shadowBlur = 0;
-
-                ctx.fillStyle = '#ff007f';
-                ctx.fillRect(p.x, p.y + 4, p.w, 2);
-
-                let windowW = 10, windowH = 15, gapX = 14, gapY = 22;
-                let colIndex = 0;
-                for (let wx = p.x + 12; wx < p.x + p.w - windowW - 8; wx += windowW + gapX) {
-                    let rowIndex = 0;
-                    for (let wy = p.y + 25; wy < canvasHeight - windowH - 10; wy += windowH + gapY) {
-                        let seed = Math.sin(p.xSeed * 77.3 + colIndex * 13.7 + rowIndex * 31.9) * 10000;
-                        let val = seed - Math.floor(seed);
-                        if (val > 0.62) {
-                            ctx.fillStyle = '#fffa8b';
-                            ctx.shadowColor = '#ffe600';
-                            ctx.shadowBlur = 8;
-                        } else {
-                            ctx.fillStyle = '#090214'; 
-                            ctx.shadowBlur = 0;
-                        }
-                        ctx.fillRect(wx, wy, windowW, windowH);
-                        rowIndex++;
-                    }
-                    colIndex++;
-                }
-                ctx.shadowBlur = 0;
-            });
-
-            // Draw Checkpoints
-            trCheckpoints.forEach(cp => {
-                ctx.fillStyle = cp.active ? '#00f0ff' : '#660066';
-                ctx.shadowBlur = cp.active ? 15 : 0;
-                ctx.shadowColor = '#00f0ff';
-                ctx.beginPath();
-                ctx.moveTo(cp.x, cp.y - 12);
-                ctx.lineTo(cp.x + 10, cp.y);
-                ctx.lineTo(cp.x, cp.y + 12);
-                ctx.lineTo(cp.x - 10, cp.y);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = cp.active ? '#ffffff' : '#aa00aa';
-                ctx.beginPath();
-                ctx.arc(cp.x, cp.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-
-            // Draw Collectible Hearts
-            trHearts.forEach(h => {
-                if (!h.active) return;
-                let hoverY = h.y + Math.sin(h.pulse) * 4;
-                ctx.fillStyle = '#ff007f';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#ff007f';
-                ctx.beginPath();
-                ctx.arc(hoverY ? h.x - 4 : h.x - 4, hoverY - 4, 5, Math.PI, 0, false);
-                ctx.arc(hoverY ? h.x + 4 : h.x + 4, hoverY - 4, 5, Math.PI, 0, false);
-                ctx.lineTo(h.x, hoverY + 7);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(h.x - 3, hoverY - 4, 2, 2);
-                ctx.shadowBlur = 0;
-            });
-
-            // Draw Boss Projectiles
-            trBossProjectiles.forEach(bp => {
-                ctx.fillStyle = '#ff007f';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#ff007f';
-                ctx.fillRect(bp.x, bp.y, bp.w, bp.h);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(bp.x + 2, bp.y + 2, bp.w - 4, bp.h - 4);
-                ctx.shadowBlur = 0;
-            });
-
-            // Draw Boss
-            if (trBoss.visible && trGameState !== 'VICTORY') {
-                ctx.fillStyle = trBoss.state === 'hurt' ? '#ffffff' : trBoss.color;
-                ctx.shadowBlur = trBoss.state === 'hurt' ? 30 : 18; 
-                ctx.shadowColor = trBoss.color;
-                
-                let by = trBoss.y + trBoss.offsetY;
-                ctx.fillRect(trBoss.x, by, trBoss.w, trBoss.h);
-                
-                ctx.fillStyle = '#00f0ff';
-                ctx.fillRect(trBoss.x - 12, by + trBoss.h - 25, 12, Math.random() * 18 + 8);
-                
-                ctx.fillStyle = '#000';
-                ctx.fillRect(trBoss.x + trBoss.w - 46, by + 20, 46, 14);
-                ctx.fillStyle = '#ffe600';
-                ctx.fillRect(trBoss.x + trBoss.w - 40, by + 24, 30, 6);
-
-                if (trGameState === 'COMBAT') {
-                    ctx.fillStyle = '#00f0ff';
-                    ctx.fillRect(trBoss.x + trBoss.w/2 + Math.sin(trGlobalFrames*0.2)*10, by - 10 - Math.abs(Math.cos(trGlobalFrames*0.1)*15), 4, 8);
-                }
-
-                ctx.shadowBlur = 0;
-            }
-
-            // Draw Player
-            if (trGameState !== 'GAMEOVER' && trGameState !== 'RESPAWNING') {
-                if (trFlashError > 0) {
-                    ctx.fillStyle = '#ff0055';
-                    trFlashError--;
-                } else {
-                    ctx.fillStyle = trPlayer.color;
-                }
-                
-                ctx.shadowBlur = (trSuperAttackTimer > 0) ? 25 : 15;
-                ctx.shadowColor = ctx.fillStyle;
-                ctx.fillRect(trPlayer.x, trPlayer.y, trPlayer.w, trPlayer.h);
-                
-                if (trPlayer.vy < -1.5) {
-                    ctx.fillStyle = trPlayer.jumps === 2 ? '#ff007f' : '#ffe600';
-                    ctx.fillRect(trPlayer.x + 6, trPlayer.y + trPlayer.h, 18, Math.random() * 16 + 8);
-                }
-                ctx.shadowBlur = 0;
-            }
-
-            // Draw Super Attack Laser
-            if (trGameState === 'SUPER_ATTACK' && trSuperAttackTimer > 20) {
-                let beamHeight = Math.min(80, (120 - trSuperAttackTimer) * 4);
-                let beamY = trPlayer.y + trPlayer.h/2 - beamHeight/2;
-                
-                ctx.fillStyle = '#ffe600';
-                ctx.shadowBlur = 30;
-                ctx.shadowColor = '#ffe600';
-                ctx.fillRect(0, beamY, trPlayer.x, beamHeight);
-                
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, beamY + beamHeight*0.3, trPlayer.x, beamHeight*0.4);
-                ctx.shadowBlur = 0;
-            }
-
-            // Draw Particles
-            trParticles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
-            });
-            trEnergyParticles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
-            });
-            ctx.globalAlpha = 1.0;
-
-            ctx.restore(); 
-            drawTrUI();
-        }
-
-        function drawTrUI() {
-            ctx.textAlign = 'left';
-            ctx.fillStyle = '#fff';
-            ctx.font = '11px "Press Start 2P"';
-            
-            ctx.fillStyle = '#00f0ff';
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = '#00f0ff';
-            ctx.fillText(`KIERROS: ${trRound}/3`, 20, 28);
-            ctx.shadowBlur = 0;
-
-            ctx.fillText("HP: ", 20, 50);
-            let hpStartX = 65;
-            for (let i = 0; i < trMaxLives; i++) {
-                if (i < trPlayerLives) {
-                    ctx.fillStyle = '#ff007f';
-                    ctx.shadowBlur = 6;
-                    ctx.shadowColor = '#ff007f';
-                } else {
-                    ctx.fillStyle = '#3a0826';
-                    ctx.shadowBlur = 0;
-                }
-                ctx.fillText("♥", hpStartX + (i * 18), 50);
-            }
-            ctx.shadowBlur = 0;
-
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                ctx.fillStyle = '#ff007f';
-                ctx.fillText("TURBON ETÄISYYS:", 20, 75);
-                
-                ctx.strokeStyle = '#ff007f';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(205, 62, 184, 16);
-                
-                ctx.fillStyle = trChaseProgress >= 100 ? (trGlobalFrames % 10 < 5 ? '#fff' : '#00f0ff') : '#00f0ff';
-                ctx.fillRect(207, 64, trChaseProgress * 1.8, 12);
-            }
-
-            if (trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK') {
-                ctx.textAlign = 'right';
-                ctx.fillStyle = '#ffe600';
-                let totalReq = trRoundGoals[trRound - 1];
-                let currentProg = Math.min(totalReq, trVerbsCompleted);
-                let blocks = "█".repeat(currentProg) + "░".repeat(totalReq - currentProg);
-                ctx.fillText(`SUPERLATAUS: ${blocks}`, canvasWidth - 20, 28);
-
-                if (trTargetVerb && trGameState === 'COMBAT') {
-                    ctx.textAlign = 'center';
-                    
-                    ctx.fillStyle = 'rgba(12, 2, 26, 0.9)';
-                    ctx.fillRect(canvasWidth/2 - 250, 55, 500, 125);
-                    ctx.strokeStyle = '#ffe600';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(canvasWidth/2 - 250, 55, 500, 125);
-                    
-                    ctx.fillStyle = '#00f0ff';
-                    let tenseName = '';
-                    
-                    if (trTargetTense === 1) tenseName = 'PERUSMUOTO (1. MUOTO)';
-                    else if (trTargetTense === 2) tenseName = 'IMPERFEKTI (2. MUOTO)';
-                    else tenseName = 'PERFEKTI (3. MUOTO)';
-                    
-                    ctx.fillText(`${trTargetVerb.finnish.toUpperCase()} -> ${tenseName}`, canvasWidth/2, 90);
-                    
-                    if (trTypingFeedback === 'success') {
-                        ctx.fillStyle = '#ffe600';
-                        ctx.shadowBlur = 12;
-                        ctx.shadowColor = '#ffe600';
-                    } else if (trTypingFeedback === 'error') {
-                        ctx.fillStyle = '#ff007f';
-                        ctx.shadowBlur = 12;
-                        ctx.shadowColor = '#ff007f';
-                    } else {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.shadowBlur = 0;
-                    }
-
-                    ctx.font = '22px "Press Start 2P"';
-                    let displayStr = "";
-                    for (let i = 0; i < trTypingExpected.length; i++) {
-                        if (i < trTypingCurrent.length) {
-                            displayStr += trTypingCurrent[i] + " ";
-                        } else {
-                            displayStr += "_ ";
-                        }
-                    }
-                    ctx.fillText(displayStr, canvasWidth/2, 140);
-                    ctx.shadowBlur = 0;
-                }
-            }
-
-            if (trMessageTimer > 0 || trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                    ctx.fillStyle = 'rgba(12, 2, 26, 0.85)';
-                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-                }
-                
-                ctx.textAlign = 'center';
-                ctx.fillStyle = (trGameState === 'GAMEOVER') ? '#ff0055' : (trGameState === 'SUPER_ATTACK' ? '#ffe600' : '#00f0ff');
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = ctx.fillStyle;
-                ctx.font = '18px "Press Start 2P"';
-                ctx.fillText(trBigMessage, canvasWidth/2, canvasHeight/2 - 12);
-                
-                ctx.fillStyle = '#ffffff';
-                ctx.shadowBlur = 0;
-                ctx.font = '11px "Press Start 2P"';
-                ctx.fillText(trSmallMessage, canvasWidth/2, canvasHeight/2 + 25);
-            }
-        }
 
         // ==========================================
         function updateSpaceShooter(timestamp) {
@@ -3959,6 +4989,8 @@ class ChiptuneEngine {
             
             if (ssState !== 'playing' && ssState !== 'boss') return;
 
+            updateSsWarp();
+
             // Bossin räjähdysanimaatio (pelaaja ei liiku eikä ammu)
             if (ssBoss.active && ssBoss.state === 'dying') {
                 updateBossDeath();
@@ -3971,7 +5003,7 @@ class ChiptuneEngine {
             if ((ssKeys['ArrowLeft'] || ssKeys['a']) && ssPlayer.x > 0) ssPlayer.x -= ssPlayer.speed;
             if ((ssKeys['ArrowRight'] || ssKeys['d']) && ssPlayer.x < canvasWidth - ssPlayer.width) ssPlayer.x += ssPlayer.speed;
 
-            ssStars.forEach(s => { s.x -= s.speed; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
+            ssStars.forEach(s => { s.x -= s.speed * ssWarp; if(s.x < 0) { s.x = canvasWidth; s.y = Math.random()*canvasHeight; } });
             ssNebulas.forEach(n => { n.x -= n.speed; if (n.x < -n.radius) { n.x = canvasWidth + n.radius; n.y = Math.random()*canvasHeight; }});
 
             if (ssState === 'playing' || (ssState === 'boss' && ssBoss.state !== 'dying')) {
