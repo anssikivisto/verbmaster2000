@@ -464,7 +464,7 @@
                 <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
                 <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
                 <!-- AVATTAVAT PELIMOODIT: lukittuina himmeinä, avautuvat pisteillä (checkUnlockedModes) -->
-                <button id="mode-btn-runner" disabled onclick="launchSelectedMode('runner')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> <span>SYNTH RUNNER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 300 EXP</span></button>
+                <button id="mode-btn-runner" disabled onclick="launchSelectedMode('runner')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> <span>ROOFTOP RIDER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 300 EXP</span></button>
                 <button id="mode-btn-spaceshooter" disabled onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> <span>SPACE SHOOTER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 600 EXP</span></button>
                 <div class="border-t-2 border-dashed border-cyan-500/50 my-1"></div>
                 <button onclick="launchSelectedMode('cards')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-layer-group text-yellow-300"></i> SANAKORTIT</button>
@@ -547,7 +547,7 @@
             </button>
             <!-- UNLOCKABLE TABS -->
             <button id="tab-runner" onclick="switchMode('runner')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm hidden border-fuchsia-500 text-fuchsia-200">
-                <span>SYNTH RUNNER</span>
+                <span>ROOFTOP RIDER</span>
             </button>
             <button id="tab-spaceshooter" onclick="switchMode('spaceshooter')" class="mode-tab jrpg-btn py-2.5 px-2 text-xs sm:text-sm hidden border-red-500 text-red-200">
                 <span>SPACE SHOOTER</span>
@@ -1400,7 +1400,7 @@ class ChiptuneEngine {
                 localStorage.setItem('vm2000_unlocked_runner', 'true');
                 checkUnlockedModes();
                 pauseGameForCutscene('cutscene_300', (prevBGM) => {
-                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SYNTH RUNNER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
+                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>ROOFTOP RIDER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
                         resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
                     });
                 });
@@ -1683,7 +1683,7 @@ class ChiptuneEngine {
             const sg = sky.getContext('2d');
             const im = sg.createImageData(bw, bh);
             const px = new Uint32Array(im.data.buffer);
-            const cols = ['#03010f', '#07031d', '#0d0535', '#150a4a', '#220d5e', '#33106b', '#4a1275', '#5a1478'].map(bgPack);
+            const cols = ['#02010c', '#05021a', '#090430', '#0e0842', '#150a50', '#1d0d58', '#260e5a', '#2c1160'].map(bgPack);
             for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) px[y * bw + x] = bgDither(cols, y / (bh - 1), x, y);
             sg.putImageData(im, 0, 0);
 
@@ -1694,7 +1694,7 @@ class ChiptuneEngine {
                 const img = g.createImageData(bw, bh);
                 const p32 = new Uint32Array(img.data.buffer);
                 const rng = bgRng(seed);
-                const palette = ['#ff2e97', '#22e6ff', '#6b4fd8', '#b8269a'].map(bgPack);
+                const palette = ['#a02a7a', '#1f8aa8', '#5a3fb8', '#7a2a8a'].map(bgPack);
                 for (let b = 0; b < count; b++) {
                     const cx = rng() * bw, cy = rng() * bh, r = (rMin + rng() * (rMax - rMin)) * bh;
                     const col = palette[Math.floor(rng() * palette.length)];
@@ -1714,7 +1714,7 @@ class ChiptuneEngine {
                 g.putImageData(img, 0, 0);
                 return c;
             };
-            const neb = [makeNebula(5, 5, 0.28, 0.42, 0.36), makeNebula(9, 4, 0.16, 0.26, 0.4)];
+            const neb = [makeNebula(5, 5, 0.28, 0.42, 0.2), makeNebula(9, 4, 0.16, 0.26, 0.24)];
 
             // rengasplaneetta
             const R = Math.floor(bh * 0.15);
@@ -1803,7 +1803,7 @@ class ChiptuneEngine {
 
             // jättiplaneetta alareunassa
             const sw = B.sunPlanet.width * P;
-            ctx.globalAlpha = 0.6;
+            ctx.globalAlpha = 0.34;
             ctx.drawImage(B.sunPlanet, canvasWidth * 0.14 - sw / 2, canvasHeight * 1.02 - sw / 2 + Math.sin(ssTime * 0.0004) * 4, sw, sw);
             ctx.globalAlpha = 1;
 
@@ -1821,14 +1821,16 @@ class ChiptuneEngine {
             const pw = B.planet.width * P;
             const span = canvasWidth + pw * 2;
             const ppx = canvasWidth + pw - ((ssBgOff[2] * 0.0065 + canvasWidth * 0.4) % span);
+            ctx.globalAlpha = 0.72;
             ctx.drawImage(B.planet, ppx - pw / 2, canvasHeight * 0.26 - (B.planet.height * P) / 2, pw, B.planet.height * P);
+            ctx.globalAlpha = 1;
 
             // tähdet kolmessa kerroksessa
             const streak = ssWarp > 1.5;
             ssStars.forEach(s => {
                 let size, col;
-                if (s.speed < 1.1) { size = 2; col = '#7a6fb0'; }
-                else if (s.speed < 1.8) { size = P; col = '#bdb4e6'; }
+                if (s.speed < 1.1) { size = 2; col = '#4a4380'; }
+                else if (s.speed < 1.8) { size = P; col = '#8a82b8'; }
                 else { size = Math.max(P, Math.round(P * 1.5)); col = (Math.floor(s.x * 7 + s.y) % 3 === 0) ? '#22e6ff' : '#ffffff'; }
                 if (Math.sin(ssTime * 0.004 + s.y) < -0.85) return;
                 ctx.fillStyle = col;
@@ -1860,10 +1862,14 @@ class ChiptuneEngine {
             });
             ctx.globalAlpha = 1;
 
+            // yleinen himmennys: pelielementit (luodit, sanat, alukset) erottuvat paremmin
+            ctx.fillStyle = 'rgba(4, 2, 16, 0.24)';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
             // boss-vaiheen tunnelma: punertava sävy, vinjetti ja vaiheenvaihdon välähdys
             if (ssState === 'boss' && ssBoss.active) {
                 if (ssBoss.phase !== ssBgPhaseSeen) { ssBgFlash = 1; ssBgPhaseSeen = ssBoss.phase; }
-                ctx.fillStyle = 'rgba(255, 30, 110, ' + (0.04 + 0.03 * ssBoss.phase) + ')';
+                ctx.fillStyle = 'rgba(255, 30, 110, ' + (0.03 + 0.02 * ssBoss.phase) + ')';
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                 const vg = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, canvasHeight * 0.35, canvasWidth / 2, canvasHeight / 2, canvasWidth * 0.62);
                 vg.addColorStop(0, 'rgba(20, 0, 30, 0)'); vg.addColorStop(1, 'rgba(20, 0, 30, 0.45)');
@@ -1934,20 +1940,31 @@ class ChiptuneEngine {
                 }
 
                 ssBullets.forEach(b => {
-                    ctx.fillStyle = '#22e6ff';
+                    ctx.fillStyle = '#07011a';
+                    ctx.fillRect(b.x - 3, b.y - 3, b.width + 6, b.height + 6);
+                    ctx.fillStyle = '#ffe94d';
                     ctx.fillRect(b.x, b.y, b.width, b.height);
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(b.x + 4, b.y + 2, Math.max(2, b.width - 8), Math.max(2, b.height - 4));
+                    ctx.fillStyle = 'rgba(255, 233, 77, 0.35)';
+                    ctx.fillRect(b.x - 16, b.y + 1, 14, Math.max(2, b.height - 2));
                 });
 
                 ssEnemyBullets.forEach(b => {
-                    ctx.fillStyle = b.isEnergyBall ? '#ff7a3d' : '#ff2e97';
                     if (b.isEnergyBall) {
-                        ctx.beginPath();
-                        ctx.arc(b.x, b.y, b.width/2, 0, Math.PI*2);
-                        ctx.fill();
+                        ctx.fillStyle = '#07011a';
+                        ctx.beginPath(); ctx.arc(b.x, b.y, b.width / 2 + 3, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#ff4d2e';
+                        ctx.beginPath(); ctx.arc(b.x, b.y, b.width / 2, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#fff6c2';
+                        ctx.beginPath(); ctx.arc(b.x, b.y, b.width / 4, 0, Math.PI * 2); ctx.fill();
                     } else {
+                        ctx.fillStyle = '#07011a';
+                        ctx.fillRect(b.x - 3, b.y - 3, b.width + 6, b.height + 6);
+                        ctx.fillStyle = '#ff4d2e';
                         ctx.fillRect(b.x, b.y, b.width, b.height);
+                        ctx.fillStyle = '#fff6c2';
+                        ctx.fillRect(b.x + 3, b.y + 2, Math.max(2, b.width - 6), Math.max(2, b.height - 4));
                     }
                 });
 
@@ -3333,15 +3350,23 @@ class ChiptuneEngine {
         //  - anchorX = vaakaankkuri hitboxin sisällä (0 = vasen reuna, 0.5 = keskikohta, 1 = oikea reuna).
         //  - offsetX / offsetY = hienosäätö pikseleinä (positiivinen offsetY siirtää hahmoa alaspäin).
         //  - flipX   = true peilaa kuvan vaakasuunnassa (jos hahmo katsoo väärään suuntaan).
+        //  - bossTired = väsynyt Roxy taistelussa (tiedostoa ei vielä ole, katso kommentti alla).
         //  - bossShoot.playFrames = kuinka monta ruutua ampumakuvaa näytetään laukauksen jälkeen.
         //  - bossShoot.muzzleX = mistä kohtaa kuvaa (0 = vasen reuna, 1 = oikea reuna) luoti lähtee.
         //  - GIF-animaatio toimii, kun peli ajetaan palvelimelta (esim. GitHub Pages tai paikallinen palvelin).
         //    Avattaessa suoraan tiedostona (file://) selain estää GIF-kehysten lukemisen,
         //    jolloin näkyy GIFin ensimmäinen kuva (peli toimii silti normaalisti).
         const RUNNER_SPRITES = {
-            player:    { src: 'motogif.gif',    drawH: 72,  anchorX: 0.5, offsetX: 0, offsetY: 6,  flipX: false },
-            bossMove:  { src: 'turbogif.gif',   drawH: 150, anchorX: 0.5, offsetX: 0, offsetY: 10, flipX: false },
-            bossShoot: { src: 'turboshoot.gif', drawH: 150, anchorX: 0.5, offsetX: 0, offsetY: 10, flipX: false, playFrames: 50, muzzleX: 0.92 }
+            // pelaaja (rullaluistelija)
+            player:    { src: 'motogif.gif',    drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
+            // Roxy Blaize liikkuu (sama koko kuin pelaaja)
+            bossMove:  { src: 'turbogif.gif',   drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
+            // Roxy Blaize ampuu
+            bossShoot: { src: 'turboshoot.gif', drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false, playFrames: 50, muzzleX: 0.92 },
+            // Väsynyt Roxy taistelussa (ruudun vasemmassa reunassa). Spriteä ei ole vielä:
+            // kirjoita tiedostonimi 'src'-kohtaan, kun kuva on valmis. Tyhjällä 'src'-arvolla käytetään
+            // toistaiseksi liikkumis-GIFin ensimmäistä kuvaa paikallaan.
+            bossTired: { src: '',               drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false }
         };
         // Musiikin tahtiin sykkivä tausta (toimii vain kun peli ajetaan palvelimelta). false = pois päältä.
         const RUNNER_MUSIC_REACTIVE = true;
@@ -3465,6 +3490,7 @@ class ChiptuneEngine {
                 this.frames = null; this.total = 0; this.w = 0; this.h = 0; this.startTime = 0;
             }
             load() {
+                if (!this.cfg.src) { this.failed = true; return; }
                 const img = new Image();
                 img.onload = () => {
                     this.staticReady = true;
@@ -3487,7 +3513,8 @@ class ChiptuneEngine {
             }
             get ready() { return !!this.frames || (this.staticReady && this.img && this.img.naturalWidth > 0); }
             restart(now) { this.startTime = now; }
-            source(now) {
+            source(now, freeze) {
+                if (freeze && this.frames) return this.frames[0].canvas;
                 if (this.frames && this.frames.length > 1 && this.total > 0) {
                     let t = (now - this.startTime) % this.total;
                     if (t < 0) t += this.total;
@@ -3505,7 +3532,8 @@ class ChiptuneEngine {
         const trSprites = {
             player: new GifSprite(RUNNER_SPRITES.player),
             bossMove: new GifSprite(RUNNER_SPRITES.bossMove),
-            bossShoot: new GifSprite(RUNNER_SPRITES.bossShoot)
+            bossShoot: new GifSprite(RUNNER_SPRITES.bossShoot),
+            bossTired: new GifSprite(RUNNER_SPRITES.bossTired)
         };
         let trSpritesLoading = false;
         function loadRunnerSprites() {
@@ -3858,7 +3886,7 @@ class ChiptuneEngine {
                 const ang = -Math.PI / 2 + Math.sin(now * 0.0007 + ph) * 0.55;
                 const len = canvasHeight * 0.75;
                 ctx.save();
-                ctx.globalAlpha = 0.09;
+                ctx.globalAlpha = 0.06;
                 ctx.fillStyle = col;
                 ctx.beginPath();
                 ctx.moveTo(bx, baseY);
@@ -3965,11 +3993,11 @@ class ChiptuneEngine {
                 if (wx + cw < vx0 || wx + cw > x + w - 10) continue;
                 for (let row = 0, wy = y + 26; wy + ch < canvasHeight; row++, wy += gy) {
                     const hv = trHash(p.xSeed + col * 7.3 + row * 3.1);
-                    const lit = hv > 0.62;
+                    const lit = hv > 0.7;
                     if (lit) {
                         const cv = trHash(p.xSeed + col * 1.7 + row * 9.9);
                         const color = cv < 0.55 ? '#ffd23f' : (cv < 0.8 ? '#22e6ff' : '#ff6ec7');
-                        ctx.globalAlpha = 0.2; ctx.fillStyle = color; ctx.fillRect(wx - 2, wy - 2, cw + 4, ch + 4);
+                        ctx.globalAlpha = 0.1; ctx.fillStyle = color; ctx.fillRect(wx - 2, wy - 2, cw + 4, ch + 4);
                         ctx.globalAlpha = 1; ctx.fillStyle = color; ctx.fillRect(wx, wy, cw, ch);
                         ctx.fillStyle = '#fff6c2'; ctx.fillRect(wx + 2, wy + 2, cw - 6, 3);
                     } else {
@@ -3997,16 +4025,6 @@ class ChiptuneEngine {
                 ctx.fillRect(lx, y - 2, 4, 2);
             }
             drawTrRoofProps(p, x, y, w, now);
-            // portin nimilappu
-            if (p.gateInfo && !p.gateInfo.gate.resolved) {
-                const txt = p.gateInfo.text;
-                ctx.font = '12px "Press Start 2P"';
-                const tw = ctx.measureText(txt).width + 22;
-                const px = x + w / 2 - tw / 2, py = y - 52;
-                trPanel(px, py, tw, 30, '#22e6ff', '#ff2e97');
-                ctx.fillStyle = '#fff6c2'; ctx.textAlign = 'center';
-                ctx.fillText(txt, x + w / 2, py + 20);
-            }
         }
 
         function trPanel(x, y, w, h, border, inner) {
@@ -4035,7 +4053,13 @@ class ChiptuneEngine {
         }
 
         const TR_HEART = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
-        function trPixelHeart(x, y, s, color, shine) {
+        function trPixelHeart(x, y, s, color, shine, outline) {
+            if (outline) {
+                ctx.fillStyle = '#07011a';
+                for (let r = 0; r < TR_HEART.length; r++) for (let c = 0; c < 7; c++) {
+                    if (TR_HEART[r][c] === 'X') ctx.fillRect(x + c * s - 2, y + r * s - 2, s + 4, s + 4);
+                }
+            }
             for (let r = 0; r < TR_HEART.length; r++) for (let c = 0; c < 7; c++) {
                 if (TR_HEART[r][c] === 'X') { ctx.fillStyle = (shine && r === 1 && c === 1) ? '#fff6c2' : color; ctx.fillRect(x + c * s, y + r * s, s, s); }
             }
@@ -4087,8 +4111,12 @@ class ChiptuneEngine {
             drawTrBlinkers(2, now);
             drawTrGroundGrid();
 
+            // taustan himmennys: etualan alustat, esineet ja hahmot erottuvat selvemmin
+            ctx.fillStyle = 'rgba(7, 1, 26, 0.32)';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
             // nopeusviivat
-            trSpeedLines.forEach(s => { ctx.fillStyle = s.c; ctx.globalAlpha = 0.45; ctx.fillRect(Math.round(s.x), Math.round(s.y / P) * P, s.len, P); });
+            trSpeedLines.forEach(s => { ctx.fillStyle = s.c; ctx.globalAlpha = 0.22; ctx.fillRect(Math.round(s.x), Math.round(s.y / P) * P, s.len, P); });
             ctx.globalAlpha = 1;
 
             // alustat
@@ -4105,26 +4133,35 @@ class ChiptuneEngine {
                 ctx.fillStyle = '#ff6ec7'; ctx.fillRect(o.x + 2, o.y - 3, 8, 4);
             });
 
-            // checkpointit
+            // checkpointit: valopylväs, iso lippu ja tumma ääriviiva
             trCheckpoints.forEach(cp => {
-                const c = cp.active ? '#22e6ff' : '#4b1b86';
-                ctx.fillStyle = '#7a6fb0'; ctx.fillRect(cp.x - 1, cp.y - 22, 2, 28);
-                ctx.fillStyle = c; ctx.fillRect(cp.x + 1, cp.y - 22, 14, 4); ctx.fillRect(cp.x + 1, cp.y - 18, 10, 4); ctx.fillRect(cp.x + 1, cp.y - 14, 6, 4);
-                if (cp.active) { ctx.fillStyle = '#fff6c2'; ctx.fillRect(cp.x + 1, cp.y - 22, 14, 1); }
+                const c = cp.active ? '#22e6ff' : '#ffd23f';
+                ctx.globalAlpha = cp.active ? 0.12 : 0.22 + Math.sin(now * 0.006) * 0.06;
+                ctx.fillStyle = c; ctx.fillRect(cp.x - 5, cp.y - 150, 10, 156);
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#07011a'; ctx.fillRect(cp.x - 4, cp.y - 48, 8, 54); ctx.fillRect(cp.x - 4, cp.y - 52, 34, 30);
+                ctx.fillStyle = '#e8e4ff'; ctx.fillRect(cp.x - 2, cp.y - 46, 4, 50);
+                ctx.fillStyle = c; ctx.fillRect(cp.x + 2, cp.y - 50, 26, 8); ctx.fillRect(cp.x + 2, cp.y - 42, 20, 8); ctx.fillRect(cp.x + 2, cp.y - 34, 14, 8);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(cp.x + 2, cp.y - 50, 26, 2);
             });
 
-            // sydämet
+            // sydämet: halo, tumma ääriviiva ja isompi koko
             trHearts.forEach(h => {
-                const bob = Math.round(Math.sin(h.pulse) * 3);
-                trPixelHeart(Math.round(h.x - 10), Math.round(h.y - 9 + bob), 3, '#ff2e97', true);
+                const bob = Math.round(Math.sin(h.pulse) * 4);
+                const hx = Math.round(h.x - 14), hy = Math.round(h.y - 12 + bob);
+                ctx.globalAlpha = 0.28 + Math.sin(h.pulse * 1.5) * 0.08;
+                ctx.fillStyle = '#ff6ec7'; ctx.beginPath(); ctx.arc(h.x, h.y + bob, 24, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+                trPixelHeart(hx, hy, 4, '#ff2e97', true, true);
             });
 
-            // pomon ammukset
+            // pomon ammukset: tumma ääriviiva, oranssi runko ja valkoinen sydän
             trBossProjectiles.forEach(bp => {
-                ctx.fillStyle = '#ff2e97'; ctx.fillRect(bp.x, bp.y, bp.w, bp.h);
+                ctx.fillStyle = '#07011a'; ctx.fillRect(bp.x - 3, bp.y - 3, bp.w + 6, bp.h + 6);
+                ctx.fillStyle = '#ff7a3d'; ctx.fillRect(bp.x, bp.y, bp.w, bp.h);
                 ctx.fillStyle = '#fff6c2'; ctx.fillRect(bp.x + 6, bp.y + 2, bp.w - 12, bp.h - 4);
-                ctx.fillStyle = 'rgba(255, 46, 151, 0.5)'; ctx.fillRect(bp.x - 14, bp.y + 2, 12, bp.h - 4);
-                ctx.fillStyle = 'rgba(255, 46, 151, 0.25)'; ctx.fillRect(bp.x - 26, bp.y + 3, 10, bp.h - 6);
+                ctx.fillStyle = 'rgba(255, 122, 61, 0.55)'; ctx.fillRect(bp.x - 14, bp.y + 2, 12, bp.h - 4);
+                ctx.fillStyle = 'rgba(255, 122, 61, 0.28)'; ctx.fillRect(bp.x - 26, bp.y + 3, 10, bp.h - 6);
             });
 
             // pomo
@@ -4134,7 +4171,7 @@ class ChiptuneEngine {
                 const hurt = trBoss.state === 'hurt';
                 const flash = trBoss.hitFlash > 0 || (hurt && trGlobalFrames % 6 < 3);
                 if (br.spr) {
-                    drawSpriteSource(br.spr.source(now), br.x, br.y, br.w, br.h, { flip: br.spr.cfg.flipX, tint: flash ? '#ffffff' : null, tintAlpha: 0.8 });
+                    drawSpriteSource(br.spr.source(now, br.freeze), br.x, br.y, br.w, br.h, { flip: br.spr.cfg.flipX, tint: flash ? '#ffffff' : null, tintAlpha: 0.8 });
                 } else {
                     drawTrBossFallback(br.x, br.y);
                 }
@@ -4151,31 +4188,33 @@ class ChiptuneEngine {
             });
 
             // pelaaja
+            const facingLeft = (trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK');
             const blink = trInvuln > 0 && Math.floor(trInvuln / 4) % 2 === 0;
             if (trGameState !== 'GAMEOVER' && trGameState !== 'RESPAWNING' && !blink) {
                 if (trSprites.player.ready) {
                     const r = trSpriteRect(trSprites.player, trPlayer.x, trPlayer.y, trPlayer.w, trPlayer.h);
                     const air = !trPlayer.grounded && (trGameState === 'CHASE' || trGameState === 'TRANSITION');
                     const rot = air ? Math.max(-0.3, Math.min(0.3, trPlayer.vy * 0.025)) : 0;
-                    drawSpriteSource(trSprites.player.source(now), r.x, r.y, r.w, r.h, { flip: RUNNER_SPRITES.player.flipX, rot: rot, tint: trFlashError > 0 ? '#ff2e97' : null, tintAlpha: 0.6 });
+                    drawSpriteSource(trSprites.player.source(now), r.x, r.y, r.w, r.h, { flip: RUNNER_SPRITES.player.flipX !== facingLeft, rot: rot, tint: trFlashError > 0 ? '#ff2e97' : null, tintAlpha: 0.6 });
                 } else {
                     drawTrPlayerFallback(trPlayer.x, trPlayer.y);
                 }
             }
 
-            // pelaajan laukaukset
+            // pelaajan laukaukset (vasemmalle kohti Roxya)
             trPlayerShots.forEach(s => {
-                ctx.fillStyle = 'rgba(255, 230, 0, 0.35)'; ctx.fillRect(s.x - 40, s.y - 2, 38, 4);
-                ctx.fillStyle = '#ffe600'; ctx.fillRect(s.x - 12, s.y - 3, 22, 6);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - 6, s.y - 1, 12, 2);
+                ctx.fillStyle = '#07011a'; ctx.fillRect(s.x - 8, s.y - 6, 26, 12);
+                ctx.fillStyle = 'rgba(255, 230, 0, 0.4)'; ctx.fillRect(s.x + 2, s.y - 2, 38, 4);
+                ctx.fillStyle = '#ffe600'; ctx.fillRect(s.x - 6, s.y - 4, 22, 8);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - 2, s.y - 1, 12, 2);
             });
 
-            // superhyökkäys: säde
+            // superhyökkäys: säde vasemmalle
             if (trGameState === 'SUPER_ATTACK' && trSuperAttackTimer > 80) {
-                const by = trPlayer.y + trPlayer.h / 2;
-                ctx.fillStyle = '#ffe600'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 14, canvasWidth, 28);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 6, canvasWidth, 12);
-                ctx.fillStyle = '#ff2e97'; ctx.fillRect(trPlayer.x + trPlayer.w, by - 18, canvasWidth, 4); ctx.fillRect(trPlayer.x + trPlayer.w, by + 14, canvasWidth, 4);
+                const by = trPlayer.y + trPlayer.h * 0.45, bx = trPlayer.x;
+                ctx.fillStyle = '#ffe600'; ctx.fillRect(0, by - 14, bx, 28);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, by - 6, bx, 12);
+                ctx.fillStyle = '#ff2e97'; ctx.fillRect(0, by - 18, bx, 4); ctx.fillRect(0, by + 14, bx, 4);
             }
 
             // hiukkaset
@@ -4185,8 +4224,8 @@ class ChiptuneEngine {
 
             // glitch-välähdys osumasta
             if (trGlitch > 0) {
-                for (let i = 0; i < 7; i++) {
-                    ctx.globalAlpha = 0.35;
+                for (let i = 0; i < 4; i++) {
+                    ctx.globalAlpha = 0.18;
                     ctx.fillStyle = i % 2 ? '#ff2e97' : '#22e6ff';
                     const gy = Math.random() * canvasHeight, gh = 4 + Math.random() * 18;
                     ctx.fillRect((Math.random() - 0.5) * 30, gy, canvasWidth, gh);
@@ -4209,7 +4248,7 @@ class ChiptuneEngine {
                 trText('SUPERLATAUS', 30, 84, '#ffe600', 8);
                 trSegBar(150, 72, 150, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
             } else {
-                trText('TURBO', 30, 84, '#ff6ec7', 8);
+                trText('ROXY', 30, 84, '#ff6ec7', 8);
                 const full = trChaseProgress >= 100;
                 trSegBar(110, 72, 190, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
             }
@@ -4218,13 +4257,13 @@ class ChiptuneEngine {
             if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
                 const goal = trRoundGoals[trRound - 1];
                 const bx = Math.max(322, canvasWidth / 2 - 170);
-                trText('TURBO THRASHER', canvasWidth / 2, 30, '#ff6ec7', 10, 'center');
+                trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 10, 'center');
                 trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trVerbsCompleted) / goal, '#ff2e97', Math.max(goal, 5) * 2);
             }
 
             // taistelun kirjoituspaneeli
             if (trTargetVerb && gs === 'COMBAT') {
-                const pw = Math.min(540, canvasWidth * 0.5), ph = 128, px = canvasWidth / 2 - pw / 2, py = 122;
+                const pw = Math.min(540, canvasWidth * 0.5), ph = 128, px = canvasWidth / 2 - pw / 2, py = 140;
                 trPanel(px, py, pw, ph, '#ffe600', '#ff2e97');
                 const tenseName = trTargetTense === 1 ? 'PERUSMUOTO (1. MUOTO)' : (trTargetTense === 2 ? 'IMPERFEKTI (2. MUOTO)' : 'PERFEKTI (3. MUOTO)');
                 trText(trTargetVerb.finnish.toUpperCase() + ' -> ' + tenseName, canvasWidth / 2, py + 34, '#22e6ff', 11, 'center');
@@ -4247,29 +4286,25 @@ class ChiptuneEngine {
                 }
             }
 
-            // portin kehote
-            if (trGate && !trGate.resolved && gs === 'CHASE') {
-                const u = trGate.upper;
-                if (u && u.x < canvasWidth && u.x + u.w > 0) {
-                    const txt = 'PORTTI: ' + trGate.prompt;
-                    ctx.font = '11px "Press Start 2P"';
-                    const tw = ctx.measureText(txt).width + 30;
-                    trPanel(canvasWidth / 2 - tw / 2, 124, tw, 34, '#22e6ff', '#ff2e97');
-                    trText(txt, canvasWidth / 2, 146, '#ffd23f', 11, 'center');
-                }
-            }
-
             // viestit
             const overlayState = (gs === 'START' || gs === 'GAMEOVER' || gs === 'VICTORY');
-            if (trMessageTimer > 0 || overlayState) {
-                if (overlayState) { ctx.fillStyle = 'rgba(7, 1, 26, 0.82)'; ctx.fillRect(0, 0, canvasWidth, canvasHeight); }
-                const mw = Math.min(canvasWidth - 40, 640), mh = overlayState ? 150 : 110;
+            if (overlayState) {
+                ctx.fillStyle = 'rgba(7, 1, 26, 0.82)'; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                const mw = Math.min(canvasWidth - 40, 640), mh = 150;
                 const mx = canvasWidth / 2 - mw / 2, my = canvasHeight / 2 - mh / 2;
                 trPanel(mx, my, mw, mh, gs === 'GAMEOVER' ? '#ff3b4a' : '#ff2e97', '#22e6ff');
-                const bigCol = gs === 'GAMEOVER' ? '#ff3b4a' : (gs === 'SUPER_ATTACK' ? '#ffe600' : '#22e6ff');
+                const bigCol = gs === 'GAMEOVER' ? '#ff3b4a' : '#22e6ff';
                 trText(trBigMessage, canvasWidth / 2, my + 52, bigCol, 18, 'center');
                 trText(trSmallMessage, canvasWidth / 2, my + 86, '#ffffff', 10, 'center');
                 if (gs === 'START') trText('VÄLILYÖNTI: HYPPY (2x = TUPLAHYPPY)   ESC: TAUKO', canvasWidth / 2, my + 120, '#bdb4e6', 8, 'center');
+            } else if (trMessageTimer > 0) {
+                // pelin aikana viesti näytetään oikeassa yläkulmassa, jotta se ei peitä hahmoja
+                const mw = Math.min(360, canvasWidth * 0.38), mh = 70;
+                const mx = canvasWidth - mw - 14, my = 64;
+                trPanel(mx, my, mw, mh, '#ff2e97', '#22e6ff');
+                const bigCol = gs === 'SUPER_ATTACK' ? '#ffe600' : '#22e6ff';
+                trText(trBigMessage, mx + mw / 2, my + 32, bigCol, 13, 'center');
+                trText(trSmallMessage, mx + mw / 2, my + 56, '#ffffff', 8, 'center');
             }
         }
 
@@ -4277,10 +4312,10 @@ class ChiptuneEngine {
         let trBgScroll = [0, 0, 0], trGroundScroll = 0;
         let trTraffic = [], trTrafficTimer = 30, trSpeedLines = [], trAfterimages = [];
         let trObstacles = [], trPlayerShots = [];
-        let trGate = null, trGateCooldown = 6;
         let trCoyote = 0, trJumpBuffer = 0, trInvuln = 0, trHitStop = 0, trGlitch = 0, trErrorStreak = 0;
-        let trWasGrounded = false, trPausedState = null, trBossShootAnimUntil = 0;
+        let trWasGrounded = false, trPausedState = null, trBossShootAnimUntil = 0, trLastTs = 0, trBossShotMs = 0;
         trBoss.hitFlash = 0;
+        trBoss.w = trPlayer.w; trBoss.h = trPlayer.h; trBoss.vy = 0; trBoss.grounded = false; trBoss.jumps = 0; trBoss.platform = null; trBoss.needDouble = false;
 
         function initTrStars() {
             trBgScroll = [0, 0, 0]; trGroundScroll = 0;
@@ -4288,28 +4323,7 @@ class ChiptuneEngine {
             buildRunnerBg();
         }
 
-        function getTrBossRect() {
-            const shooting = trGlobalFrames < trBossShootAnimUntil;
-            let spr = null;
-            if (shooting && trSprites.bossShoot.ready) spr = trSprites.bossShoot;
-            else if (trSprites.bossMove.ready) spr = trSprites.bossMove;
-            else if (trSprites.bossShoot.ready) spr = trSprites.bossShoot;
-            const by = trBoss.y + trBoss.offsetY;
-            if (!spr) return { spr: null, x: trBoss.x, y: by, w: trBoss.w, h: trBoss.h };
-            const r = trSpriteRect(spr, trBoss.x, by, trBoss.w, trBoss.h);
-            r.spr = spr;
-            return r;
-        }
 
-        function fireTrBossProjectile(atPlayerHeight) {
-            const r = getTrBossRect();
-            const mx = r.spr ? r.x + r.w * (RUNNER_SPRITES.bossShoot.muzzleX || 0.9) : trBoss.x + trBoss.w;
-            const my = atPlayerHeight ? trPlayer.y + trPlayer.h / 2 - 4 : trBoss.y + trBoss.offsetY + trBoss.h / 2 - 4;
-            trBossProjectiles.push({ x: Math.max(mx, -10), y: my, w: 24, h: 8, vx: 9 });
-            trBossShootAnimUntil = trGlobalFrames + (RUNNER_SPRITES.bossShoot.playFrames || 40);
-            trSprites.bossShoot.restart(performance.now());
-            audio.playLaser();
-        }
 
         function trTakeHit(title, sub) {
             if (trInvuln > 0) return false;
@@ -4326,106 +4340,153 @@ class ChiptuneEngine {
             return true;
         }
 
+
+
+
+
+
+        function trPlayerHomeX() { return Math.round(canvasWidth * 0.5 - trPlayer.w / 2); }
+        function trPlayerRightX() { return Math.round(canvasWidth - 130); }
+        function trBossLeftX() { return 24; }
+        // Roxy Blaize ampuu: kierros 1 ei lainkaan, kierros 2 seitsemän sekunnin välein, kierros 3 neljän sekunnin välein
+        function trBossShotInterval() { return trRound >= 3 ? 4000 : (trRound === 2 ? 7000 : 0); }
+
+        function placeTrBossOnPlatform(p, x) {
+            trBoss.x = x; trBoss.y = p.y - trBoss.h; trBoss.vy = 0; trBoss.grounded = true; trBoss.jumps = 0; trBoss.platform = p;
+        }
+
+        // Roxy rullaluistelee kattoja pitkin samalla tavalla kuin pelaaja: painovoima, alustat, hypyt ja tuplahypyt
+        function updateTrBoss() {
+            const b = trBoss;
+            b.vy += trPlayer.gravity;
+            b.y += b.vy;
+            b.grounded = false;
+            for (let i = 0; i < trPlatforms.length; i++) {
+                const p = trPlatforms[i];
+                if (b.vy > 0 && b.x + b.w > p.x + 4 && b.x < p.x + p.w - 4 &&
+                    b.y + b.h >= p.y && b.y + b.h <= p.y + b.vy + 12) {
+                    b.y = p.y - b.h; b.vy = 0; b.grounded = true; b.jumps = 0; b.platform = p;
+                }
+            }
+            if (b.grounded && b.platform) {
+                const cur = b.platform, front = b.x + b.w;
+                const endDist = cur.x + cur.w - front;
+                const obs = trObstacles.find(o => o.plat === cur && o.x > b.x && o.x - front < 85);
+                if (endDist < 14 || obs) {
+                    // Roxy simuloi hypyn etukäteen: yksi hyppy riittää vai tarvitaanko tuplahyppy
+                    b.needDouble = !trBossSimJump(false) && trBossSimJump(true);
+                    b.vy = trPlayer.jumpPower; b.jumps = 1; b.grounded = false;
+                }
+            } else if (!b.grounded && b.jumps === 1 && b.needDouble && b.vy > -1) {
+                b.vy = trPlayer.doubleJumpPower; b.jumps = 2;
+            }
+            if (b.y > canvasHeight + 60) {
+                let target = null;
+                for (let i = 0; i < trPlatforms.length; i++) {
+                    const p = trPlatforms[i];
+                    if (!p.isArena && p.x + p.w > Math.max(b.x, 0) + 60 && (!target || p.x < target.x)) target = p;
+                }
+                if (!target) target = trPlatforms[0];
+                if (target) placeTrBossOnPlatform(target, Math.max(b.x, target.x + 8));
+            }
+        }
+
+        // Ennustaa, laskeutuuko Roxy alustalle, jos hän hyppää nyt (liikkuvat alustat huomioiden)
+        function trBossSimJump(useDouble) {
+            const b = trBoss, s = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
+            let y = b.y, vy = trPlayer.jumpPower, used = false;
+            for (let t = 1; t < 160; t++) {
+                vy += trPlayer.gravity; y += vy;
+                if (useDouble && !used && vy > -1) { vy = trPlayer.doubleJumpPower; used = true; }
+                for (let i = 0; i < trPlatforms.length; i++) {
+                    const p = trPlatforms[i];
+                    const px = p.x - s * t;
+                    const py = p.mover ? p.mover.baseY + Math.sin((trGlobalFrames + t) * p.mover.speed + p.mover.phase) * p.mover.amp : p.y;
+                    if (vy > 0 && b.x + b.w > px + 4 && b.x < px + p.w - 4 && y + b.h >= py && y + b.h <= py + vy + 12) return true;
+                }
+                if (y > canvasHeight + 60) return false;
+            }
+            return false;
+        }
+
+        // Väsynyt Roxy: liukuu ruudun vasempaan reunaan ja pysyy kattojen päällä
+        function updateTrBossTired() {
+            const b = trBoss;
+            const dx = trBossLeftX() - b.x;
+            b.x += Math.max(-4, Math.min(4, dx));
+            let ty = null;
+            for (let i = 0; i < trPlatforms.length; i++) {
+                const p = trPlatforms[i];
+                if (b.x + b.w > p.x + 2 && b.x < p.x + p.w - 2 && (ty === null || p.y < ty)) ty = p.y;
+            }
+            if (ty === null) ty = trArenaY;
+            b.y += Math.max(-8, Math.min(8, (ty - b.h) - b.y));
+            b.vy = 0; b.grounded = true;
+        }
+
+        function getTrBossRect() {
+            const tired = (trGameState === 'TRANSITION' || trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK');
+            const shooting = trGlobalFrames < trBossShootAnimUntil;
+            let spr = null, freeze = false;
+            if (tired) {
+                if (trSprites.bossTired.ready) spr = trSprites.bossTired;
+                else if (trSprites.bossMove.ready) { spr = trSprites.bossMove; freeze = true; }
+            } else {
+                if (shooting && trSprites.bossShoot.ready) spr = trSprites.bossShoot;
+                else if (trSprites.bossMove.ready) spr = trSprites.bossMove;
+                else if (trSprites.bossShoot.ready) spr = trSprites.bossShoot;
+            }
+            const by = trBoss.y + trBoss.offsetY;
+            if (!spr) return { spr: null, freeze: false, x: trBoss.x, y: by, w: trBoss.w, h: trBoss.h };
+            const r = trSpriteRect(spr, trBoss.x, by, trBoss.w, trBoss.h);
+            r.spr = spr; r.freeze = freeze;
+            return r;
+        }
+
+        function fireTrBossProjectile() {
+            const r = getTrBossRect();
+            const mx = r.spr ? r.x + r.w * (RUNNER_SPRITES.bossShoot.muzzleX || 0.9) : trBoss.x + trBoss.w;
+            const my = trBoss.y + trBoss.h * 0.45 - 4;
+            trBossProjectiles.push({ x: Math.max(mx, -10), y: my, w: 24, h: 8, vx: 9 });
+            trBossShootAnimUntil = trGlobalFrames + (RUNNER_SPRITES.bossShoot.playFrames || 40);
+            trSprites.bossShoot.restart(performance.now());
+            audio.playLaser();
+        }
+
         function generateTrSafeStartPlatform() {
             trPlatforms = [];
             trHearts = [];
             trCheckpoints = [];
             trObstacles = [];
-            trGate = null; trGateCooldown = 6;
 
             let startPlat = {
-                x: 0, y: canvasHeight * 0.65, w: 600, h: canvasHeight - (canvasHeight * 0.65),
+                x: -300, y: canvasHeight * 0.65, w: canvasWidth * 0.5 + 700, h: canvasHeight - (canvasHeight * 0.65),
                 isArena: false, id: 1, xSeed: Math.random() * 1000
             };
             trPlatforms.push(startPlat);
 
-            trPlayer.x = 250;
+            trPlayer.x = trPlayerHomeX();
             trPlayer.y = startPlat.y - trPlayer.h - 5;
             trPlayer.vy = 0;
             trPlayer.jumps = 0;
             trCoyote = 0; trJumpBuffer = 0; trInvuln = 60;
 
+            // Roxy ilmestyy hiljalleen vasemmasta reunasta
+            placeTrBossOnPlatform(startPlat, -90);
+            trBoss.offsetY = 0;
+            trBossShotMs = 0;
+
             trActiveCheckpoint = {
                 platId: startPlat.id,
-                relX: 250,
+                relX: trPlayer.x,
                 y: startPlat.y - 30
             };
-        }
-
-        function pickTrGateForms() {
-            const pool = activeVerbs.length ? activeVerbs : VERB_DATA;
-            const verb = pool[Math.floor(Math.random() * pool.length)];
-            const forms = [verb.base, verb.past, verb.participle].map(f => f.split('/')[0].trim());
-            const tenseIdx = 1 + Math.floor(Math.random() * 2);   // 1 = 2. muoto, 2 = 3. muoto
-            const correct = forms[tenseIdx];
-            let wrongs = forms.filter((f, i) => i !== tenseIdx && f.toLowerCase() !== correct.toLowerCase());
-            if (wrongs.length === 0) {
-                const other = VERB_DATA.filter(v => v !== verb && [v.base, v.past, v.participle][tenseIdx].split('/')[0].trim().toLowerCase() !== correct.toLowerCase());
-                const o = other[Math.floor(Math.random() * other.length)];
-                wrongs = [o.base.split('/')[0].trim()];
-            }
-            const wrong = wrongs[Math.floor(Math.random() * wrongs.length)];
-            return { verb: verb, tenseIdx: tenseIdx, correct: correct, wrong: wrong };
-        }
-
-        function generateTrGate(last, diff) {
-            const f = pickTrGateForms();
-            const minY = canvasHeight * 0.4, maxY = canvasHeight * 0.8;
-            const gap = 70 + Math.random() * 50;
-            const w = 210 + Math.random() * 60;
-            let yU = last.y - 40 - Math.random() * 25;
-            if (yU < minY) yU = minY;
-            let yL = yU + 100 + Math.random() * 20;
-            if (yL > maxY) { yL = maxY; yU = Math.max(minY, yL - 100); }
-            const startX = last.x + last.w + gap;
-            const upperCorrect = Math.random() < 0.5;
-            const gate = {
-                resolved: false, correct: f.correct, wrong: f.wrong,
-                prompt: f.verb.finnish.toUpperCase() + ' -> ' + (f.tenseIdx === 1 ? '2. MUOTO' : '3. MUOTO'),
-                upper: null, lower: null
-            };
-            const mk = (y, isCorrect) => ({
-                x: startX, y: y, w: w, h: canvasHeight - y, isArena: false,
-                id: trGlobalFrames + Math.random() * 1000, xSeed: Math.random() * 1000,
-                gateInfo: { gate: gate, text: isCorrect ? f.correct : f.wrong, isCorrect: isCorrect }
-            });
-            const up = mk(yU, upperCorrect), lo = mk(yL, !upperCorrect);
-            gate.upper = up; gate.lower = lo;
-            trPlatforms.push(up);
-            trPlatforms.push(lo);
-            trGate = gate;
-            trGateCooldown = 12 + Math.floor(Math.random() * 6);
-        }
-
-        function resolveTrGate(p) {
-            const g = p.gateInfo.gate;
-            if (g.resolved) return;
-            g.resolved = true;
-            if (p.gateInfo.isCorrect) {
-                addScore(10); combo++;
-                createTrParticles(p.x + p.w / 2, p.y - 10, 26, '#ffe600', 1.4);
-                showTrMessage("OIKEIN!", g.correct, 50);
-                audio.playCorrect();
-            } else {
-                combo = 0;
-                trGlitch = 14;
-                createTrParticles(p.x + p.w / 2, p.y - 10, 20, '#ff007f', 1.2);
-                showTrMessage("VÄÄRIN!", 'Oikea muoto: ' + g.correct, 70);
-                audio.playWrong();
-                fireTrBossProjectile(true);
-            }
         }
 
         function generateTrNextPlatform() {
             if (trPlatforms.length === 0) return;
             let last = trPlatforms[trPlatforms.length - 1];
             const diff = Math.min(1.5, (trRound - 1) * 0.5 + trChaseProgress / 100);
-
-            trGateCooldown--;
-            if (trGateCooldown <= 0 && trChaseProgress > 12 && trChaseProgress < 82 && trGameState === 'CHASE' && Math.random() < 0.5) {
-                generateTrGate(last, diff);
-                return;
-            }
 
             let gap = 55 + diff * 25 + Math.random() * (80 + diff * 45);
             let w = Math.max(105, Math.random() * (200 - diff * 35) + 130 - diff * 12);
@@ -4455,16 +4516,15 @@ class ChiptuneEngine {
             };
             trPlatforms.push(newPlat);
 
-            // laserportti jatkuvalle alustalle
             const obstacleChance = trRound === 1 ? (trChaseProgress > 20 ? 0.14 : 0) : 0.2 + diff * 0.1;
-            if (!mover && !last.gateInfo && w >= 190 && Math.random() < obstacleChance) {
+            if (!mover && w >= 190 && Math.random() < obstacleChance) {
                 trObstacles.push({ plat: newPlat, offX: w * (0.4 + Math.random() * 0.25), w: 12, h: 36, x: 0, y: 0 });
             }
 
             if (trHeartsSpawned < trHeartsTarget && Math.random() > 0.4) {
                 trHearts.push({
                     x: newPlat.x + w / 2,
-                    y: newPlat.y - 35,
+                    y: newPlat.y - 38,
                     active: true,
                     pulse: Math.random() * Math.PI
                 });
@@ -4481,44 +4541,78 @@ class ChiptuneEngine {
             }
         }
 
-        // Hyppy: coyote time, hyppypuskuri ja tuplahyppy
-        function tryTrJump() {
-            const p = trPlayer;
-            if (p.grounded || (p.jumps === 0 && trCoyote > 0)) {
-                p.vy = p.jumpPower; p.jumps = 1; p.grounded = false; trCoyote = 0;
-                createTrParticles(p.x + p.w / 2, p.y + p.h, 6, '#00f0ff');
-                return true;
-            }
-            if (p.jumps === 0) p.jumps = 1;   // putosi reunalta: ensimmäinen hyppy on käytetty
-            if (p.jumps === 1) {
-                p.vy = p.doubleJumpPower; p.jumps = 2;
-                createTrParticles(p.x + p.w / 2, p.y + p.h, 16, '#ff007f', 1.5);
-                return true;
-            }
-            return false;
+        function spawnTrPlayerShot() {
+            trPlayerShots.push({ x: trPlayer.x, y: trPlayer.y + trPlayer.h * 0.45, vx: -20 });
         }
 
-        function handleTrJump() {
-            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                if (trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
-                    trGameState = 'START';
-                    showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
-                } else {
-                    initTrGameRun();
-                }
+        function triggerTrSetback() {
+            trPlayerLives--;
+            createTrParticles(trPlayer.x + trPlayer.w/2, canvasHeight - 20, 35, '#ff007f', 1.5);
+            audio.playExplosion();
+
+            if (trPlayerLives <= 0) {
+                trGameState = 'GAMEOVER';
+                showTrMessage("GAME OVER", "Elämät loppuivat! Paina Hyppy aloittaaksesi uudelleen.", 9999);
                 return;
             }
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                if (!tryTrJump()) trJumpBuffer = 7;
+
+            trGameState = 'RESPAWNING';
+            trGlitch = 14; trScreenShake = 8;
+            showTrMessage("PUTOSIT!", `Elämiä jäljellä: ${trPlayerLives}`, 55);
+
+            setTimeout(() => {
+                const home = trPlayerHomeX();
+                trPlatforms = trPlatforms.filter(p => !p.isArena);
+                const covers = p => p && p.x < home - 10 && p.x + p.w > home + trPlayer.w + 40;
+                let respawnPlat = null;
+                if (trActiveCheckpoint) respawnPlat = trPlatforms.find(p => p.id === trActiveCheckpoint.platId);
+                if (!covers(respawnPlat)) respawnPlat = trPlatforms.find(covers) || null;
+
+                if (!respawnPlat) {
+                    generateTrSafeStartPlatform();
+                } else {
+                    trPlayer.x = home;
+                    trPlayer.y = respawnPlat.y - trPlayer.h - 10;
+                    trPlayer.vy = 0;
+                    trPlayer.jumps = 0;
+                }
+
+                trChaseProgress = Math.max(0, trChaseProgress - 15);
+                trInvuln = 60;
+                trGameState = 'CHASE';
+            }, 650);
+        }
+
+        function transitionTrToCombat() {
+            trGameState = 'TRANSITION';
+            trHearts = [];
+            trCheckpoints = [];
+            trObstacles = [];
+            showTrMessage("ROXY ON VÄSYNYT!", "Aika kerätä superlataus!", 90);
+
+            let last = trPlatforms.length > 0 ? trPlatforms[trPlatforms.length - 1] : { x: 0, y: canvasHeight * 0.7, w: 400, h: 20 };
+            trArenaY = Math.max(canvasHeight * 0.62, Math.min(canvasHeight * 0.8, last.y));
+            let bridgeStart = last.x + last.w;
+            let arenaStartX = Math.max(canvasWidth, bridgeStart);
+
+            if (arenaStartX > bridgeStart) {
+                trPlatforms.push({
+                    x: bridgeStart, y: last.y, w: arenaStartX - bridgeStart + 50, h: canvasHeight - last.y,
+                    isArena: false, id: trGlobalFrames, xSeed: Math.random() * 1000
+                });
             }
+
+            trPlatforms.push({
+                x: arenaStartX, y: trArenaY, w: 3200, h: canvasHeight - trArenaY,
+                isArena: true, id: trGlobalFrames + 1, xSeed: 999
+            });
         }
 
-        function spawnTrPlayerShot() {
-            trPlayerShots.push({ x: trPlayer.x + trPlayer.w, y: trPlayer.y + trPlayer.h / 2, vx: 20 });
-        }
-
-        function updateRunner() {
+        function updateRunner(timestamp) {
             if (trHitStop > 0) { trHitStop--; return; }
+            const nowT = (typeof timestamp === 'number') ? timestamp : performance.now();
+            const dtMs = Math.max(0, Math.min(50, nowT - (trLastTs || nowT)));
+            trLastTs = nowT;
             trGlobalFrames++;
             if (trMessageTimer > 0) trMessageTimer--;
             if (trFeedbackTimer > 0) trFeedbackTimer--;
@@ -4554,20 +4648,22 @@ class ChiptuneEngine {
                 if (trAfterimages[i].life <= 0) trAfterimages.splice(i, 1);
             }
 
-            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING') {
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING' || trGameState === 'PAUSED') {
                 return;
             }
 
             let currentScrollSpeed = bgScrollSpeed;
+            const homeX = trPlayerHomeX();
 
             if (trGameState !== 'SUPER_ATTACK' && trGameState !== 'COMBAT') {
                 trPlayer.vy += trPlayer.gravity;
                 trPlayer.y += trPlayer.vy;
             }
 
+            // pelaaja pysyy ruudun keskellä; taistelussa oikeassa reunassa
             if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                if (trPlayer.x > 255) trPlayer.x -= 2;
-                if (trPlayer.x < 245) trPlayer.x += 2;
+                const tx = trGameState === 'TRANSITION' ? trPlayerRightX() : homeX;
+                trPlayer.x += Math.max(-3, Math.min(3, tx - trPlayer.x));
                 if (trPlayer.jumps === 2 && !trPlayer.grounded && trGlobalFrames % 2 === 0) {
                     trAfterimages.push({ x: trPlayer.x, y: trPlayer.y, life: 1 });
                 }
@@ -4584,14 +4680,18 @@ class ChiptuneEngine {
                     transitionTrToCombat();
                 }
 
-                let targetBossX = -150 + (trChaseProgress / 100) * (trPlayer.x - 100 - (-150));
+                const startX = -90, endX = homeX - 70;
+                const targetBossX = startX + (trChaseProgress / 100) * (endX - startX);
                 trBoss.x += (targetBossX - trBoss.x) * 0.1;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.1) * 12;
+                trBoss.offsetY = 0;
 
-                trBossShootTimer--;
-                if (trBossShootTimer <= 0 && trBoss.x > -50) {
-                    fireTrBossProjectile(false);
-                    trBossShootTimer = Math.random() * 50 + 50;
+                const interval = trBossShotInterval();
+                if (interval > 0 && trBoss.x > 0) {
+                    trBossShotMs += dtMs;
+                    if (trBossShotMs >= interval) {
+                        trBossShotMs = 0;
+                        fireTrBossProjectile();
+                    }
                 }
             }
 
@@ -4607,19 +4707,20 @@ class ChiptuneEngine {
                         trGameState = 'COMBAT';
                         trVerbsCompleted = 0;
                         trErrorStreak = 0;
+                        trPlayer.y = trArenaY - trPlayer.h; trPlayer.vy = 0; trPlayer.grounded = true; trPlayer.jumps = 0;
+                        trBoss.x = trBossLeftX();
                         setupTrNextVerb();
                     }
                 }
-
-                trBoss.x += ((trPlayer.x - 120) - trBoss.x) * 0.05;
-                trBoss.y = trArenaY - trBoss.h;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.07) * 18;
+                trBoss.offsetY = 0;
             }
 
             if (trGameState === 'COMBAT') {
                 currentScrollSpeed = 0;
+                trPlayer.x += Math.max(-4, Math.min(4, trPlayerRightX() - trPlayer.x));
+                trBoss.x = trBossLeftX();
                 trBoss.y = trArenaY - trBoss.h;
-                trBoss.offsetY = Math.sin(trGlobalFrames * 0.04) * 25;
+                trBoss.offsetY = 0;
             }
 
             if (trGameState === 'SUPER_ATTACK') {
@@ -4642,7 +4743,7 @@ class ChiptuneEngine {
                     trBoss.state = 'normal';
                     if (trRound >= 3) {
                         trGameState = 'VICTORY';
-                        showTrMessage("VOITTO!", "TURBO THRASHER ON LYÖTY!", 9999);
+                        showTrMessage("VOITTO!", "ROXY BLAIZE ON LYÖTY!", 9999);
                         createTrParticles(trBoss.x + trBoss.w / 2, trBoss.y + trBoss.h / 2, 120, '#ff007f', 3);
                         audio.playExplosion();
                     } else {
@@ -4675,12 +4776,14 @@ class ChiptuneEngine {
                     trPlayer.vy = 0;
                     trPlayer.grounded = true;
                     trPlayer.jumps = 0;
-                    if (p.gateInfo && trGameState === 'CHASE') resolveTrGate(p);
                 }
 
                 if (p.x + p.w < -120) trPlatforms.splice(i, 1);
             }
-            if (trGate && !trGate.resolved && trGate.upper.x + trGate.upper.w < 0) trGate.resolved = true;
+
+            // Roxy liikkuu kattojen päällä
+            if (trGameState === 'CHASE') updateTrBoss();
+            else if (trGameState === 'TRANSITION') updateTrBossTired();
 
             // coyote time, hyppypuskuri ja laskeutumispöly
             if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
@@ -4725,8 +4828,8 @@ class ChiptuneEngine {
                 h.pulse += 0.08;
 
                 if (h.active && (trGameState === 'CHASE' || trGameState === 'TRANSITION') &&
-                    trPlayer.x < h.x + 18 && trPlayer.x + trPlayer.w > h.x - 18 &&
-                    trPlayer.y < h.y + 18 && trPlayer.y + trPlayer.h > h.y - 18)
+                    trPlayer.x < h.x + 20 && trPlayer.x + trPlayer.w > h.x - 20 &&
+                    trPlayer.y < h.y + 20 && trPlayer.y + trPlayer.h > h.y - 20)
                 {
                     h.active = false;
                     if (trPlayerLives < trMaxLives) trPlayerLives++;
@@ -4759,26 +4862,60 @@ class ChiptuneEngine {
                     bp.y < trPlayer.y + trPlayer.h && bp.y + bp.h > trPlayer.y)
                 {
                     trBossProjectiles.splice(i, 1);
-                    trTakeHit("OSUMA!", "Turbo osui!");
+                    trTakeHit("OSUMA!", "Roxyn laukaus osui!");
                     continue;
                 }
 
                 if (bp.x > canvasWidth + 100) trBossProjectiles.splice(i, 1);
             }
 
-            // pelaajan laukaukset taistelussa
+            // pelaajan laukaukset taistelussa (vasemmalle kohti Roxya)
             for (let i = trPlayerShots.length - 1; i >= 0; i--) {
                 const s = trPlayerShots[i];
                 s.x += s.vx;
                 const br = getTrBossRect();
-                if (s.x >= br.x + br.w * 0.55 || s.x > canvasWidth) {
+                if (s.x <= br.x + br.w * 0.6 || s.x < 0) {
                     trPlayerShots.splice(i, 1);
                     trBoss.hitFlash = 8;
-                    createTrParticles(br.x + br.w * 0.6, br.y + br.h * 0.5, 12, '#ffe600', 1.6);
+                    createTrParticles(br.x + br.w * 0.5, br.y + br.h * 0.5, 12, '#ffe600', 1.6);
                     audio.playHit();
                 }
             }
         }
+
+        // Hyppy: coyote time, hyppypuskuri ja tuplahyppy
+        function tryTrJump() {
+            const p = trPlayer;
+            if (p.grounded || (p.jumps === 0 && trCoyote > 0)) {
+                p.vy = p.jumpPower; p.jumps = 1; p.grounded = false; trCoyote = 0;
+                createTrParticles(p.x + p.w / 2, p.y + p.h, 6, '#00f0ff');
+                return true;
+            }
+            if (p.jumps === 0) p.jumps = 1;   // putosi reunalta: ensimmäinen hyppy on käytetty
+            if (p.jumps === 1) {
+                p.vy = p.doubleJumpPower; p.jumps = 2;
+                createTrParticles(p.x + p.w / 2, p.y + p.h, 16, '#ff007f', 1.5);
+                return true;
+            }
+            return false;
+        }
+
+        function handleTrJump() {
+            if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                if (trGameState === 'GAMEOVER' || trGameState === 'VICTORY') {
+                    trGameState = 'START';
+                    showTrMessage("ROOFTOP RIDER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
+                } else {
+                    initTrGameRun();
+                }
+                return;
+            }
+            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+                if (!tryTrJump()) trJumpBuffer = 7;
+            }
+        }
+
+
 
 
         function createTrParticles(x, y, count, color, speedScale = 1) {
@@ -4871,73 +5008,14 @@ class ChiptuneEngine {
             }
         }
 
-        function triggerTrSetback() {
-            trPlayerLives--;
-            createTrParticles(trPlayer.x + trPlayer.w/2, canvasHeight - 20, 35, '#ff007f', 1.5);
-            audio.playExplosion();
 
-            if (trPlayerLives <= 0) {
-                trGameState = 'GAMEOVER';
-                showTrMessage("GAME OVER", "Elämät loppuivat! Paina Hyppy aloittaaksesi uudelleen.", 9999);
-                return;
-            }
-
-            trGameState = 'RESPAWNING';
-            trGlitch = 14; trScreenShake = 8;
-            showTrMessage("PUTOSIT!", `Elämiä jäljellä: ${trPlayerLives}`, 55);
-
-            setTimeout(() => {
-                let respawnPlat = null;
-                if (trActiveCheckpoint) {
-                    respawnPlat = trPlatforms.find(p => p.id === trActiveCheckpoint.platId);
-                }
-
-                if (!respawnPlat || respawnPlat.x + respawnPlat.w < 150) {
-                    generateTrSafeStartPlatform();
-                } else {
-                    trPlayer.x = 250;
-                    trPlayer.y = respawnPlat.y - trPlayer.h - 10;
-                    trPlayer.vy = 0;
-                    trPlayer.jumps = 0;
-                }
-                
-                trChaseProgress = Math.max(0, trChaseProgress - 15);
-                trInvuln = 60;
-                trGameState = 'CHASE';
-            }, 650);
-        }
-
-        function transitionTrToCombat() {
-            trGameState = 'TRANSITION';
-            trHearts = [];
-            trCheckpoints = [];
-            trObstacles = [];
-            trGate = null;
-            showTrMessage("TURBO ON HENGÄSTYNYT!", "Aika kerätä superlataus!", 90);
-            
-            let last = trPlatforms.length > 0 ? trPlatforms[trPlatforms.length - 1] : { x: 0, y: trArenaY, w: 400, h: 20 };
-            let bridgeStart = last.x + last.w;
-            let arenaStartX = Math.max(canvasWidth, bridgeStart);
-            
-            if (arenaStartX > bridgeStart) {
-                trPlatforms.push({
-                    x: bridgeStart, y: last.y, w: arenaStartX - bridgeStart + 50, h: canvasHeight - last.y,
-                    isArena: false, id: trGlobalFrames, xSeed: Math.random() * 1000
-                });
-            }
-            
-            trPlatforms.push({
-                x: arenaStartX, y: trArenaY, w: 3200, h: canvasHeight - trArenaY,
-                isArena: true, id: trGlobalFrames + 1, xSeed: 999
-            });
-        }
 
         function initTrGame() {
             loadRunnerSprites();
             setupRunnerAnalyser();
             initTrStars();
             trGameState = 'START';
-            showTrMessage("SYNTH RUNNER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
+            showTrMessage("ROOFTOP RIDER: PURSUIT", "Paina välilyöntiä aloittaaksesi", 9999);
         }
 
         function initTrGameRun() {
@@ -4947,7 +5025,8 @@ class ChiptuneEngine {
             trRound = 1;
             trHeartsSpawned = 0;
             trHeartsTarget = Math.floor(Math.random() * 2) + 1;
-            trBoss.x = -150;
+            trBoss.x = -90;
+            trBossShotMs = 0; trLastTs = 0;
             trBoss.state = 'normal';
             trBoss.hitFlash = 0;
             
