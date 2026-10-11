@@ -203,7 +203,7 @@
         /* Alareunan ohjerivi */
         .hint-line {
             font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
+            font-size: 0.625rem;
             line-height: 1.6;
             color: var(--lav);
             text-align: center;
@@ -399,17 +399,17 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[17.5rem] overflow-y-auto pr-2">
-                    <button onclick="selectStartGroup('1')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>1. be – break</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('2')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>2. bring – dive</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('3')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>3. do – feel</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('4')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>4. flee – give</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('5')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>5. go – keep</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('6')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>6. know – make</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('7')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>7. mean – say</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('8')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>8. see – shut</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('9')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>9. sing – spread</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('10')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>10. spring – tell</span><span class="text-yellow-300">☞</span></button>
-                    <button onclick="selectStartGroup('11')" class="jrpg-btn p-3.5 text-xs sm:text-sm text-left flex items-center justify-between"><span>11. think – write</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('1')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>1. be – break</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('2')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>2. bring – dive</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('3')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>3. do – feel</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('4')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>4. flee – give</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('5')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>5. go – keep</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('6')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>6. know – make</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('7')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>7. mean – say</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('8')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>8. see – shut</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('9')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>9. sing – spread</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('10')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>10. spring – tell</span><span class="text-yellow-300">☞</span></button>
+                    <button onclick="selectStartGroup('11')" class="jrpg-btn p-3.5 text-sm sm:text-base text-left flex items-center justify-between"><span>11. think – write</span><span class="text-yellow-300">☞</span></button>
                 </div>
             </div>
 
@@ -456,7 +456,7 @@
             <h2 class="text-2xl sm:text-3xl font-pixel text-yellow-300 pixel-shadow-gold">VALITSE PELI</h2>
             <div>
                 <p class="text-lg text-cyan-200 font-sans">Miten haluat harjoitella?</p>
-                <p id="mode-select-group" class="font-pixel text-[0.625rem] text-neon-yellow mt-2 leading-relaxed"></p>
+                <p id="mode-select-group" class="font-pixel text-xs text-neon-yellow mt-2 leading-relaxed"></p>
             </div>
 
             <div class="flex flex-col gap-2.5">
@@ -464,8 +464,8 @@
                 <button onclick="launchSelectedMode('scramble')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-font text-purple-300"></i> KIRJAINSOTKU</button>
                 <button onclick="launchSelectedMode('typing')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2"><i class="fa-solid fa-keyboard text-green-300"></i> KIRJOITUS</button>
                 <!-- AVATTAVAT PELIMOODIT: lukittuina himmeinä, avautuvat pisteillä (checkUnlockedModes) -->
-                <button id="mode-btn-runner" disabled onclick="launchSelectedMode('runner')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> <span>ROOFTOP RIDER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 300 EXP</span></button>
-                <button id="mode-btn-spaceshooter" disabled onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> <span>SPACE SHOOTER</span> <span class="mode-lock text-[0.6rem] text-neon-yellow"><i class="fa-solid fa-lock"></i> 600 EXP</span></button>
+                <button id="mode-btn-runner" disabled onclick="launchSelectedMode('runner')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-fuchsia-500 text-fuchsia-200"><i class="fa-solid fa-person-running text-fuchsia-300"></i> <span>ROOFTOP RIDER</span> <span class="mode-lock text-xs text-neon-yellow"><i class="fa-solid fa-lock"></i> 300 EXP</span></button>
+                <button id="mode-btn-spaceshooter" disabled onclick="launchSelectedMode('spaceshooter')" class="jrpg-btn mode-locked py-3 text-sm sm:text-base flex justify-center items-center gap-2 border-red-500 text-red-200"><i class="fa-solid fa-rocket text-red-300"></i> <span>SPACE SHOOTER</span> <span class="mode-lock text-xs text-neon-yellow"><i class="fa-solid fa-lock"></i> 600 EXP</span></button>
                 <div class="border-t-2 border-dashed border-cyan-500/50 my-1"></div>
                 <button onclick="launchSelectedMode('cards')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-layer-group text-yellow-300"></i> SANAKORTIT</button>
                 <button onclick="launchSelectedMode('dictionary')" class="jrpg-btn py-3 text-sm sm:text-base flex justify-center items-center gap-2 text-slate-300"><i class="fa-solid fa-book text-cyan-300"></i> KIRJASTO</button>
@@ -492,12 +492,12 @@
 
             <div class="flex items-center gap-3 sm:gap-4">
                 <div class="text-right hidden sm:block border-2 border-cyan-500 bg-blue-950 px-3 py-1.5">
-                    <div class="text-[0.625rem] font-pixel text-cyan-300">TOTAL EXP</div>
+                    <div class="text-xs font-pixel text-cyan-300">TOTAL EXP</div>
                     <div id="total-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
                 </div>
 
                 <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn w-10 h-10 flex items-center justify-center p-0">
-                    <i id="music-icon" class="fa-solid fa-music text-yellow-300 animate-pulse"></i>
+                    <i id="music-icon" class="fa-solid fa-music text-yellow-300"></i>
                 </button>
 
                 <button id="audio-toggle" onclick="toggleAudio()" title="Äänitehosteet" class="jrpg-btn w-10 h-10 flex items-center justify-center p-0">
@@ -564,14 +564,14 @@
                     <div id="hud-combo-badge" class="hidden bg-amber-500 border-2 border-yellow-200 text-black font-pixel text-xs px-2 py-1 animate-pulse shadow-lg">
                         <span id="hud-combo">2x</span> COMBO!
                     </div>
-                    <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-[0.625rem] sm:text-xs px-2 py-1 shadow-lg">
+                    <div id="hud-diff-badge" class="hidden bg-purple-900 border-2 border-purple-400 text-purple-200 font-pixel text-xs sm:text-sm px-2 py-1 shadow-lg">
                         TASO: <span id="hud-diff-name">Keskitaso</span>
                     </div>
                 </div>
 
                 <!-- 8-bit Heart SVG -->
                 <div id="hud-lives-container" class="flex items-center gap-2 jrpg-box bg-blue-950 px-3 py-2">
-                    <span class="text-[0.625rem] sm:text-xs text-yellow-300 font-pixel">HEALTH:</span>
+                    <span class="text-xs sm:text-sm text-yellow-300 font-pixel">HEALTH:</span>
                     <div id="hud-lives" class="flex gap-1.5">
                         <!-- Hearts dynamically injected here -->
                     </div>
@@ -595,12 +595,12 @@
                 <!-- SPACE SHOOTER UI -->
                 <div id="ss-ui" class="pointer-events-none w-full h-full relative hidden">
                     <div id="ss-boss-hud" class="absolute top-12 sm:top-2 left-1/2 transform -translate-x-1/2 w-64 hidden flex-col gap-1 bg-black/80 border-2 border-red-500 p-2 text-center transition-opacity">
-                        <div class="text-red-500 font-pixel text-[0.625rem]">CAPTAIN CONJUGATOR</div>
+                        <div class="text-red-500 font-pixel text-xs">CAPTAIN CONJUGATOR</div>
                         <div class="w-full bg-slate-800 h-4 border border-white">
                             <div id="ss-boss-hp-bar" class="bg-red-500 h-full w-full transition-all"></div>
                         </div>
                     </div>
-                    <button id="ss-btn-shoot" onpointerdown="ssShoot()" onmousedown="ssShoot()" class="pointer-events-auto absolute bottom-8 right-8 w-16 h-16 rounded-full bg-red-600 border-4 border-red-400 text-white font-pixel text-[0.625rem] shadow-[0_0_15px_rgba(220,38,38,0.8)] active:scale-95 hidden sm:hidden flex items-center justify-center">
+                    <button id="ss-btn-shoot" onpointerdown="ssShoot()" onmousedown="ssShoot()" class="pointer-events-auto absolute bottom-8 right-8 w-16 h-16 rounded-full bg-red-600 border-4 border-red-400 text-white font-pixel text-xs shadow-[0_0_15px_rgba(220,38,38,0.8)] active:scale-95 hidden sm:hidden flex items-center justify-center">
                         AMMU
                     </button>
                 </div>
@@ -608,8 +608,8 @@
                 <!-- FLASHCARDS UI -->
                 <div id="cards-ui" class="pointer-events-auto w-full max-w-md hidden flex-col items-center gap-3">
                     <div class="flex justify-between w-full gap-2 mb-1">
-                        <button onclick="toggleCardLang()" id="card-lang-btn" class="jrpg-btn text-[0.625rem] sm:text-xs py-2.5 px-3 flex-1">NÄYTÄ ENSIN: ENGLANTI</button>
-                        <button onclick="shuffleCards()" class="jrpg-btn text-[0.625rem] sm:text-xs py-2.5 px-3 flex-1"><i class="fa-solid fa-shuffle"></i> SEKOITA KORTIT</button>
+                        <button onclick="toggleCardLang()" id="card-lang-btn" class="jrpg-btn text-xs sm:text-sm py-2.5 px-3 flex-1">NÄYTÄ ENSIN: ENGLANTI</button>
+                        <button onclick="shuffleCards()" class="jrpg-btn text-xs sm:text-sm py-2.5 px-3 flex-1"><i class="fa-solid fa-shuffle"></i> SEKOITA KORTIT</button>
                     </div>
                     <div id="flashcard-element" onclick="flipCard()" class="w-full h-64 sm:h-72 perspective-1000 cursor-pointer">
                         <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d jrpg-box-gold flex flex-col justify-center items-center p-6 text-center">
@@ -677,8 +677,8 @@
                 <!-- SCRAMBLE UI -->
                 <div id="scramble-ui" class="pointer-events-auto w-full max-w-xl hidden flex-col items-center gap-4 jrpg-box p-5">
                     <div class="flex gap-2 w-full mb-1">
-                        <button onclick="setScrambleDiff('easy')" id="scramble-diff-easy" class="jrpg-btn flex-1 text-[0.625rem] sm:text-xs py-2 menu-active">HELPPO</button>
-                        <button onclick="setScrambleDiff('hard')" id="scramble-diff-hard" class="jrpg-btn flex-1 text-[0.625rem] sm:text-xs py-2">HAASTAVA</button>
+                        <button onclick="setScrambleDiff('easy')" id="scramble-diff-easy" class="jrpg-btn flex-1 text-xs sm:text-sm py-2 menu-active">HELPPO</button>
+                        <button onclick="setScrambleDiff('hard')" id="scramble-diff-hard" class="jrpg-btn flex-1 text-xs sm:text-sm py-2">HAASTAVA</button>
                     </div>
                     <div class="text-center mt-2">
                         <div class="text-xs font-pixel text-yellow-300 uppercase" id="scramble-hint-label">MUODOSTA 2. MUOTO / IMPERFEKTI:</div>
@@ -702,13 +702,13 @@
                     📖 VERBIRYHMÄKIRJASTO
                 </h2>
                 <div class="relative w-full sm:w-72">
-                    <input type="text" id="verb-search" oninput="filterVerbs()" placeholder="Etsi verbiä..." class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-4 py-2 text-sm focus:outline-none focus:border-yellow-400">
+                    <input type="text" id="verb-search" oninput="filterVerbs()" placeholder="Etsi verbiä..." class="w-full bg-black border-2 border-white text-yellow-300 font-pixel px-4 py-2 text-base focus:outline-none focus:border-yellow-400">
                 </div>
             </div>
 
             <div class="overflow-y-auto max-h-[28.125rem] border-2 border-white bg-black">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead class="bg-blue-950 text-yellow-300 font-pixel text-xs sticky top-0 border-b-2 border-white">
+                <table class="w-full text-left border-collapse text-lg">
+                    <thead class="bg-blue-950 text-yellow-300 font-pixel text-sm sticky top-0 border-b-2 border-white">
                         <tr>
                             <th class="p-3">1. MUOTO / PERUSMUOTO</th>
                             <th class="p-3">2. MUOTO / IMPERFEKTI</th>
@@ -717,7 +717,7 @@
                             <th class="p-3 text-center">ÄÄNI</th>
                         </tr>
                     </thead>
-                    <tbody id="verb-table-body" class="divide-y divide-slate-800 font-sans text-base"></tbody>
+                    <tbody id="verb-table-body" class="divide-y divide-slate-800 font-sans text-xl"></tbody>
                 </table>
             </div>
         </div>
@@ -1358,26 +1358,27 @@ class ChiptuneEngine {
         function pauseGameForCutscene(sceneId, callback) {
             const wasBubble = isBubblePlaying;
             const wasSS = (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss'));
-            const wasRunner = (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT'));
+            const wasRunner = (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'TRANSITION' || trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK'));
             const prevMode = gameMode;
-            const prevBGM = audio.currentTrack; 
-            
-            isBubblePlaying = false; 
+            const prevBGM = audio.currentTrack;
+            // jos ruudulla on tulos- tai game over -ruutu, se palautetaan cutscenen jälkeen
+            const overlayHTML = (!overlayPanel.classList.contains('hidden')) ? overlayContent.innerHTML : null;
+
+            isBubblePlaying = false;
             if (wasSS) { ssPausedState = ssState; ssState = 'menu'; }
             if (wasRunner) { trPausedState = trGameState; trGameState = 'PAUSED'; }
-            
+
+            const resume = () => {
+                resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM);
+                if (overlayHTML) showOverlay(overlayHTML);
+            };
+
             startCutscene(sceneId, () => {
                 document.getElementById('game-canvas-wrapper').classList.remove('hidden');
                 resizeCanvas();
-                
-                if (callback) {
-                    callback(prevBGM);
-                } else {
-                    resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM);
-                }
+                if (callback) callback(prevBGM, resume); else resume();
             });
         }
-
         function resumeAfterCutscene(prevMode, wasSS, wasBubble, wasRunner, prevBGM) {
             if (prevMode === 'spaceshooter' && wasSS) {
                 ssState = ssPausedState || 'playing';
@@ -1392,6 +1393,7 @@ class ChiptuneEngine {
         }
 
         function checkMilestones(currentTotal) {
+            if (window._deferMilestones) { window._pendingMilestone = currentTotal; return; }
             if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
                 localStorage.setItem('vm2000_ms_100', 'true');
                 pauseGameForCutscene('cutscene_100');
@@ -1399,26 +1401,20 @@ class ChiptuneEngine {
                 localStorage.setItem('vm2000_ms_300', 'true');
                 localStorage.setItem('vm2000_unlocked_runner', 'true');
                 checkUnlockedModes();
-                pauseGameForCutscene('cutscene_300', (prevBGM) => {
-                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>ROOFTOP RIDER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
-                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
-                    });
+                pauseGameForCutscene('cutscene_300', (prevBGM, resume) => {
+                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>ROOFTOP RIDER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", resume);
                 });
             } else if (currentTotal >= 600 && !localStorage.getItem('vm2000_ms_600')) {
                 localStorage.setItem('vm2000_ms_600', 'true');
                 localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
                 checkUnlockedModes();
-                pauseGameForCutscene('cutscene_600', (prevBGM) => {
-                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SPACE SHOOTER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", () => {
-                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
-                    });
+                pauseGameForCutscene('cutscene_600', (prevBGM, resume) => {
+                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SPACE SHOOTER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", resume);
                 });
             } else if (currentTotal >= 1000 && !localStorage.getItem('vm2000_ms_1000')) {
                 localStorage.setItem('vm2000_ms_1000', 'true');
-                pauseGameForCutscene('cutscene_1000', (prevBGM) => {
-                    pixelAlert("Lopputaistelu avattu!<br>(Odottaa toteutusta)", () => {
-                        resumeAfterCutscene(gameMode, ssState === 'menu', true, false, prevBGM);
-                    });
+                pauseGameForCutscene('cutscene_1000', (prevBGM, resume) => {
+                    pixelAlert("Lopputaistelu avattu!<br>(Odottaa toteutusta)", resume);
                 });
             }
         }
@@ -1463,6 +1459,7 @@ class ChiptuneEngine {
 
         function backToGroupSelect() {
             audio.playSelect();
+            suspendGameForMenu();
             modeSelectScreen.classList.add('hidden');
             startScreen.classList.remove('hidden');
             document.getElementById('start-step-preview').classList.add('hidden');
@@ -2204,7 +2201,17 @@ class ChiptuneEngine {
             });
         }
 
+        // Pysäyttää käynnissä olevan pelin logiikan, kun siirrytään valikoihin
+        function suspendGameForMenu() {
+            isBubblePlaying = false;
+            if (ssState === 'playing' || ssState === 'boss') ssState = 'menu';
+            ssPausedState = null;
+            if (trGameState !== 'START') trGameState = 'START';
+            trPausedState = null;
+        }
+
         function ssShowModeSelect() {
+            suspendGameForMenu();
             ssState = 'menu';
             isBubblePlaying = false;
             document.getElementById('main-menu-screen').classList.add('hidden');
@@ -2228,7 +2235,9 @@ class ChiptuneEngine {
             audio.stopBGM();
             
             if (win) {
+                window._deferMilestones = true;
                 addScore(500);
+                window._deferMilestones = false;
                 showOverlay(`
                     <h2 class="text-3xl sm:text-4xl font-pixel text-green-400 pixel-shadow mb-5">VOITTO!</h2>
                     <div class="jrpg-box bg-black p-5 mb-5">
@@ -2237,6 +2246,7 @@ class ChiptuneEngine {
                     </div>
                     <button onclick="ssVictoryContinue();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Jatka</button>
                 `);
+                if (window._pendingMilestone != null) { const t = window._pendingMilestone; window._pendingMilestone = null; checkMilestones(t); }
             } else {
                 showOverlay(`
                     <h2 class="text-3xl sm:text-4xl font-pixel text-red-500 pixel-shadow mb-5">GAME OVER</h2>
@@ -2569,15 +2579,25 @@ class ChiptuneEngine {
             startGameFromMenu();
         }
 
+        // Päivittää yläreunan mute-kuvakkeet vastaamaan asetuksia (myös Asetukset-valikosta tehdyt muutokset)
+        function syncAudioIcons() {
+            const mi = document.getElementById('music-icon');
+            if (mi) mi.className = audio.musicEnabled ? 'fa-solid fa-music text-yellow-300' : 'fa-solid fa-music text-red-500';
+            const ai = document.getElementById('audio-icon');
+            if (ai) ai.className = audio.sfxEnabled ? 'fa-solid fa-volume-high text-yellow-300' : 'fa-solid fa-volume-xmark text-red-500';
+        }
+
         function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
             if (audio.sfxEnabled) audio.playSelect();
+            syncAudioIcons();
             showOptionsMenu();
         }
 
         function toggleMusicOverlay() {
             audio.playSelect();
             audio.toggleMusic();
+            syncAudioIcons();
             showOptionsMenu();
         }
 
@@ -2657,7 +2677,7 @@ class ChiptuneEngine {
             const isPlaying = audio.toggleMusic();
             const icon = document.getElementById('music-icon');
             if (icon) {
-                icon.className = isPlaying ? 'fa-solid fa-music text-yellow-300 animate-pulse' : 'fa-solid fa-music text-slate-500';
+                icon.className = isPlaying ? 'fa-solid fa-music text-yellow-300' : 'fa-solid fa-music text-red-500';
             }
         }
 
@@ -2721,6 +2741,7 @@ class ChiptuneEngine {
             document.getElementById('group-selector').value = selectedGroupForStart;
             changeVerbGroup(selectedGroupForStart);
             startScreen.classList.add('hidden');
+            suspendGameForMenu();
             checkUnlockedModes();
             updateModeSelectInfo();
             modeSelectScreen.classList.remove('hidden');
@@ -2997,11 +3018,9 @@ class ChiptuneEngine {
             resetGame();
             isBubblePlaying = true;
             
-            if (gameMode === 'bubble') {
-                audio.bgmPlayer.currentTime = 0;
-                if (audio.musicEnabled && audio.currentTrack) {
-                    audio.bgmPlayer.play().catch(e => console.warn(e));
-                }
+            // musiikki jatkuu suoraan siitä, mihin se oli menossa (ei aloiteta alusta)
+            if (gameMode === 'bubble' && audio.musicEnabled && audio.currentTrack && audio.bgmPlayer.paused) {
+                audio.bgmPlayer.play().catch(e => console.warn(e));
             }
         }
 
@@ -3604,9 +3623,9 @@ class ChiptuneEngine {
         // RUNNER: PIKSELITAUSTA (taivas, aurinko, kolmikerroksinen kaupunki, ruudukko)
         // ==========================================
         const TR_LAYERS = [
-            { seed: 11, color: '#4a1170', rim: '#7a2a9a', wMin: 3, wMax: 8,  hMin: 0.10, hMax: 0.34, win: 0.0,  speed: 0.08 },
-            { seed: 23, color: '#2b0a55', rim: '#4b1b86', wMin: 4, wMax: 10, hMin: 0.10, hMax: 0.40, win: 0.22, speed: 0.18 },
-            { seed: 37, color: '#190638', rim: '#33106b', wMin: 6, wMax: 14, hMin: 0.08, hMax: 0.32, win: 0.28, speed: 0.35 }
+            { seed: 11, color: '#4a1170', rim: '#7a2a9a', wMin: 4, wMax: 10, hMin: 0.16, hMax: 0.48, win: 0.0,  speed: 0.08 },
+            { seed: 23, color: '#2b0a55', rim: '#4b1b86', wMin: 5, wMax: 12, hMin: 0.14, hMax: 0.52, win: 0.22, speed: 0.18 },
+            { seed: 37, color: '#190638', rim: '#33106b', wMin: 7, wMax: 16, hMin: 0.12, hMax: 0.44, win: 0.28, speed: 0.35 }
         ];
         let trBg = { key: '' };
 
@@ -3692,7 +3711,7 @@ class ChiptuneEngine {
         function buildRunnerBg() {
             const P = Math.max(2, Math.round(canvasHeight / 170));
             const bw = Math.ceil(canvasWidth / P), bh = Math.ceil(canvasHeight / P);
-            const hor = Math.floor(bh * 0.86);
+            const hor = Math.floor(bh * 0.97);
 
             // Taivas + maa (dithering)
             const sky = document.createElement('canvas'); sky.width = bw; sky.height = bh;
@@ -3749,9 +3768,9 @@ class ChiptuneEngine {
             const him = hg.createImageData(bw, bh);
             const h32 = new Uint32Array(him.data.buffer);
             const hazeCol = bgPack('#e8309a');
-            const HZ = 18;
-            for (let y = hor - HZ; y < hor; y++) {
-                const t = (y - (hor - HZ)) / HZ;
+            const HZ = 30, hzEnd = hor - 12;
+            for (let y = hzEnd - HZ; y < hzEnd; y++) {
+                const t = (y - (hzEnd - HZ)) / HZ;
                 for (let x = 0; x < bw; x++) {
                     const thr = (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
                     if (t > thr) h32[y * bw + x] = hazeCol;
@@ -3764,7 +3783,7 @@ class ChiptuneEngine {
             const starCols = ['#ffffff', '#22e6ff', '#ff6ec7'];
             for (let i = 0; i < 70; i++) stars.push({ x: Math.floor(sr() * bw), y: Math.floor(sr() * hor * 0.62), ph: sr() * 6.28, c: starCols[Math.floor(sr() * 3)] });
 
-            trBg = { key: canvasWidth + 'x' + canvasHeight, P: P, bw: bw, bh: bh, hor: hor, sky: sky, sunFrames: sunFrames, sunR: R, sunCx: bw >> 1, sunCy: Math.floor(hor * 0.60), layers: layers, haze: haze, stars: stars, blinkers: blinkers };
+            trBg = { key: canvasWidth + 'x' + canvasHeight, P: P, bw: bw, bh: bh, hor: hor, sky: sky, sunFrames: sunFrames, sunR: R, sunCx: bw >> 1, sunCy: Math.floor(hor * 0.50), layers: layers, haze: haze, stars: stars, blinkers: blinkers };
         }
 
         // ---- Ympäristö: liikenne, nopeusviivat, valonheittimet ----
@@ -3795,7 +3814,7 @@ class ChiptuneEngine {
                 } else if (r < 0.6) {
                     trTraffic.push({ type: 'drone', dir: dir, par: 0.25, y: canvasHeight * (0.2 + Math.random() * 0.3), x: dir < 0 ? canvasWidth + 20 : -20, vx: dir * (0.9 + Math.random() * 0.8) });
                 } else {
-                    trTraffic.push({ type: 'car', dir: dir, par: 0.2, y: trBg.hor * P - P * (14 + Math.random() * 30), x: dir < 0 ? canvasWidth + 30 : -30, vx: dir * (1.8 + Math.random() * 1.4) });
+                    trTraffic.push({ type: 'car', dir: dir, par: 0.2, y: canvasHeight * (0.5 + Math.random() * 0.2), x: dir < 0 ? canvasWidth + 30 : -30, vx: dir * (1.8 + Math.random() * 1.4) });
                 }
             }
             for (let i = trTraffic.length - 1; i >= 0; i--) {
@@ -3829,10 +3848,8 @@ class ChiptuneEngine {
             for (let i = 0; i < trBg.blinkers.length; i++) {
                 const b = trBg.blinkers[i];
                 if (b.li !== li) continue;
-                let on;
-                if (b.kind === 'red') on = ((step + b.id) % 2) === 0;
-                else if (b.kind === 'sign') on = ((Math.floor(now / 140) + b.id * 3) % 11) > 1;
-                else on = ((step * 7 + b.id * 13) % 5) >= 2;
+                if (b.kind !== 'red') continue;          // ikkunat ja kyltit ovat staattisia
+                const on = ((Math.floor(now / 1100) + b.id) % 2) === 0;
                 for (let k = 0; k < 2; k++) {
                     const sx = b.x * P - o + k * w;
                     if (sx < -b.x - 40 || sx > canvasWidth + 20) continue;
@@ -3898,43 +3915,6 @@ class ChiptuneEngine {
             });
         }
 
-        function drawTrGroundGrid() {
-            const P = trBg.P, bw = trBg.bw, bh = trBg.bh, hor = trBg.hor;
-            const rows = bh - hor;
-            // vaakaviivat
-            const hc = ['#3a1470', '#a3105f', '#ff2e97'];
-            for (let k = 0; k < 8; k++) {
-                const d = (k + 1) / 8;
-                const y = hor + 1 + Math.floor(d * d * (rows - 1));
-                ctx.fillStyle = hc[d < 0.35 ? 0 : (d < 0.7 ? 1 : 2)];
-                ctx.fillRect(0, y * P, bw * P, P);
-            }
-            // pystyviivat (liikkuvat)
-            const vc = ['#0a8fb0', '#22a8c8', '#22e6ff'];
-            const cx = bw >> 1, S = bw * 0.09;
-            const off = (trGroundScroll / P * 0.9) % S;
-            for (let tone = 0; tone < 3; tone++) {
-                const y0 = hor + 1 + Math.floor(rows * (tone === 0 ? 0 : (tone === 1 ? 0.34 : 0.68)));
-                const y1 = hor + 1 + Math.floor(rows * (tone === 0 ? 0.34 : (tone === 1 ? 0.68 : 1)));
-                ctx.fillStyle = vc[tone];
-                for (let i = -14; i <= 14; i++) {
-                    const wx = i * S - off;
-                    for (let y = y0; y < y1 && y < bh; y++) {
-                        const d = (y - hor) / rows;
-                        const x = Math.round(cx + wx * (0.1 + 0.9 * d));
-                        const xp = Math.round(cx + wx * (0.1 + 0.9 * ((y - 1 - hor) / rows)));
-                        let lo = x, hi = x;
-                        if (x > xp) lo = xp + 1; else if (x < xp) hi = xp - 1;
-                        if (hi < 0 || lo >= bw) continue;
-                        lo = Math.max(lo, 0); hi = Math.min(hi, bw - 1);
-                        ctx.fillRect(lo * P, y * P, (hi - lo + 1) * P, P);
-                    }
-                }
-            }
-            // horisonttiviiva
-            ctx.fillStyle = '#ff6ec7';
-            ctx.fillRect(0, hor * P, bw * P, P);
-        }
 
         // ==========================================
         // RUNNER: PIIRTOFUNKTIOT (alustat, esteet, hahmot, käyttöliittymä)
@@ -3942,29 +3922,24 @@ class ChiptuneEngine {
         function trHash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
 
         function drawTrRoofProps(p, x, y, w, now) {
-            if (p.isArena || w < 120) return;
+            if (p.isArena || w < 150) return;
             const r = bgRng(Math.floor(p.xSeed * 1000) + 5);
-            const count = w > 260 ? 3 : 2;
+            if (r() < 0.4) return;                       // osalla katoista ei koristeita
+            const count = w > 280 ? 2 : 1;
             for (let k = 0; k < count; k++) {
-                const px = x + 28 + r() * (w - 80);
-                const kind = Math.floor(r() * 5);
+                const px = x + 28 + r() * (w - 90);
+                const kind = Math.floor(r() * 4);
                 if (kind === 0) {            // ilmastointiyksikkö
                     ctx.fillStyle = '#2a1260'; ctx.fillRect(px, y - 9, 18, 9);
                     ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 9, 18, 2);
                     ctx.fillStyle = '#0a0314'; ctx.fillRect(px + 3, y - 6, 12, 1); ctx.fillRect(px + 3, y - 3, 12, 1);
-                } else if (kind === 1) {     // antenni
+                } else if (kind === 1) {     // antenni (staattinen)
                     ctx.fillStyle = '#7a6fb0'; ctx.fillRect(px, y - 22, 2, 22); ctx.fillRect(px - 4, y - 16, 10, 2);
-                    if (Math.floor(now / 400 + px) % 2) { ctx.fillStyle = '#ff3b4a'; ctx.fillRect(px - 1, y - 25, 4, 4); }
+                    ctx.fillStyle = '#a02a3a'; ctx.fillRect(px - 1, y - 25, 4, 4);
                 } else if (kind === 2) {     // vesisäiliö
                     ctx.fillStyle = '#2a1260'; ctx.fillRect(px + 1, y - 6, 2, 6); ctx.fillRect(px + 11, y - 6, 2, 6);
                     ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 16, 14, 10);
                     ctx.fillStyle = '#7a2a9a'; ctx.fillRect(px - 1, y - 18, 16, 3);
-                } else if (kind === 3) {     // neonkyltti
-                    const on = ((Math.floor(now / 120) + Math.floor(px)) % 13) > 1;
-                    ctx.fillStyle = '#14052b'; ctx.fillRect(px, y - 26, 8, 26);
-                    ctx.fillStyle = on ? (r() < 0.5 ? '#ff2e97' : '#22e6ff') : '#3a1470';
-                    ctx.fillRect(px + 1, y - 25, 6, 24);
-                    ctx.fillStyle = on ? '#fff6c2' : '#4b1b86'; ctx.fillRect(px + 3, y - 24, 2, 22);
                 } else {                     // putket
                     ctx.fillStyle = '#4b1b86'; ctx.fillRect(px, y - 6, 24, 4);
                     ctx.fillStyle = '#7a2a9a'; ctx.fillRect(px, y - 6, 24, 1); ctx.fillRect(px + 20, y - 12, 4, 8);
@@ -4016,13 +3991,6 @@ class ChiptuneEngine {
             } else {
                 ctx.fillStyle = '#22e6ff'; ctx.fillRect(vx0, y, vx1 - vx0, 4);
                 ctx.fillStyle = '#ff2e97'; ctx.fillRect(vx0, y + 4, vx1 - vx0, 2);
-            }
-            // reunavalot
-            for (let lx = x + 10; lx < x + w - 10; lx += 28) {
-                if (lx < -6 || lx > canvasWidth) continue;
-                const on = ((Math.floor(now / 300) + Math.floor((lx - x) / 28)) % 3) !== 0;
-                ctx.fillStyle = on ? '#fff6c2' : '#7a6fb0';
-                ctx.fillRect(lx, y - 2, 4, 2);
             }
             drawTrRoofProps(p, x, y, w, now);
         }
@@ -4109,7 +4077,6 @@ class ChiptuneEngine {
             drawTrTraffic(['drone', 'car'], now);
             drawTrTile(B.layers[2].canvas, trBgScroll[2]);
             drawTrBlinkers(2, now);
-            drawTrGroundGrid();
 
             // taustan himmennys: etualan alustat, esineet ja hahmot erottuvat selvemmin
             ctx.fillStyle = 'rgba(7, 1, 26, 0.32)';
@@ -4122,27 +4089,19 @@ class ChiptuneEngine {
             // alustat
             trPlatforms.forEach(p => drawTrPlatform(p, now));
 
-            // laserportit
-            trObstacles.forEach(o => {
-                if (o.x > canvasWidth + 20 || o.x < -40) return;
-                const f = Math.floor(now / 90) % 2;
-                ctx.fillStyle = '#4b1b86'; ctx.fillRect(o.x, o.y + o.h - 8, o.w, 8);
-                ctx.fillStyle = '#7a2a9a'; ctx.fillRect(o.x, o.y + o.h - 8, o.w, 2);
-                ctx.fillStyle = f ? '#ff2e97' : '#ff6ec7'; ctx.fillRect(o.x + 4, o.y, 4, o.h - 8);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(o.x + 5, o.y, 2, o.h - 8);
-                ctx.fillStyle = '#ff6ec7'; ctx.fillRect(o.x + 2, o.y - 3, 8, 4);
-            });
-
-            // checkpointit: valopylväs, iso lippu ja tumma ääriviiva
+            // checkpointit: lippu seisoo katon päällä
             trCheckpoints.forEach(cp => {
                 const c = cp.active ? '#22e6ff' : '#ffd23f';
-                ctx.globalAlpha = cp.active ? 0.12 : 0.22 + Math.sin(now * 0.006) * 0.06;
-                ctx.fillStyle = c; ctx.fillRect(cp.x - 5, cp.y - 150, 10, 156);
-                ctx.globalAlpha = 1;
-                ctx.fillStyle = '#07011a'; ctx.fillRect(cp.x - 4, cp.y - 48, 8, 54); ctx.fillRect(cp.x - 4, cp.y - 52, 34, 30);
-                ctx.fillStyle = '#e8e4ff'; ctx.fillRect(cp.x - 2, cp.y - 46, 4, 50);
-                ctx.fillStyle = c; ctx.fillRect(cp.x + 2, cp.y - 50, 26, 8); ctx.fillRect(cp.x + 2, cp.y - 42, 20, 8); ctx.fillRect(cp.x + 2, cp.y - 34, 14, 8);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(cp.x + 2, cp.y - 50, 26, 2);
+                const by = Math.round(cp.y);
+                ctx.fillStyle = '#07011a';
+                ctx.fillRect(cp.x - 7, by - 4, 14, 4);                // jalusta (ääriviiva)
+                ctx.fillRect(cp.x - 4, by - 56, 8, 52);               // tanko (ääriviiva)
+                ctx.fillRect(cp.x - 4, by - 58, 36, 32);              // lippu (ääriviiva)
+                ctx.fillStyle = '#7a6fb0'; ctx.fillRect(cp.x - 6, by - 3, 12, 3);
+                ctx.fillStyle = '#e8e4ff'; ctx.fillRect(cp.x - 2, by - 54, 4, 52);
+                ctx.fillStyle = c;
+                ctx.fillRect(cp.x + 2, by - 56, 26, 8); ctx.fillRect(cp.x + 2, by - 48, 20, 8); ctx.fillRect(cp.x + 2, by - 40, 14, 8);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(cp.x + 2, by - 56, 26, 2);
             });
 
             // sydämet: halo, tumma ääriviiva ja isompi koko
@@ -4240,15 +4199,15 @@ class ChiptuneEngine {
             const gs = trGameState;
             // vasen paneeli: kierros, pisteet, sydämet, jahtipalkki
             trPanel(14, 12, 300, 98, '#ff2e97', '#22e6ff');
-            trText('RND ' + trRound + '/3', 30, 36, '#22e6ff', 11);
-            trText('PTS ' + score, 300, 36, '#ffd23f', 11, 'right');
+            trText('RND ' + trRound + '/3', 30, 36, '#22e6ff', 13);
+            trText('PTS ' + score, 300, 36, '#ffd23f', 13, 'right');
             for (let i = 0; i < trMaxLives; i++) trPixelHeart(30 + i * 26, 44, 3, i < trPlayerLives ? '#ff2e97' : '#2a1260', i < trPlayerLives);
             if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
                 const goal = trRoundGoals[trRound - 1];
-                trText('SUPERLATAUS', 30, 84, '#ffe600', 8);
+                trText('SUPERLATAUS', 30, 84, '#ffe600', 10);
                 trSegBar(150, 72, 150, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
             } else {
-                trText('ROXY', 30, 84, '#ff6ec7', 8);
+                trText('ROXY', 30, 84, '#ff6ec7', 10);
                 const full = trChaseProgress >= 100;
                 trSegBar(110, 72, 190, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
             }
@@ -4257,8 +4216,21 @@ class ChiptuneEngine {
             if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
                 const goal = trRoundGoals[trRound - 1];
                 const bx = Math.max(322, canvasWidth / 2 - 170);
-                trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 10, 'center');
+                trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 12, 'center');
                 trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trVerbsCompleted) / goal, '#ff2e97', Math.max(goal, 5) * 2);
+            }
+
+            // Roxy-ilmaisin: nuoli vasemmassa reunassa, kun Roxy on vielä ruudun ulkopuolella
+            if (gs === 'CHASE') {
+                const rr = getTrBossRect();
+                if (rr.x + rr.w < 8) {
+                    const iy = Math.max(130, Math.min(canvasHeight - 120, trBoss.y + trBoss.h / 2 - 16));
+                    const pulse = Math.floor(performance.now() / 350) % 2;
+                    trPanel(8, iy, 96, 34, '#ff2e97', pulse ? '#22e6ff' : '#ff2e97');
+                    trText('ROXY', 22, iy + 22, '#ffd23f', 10);
+                    ctx.fillStyle = '#ffd23f';
+                    for (let k = 0; k < 4; k++) ctx.fillRect(78 + k * 3, iy + 17 - k * 3 + (k > 0 ? 0 : 0), 3, 3 + k * 6 - (k === 0 ? 0 : 0));
+                }
             }
 
             // taistelun kirjoituspaneeli
@@ -4266,7 +4238,7 @@ class ChiptuneEngine {
                 const pw = Math.min(540, canvasWidth * 0.5), ph = 128, px = canvasWidth / 2 - pw / 2, py = 140;
                 trPanel(px, py, pw, ph, '#ffe600', '#ff2e97');
                 const tenseName = trTargetTense === 1 ? 'PERUSMUOTO (1. MUOTO)' : (trTargetTense === 2 ? 'IMPERFEKTI (2. MUOTO)' : 'PERFEKTI (3. MUOTO)');
-                trText(trTargetVerb.finnish.toUpperCase() + ' -> ' + tenseName, canvasWidth / 2, py + 34, '#22e6ff', 11, 'center');
+                trText(trTargetVerb.finnish.toUpperCase() + ' -> ' + tenseName, canvasWidth / 2, py + 34, '#22e6ff', 13, 'center');
                 const n = trTypingExpected.length;
                 const bw = 28, gap = 6;
                 const total = n * bw + (n - 1) * gap;
@@ -4294,17 +4266,17 @@ class ChiptuneEngine {
                 const mx = canvasWidth / 2 - mw / 2, my = canvasHeight / 2 - mh / 2;
                 trPanel(mx, my, mw, mh, gs === 'GAMEOVER' ? '#ff3b4a' : '#ff2e97', '#22e6ff');
                 const bigCol = gs === 'GAMEOVER' ? '#ff3b4a' : '#22e6ff';
-                trText(trBigMessage, canvasWidth / 2, my + 52, bigCol, 18, 'center');
-                trText(trSmallMessage, canvasWidth / 2, my + 86, '#ffffff', 10, 'center');
-                if (gs === 'START') trText('VÄLILYÖNTI: HYPPY (2x = TUPLAHYPPY)   ESC: TAUKO', canvasWidth / 2, my + 120, '#bdb4e6', 8, 'center');
+                trText(trBigMessage, canvasWidth / 2, my + 52, bigCol, 20, 'center');
+                trText(trSmallMessage, canvasWidth / 2, my + 86, '#ffffff', 12, 'center');
+                if (gs === 'START') trText('VÄLILYÖNTI: HYPPY (2x = TUPLAHYPPY)   ESC: TAUKO', canvasWidth / 2, my + 122, '#bdb4e6', 10, 'center');
             } else if (trMessageTimer > 0) {
                 // pelin aikana viesti näytetään oikeassa yläkulmassa, jotta se ei peitä hahmoja
-                const mw = Math.min(360, canvasWidth * 0.38), mh = 70;
+                const mw = Math.min(430, canvasWidth * 0.44), mh = 74;
                 const mx = canvasWidth - mw - 14, my = 64;
                 trPanel(mx, my, mw, mh, '#ff2e97', '#22e6ff');
                 const bigCol = gs === 'SUPER_ATTACK' ? '#ffe600' : '#22e6ff';
-                trText(trBigMessage, mx + mw / 2, my + 32, bigCol, 13, 'center');
-                trText(trSmallMessage, mx + mw / 2, my + 56, '#ffffff', 8, 'center');
+                trText(trBigMessage, mx + mw / 2, my + 33, bigCol, 15, 'center');
+                trText(trSmallMessage, mx + mw / 2, my + 58, '#ffffff', 10, 'center');
             }
         }
 
@@ -4371,8 +4343,7 @@ class ChiptuneEngine {
             if (b.grounded && b.platform) {
                 const cur = b.platform, front = b.x + b.w;
                 const endDist = cur.x + cur.w - front;
-                const obs = trObstacles.find(o => o.plat === cur && o.x > b.x && o.x - front < 85);
-                if (endDist < 14 || obs) {
+                if (endDist < 14) {
                     // Roxy simuloi hypyn etukäteen: yksi hyppy riittää vai tarvitaanko tuplahyppy
                     b.needDouble = !trBossSimJump(false) && trBossSimJump(true);
                     b.vy = trPlayer.jumpPower; b.jumps = 1; b.grounded = false;
@@ -4380,7 +4351,21 @@ class ChiptuneEngine {
             } else if (!b.grounded && b.jumps === 1 && b.needDouble && b.vy > -1) {
                 b.vy = trPlayer.doubleJumpPower; b.jumps = 2;
             }
+            // laskeutumisen varmistus: hätätuplahyppy ja ilmaohjaus, jos nykyinen lasku ei osuisi alustalle
+            if (!b.grounded && b.vy > 0 && !trBossSimFrom(b.vy, 0, false)) {
+                if (b.jumps === 1 && trBossSimFrom(trPlayer.doubleJumpPower, 0, false)) {
+                    b.vy = trPlayer.doubleJumpPower; b.jumps = 2;
+                } else {
+                    const steer = [2, 4, 6, -2, -4];
+                    let fixedIt = false;
+                    for (let k = 0; k < steer.length; k++) {
+                        if (trBossSimFrom(b.vy, steer[k], false)) { b.x += steer[k]; fixedIt = true; break; }
+                    }
+                    if (!fixedIt && b.jumps === 1) { b.vy = trPlayer.doubleJumpPower; b.jumps = 2; }
+                }
+            }
             if (b.y > canvasHeight + 60) {
+                b.fallCount = (b.fallCount || 0) + 1;
                 let target = null;
                 for (let i = 0; i < trPlatforms.length; i++) {
                     const p = trPlatforms[i];
@@ -4391,23 +4376,24 @@ class ChiptuneEngine {
             }
         }
 
-        // Ennustaa, laskeutuuko Roxy alustalle, jos hän hyppää nyt (liikkuvat alustat huomioiden)
-        function trBossSimJump(useDouble) {
+        // Ennustaa, laskeutuuko Roxy alustalle (liikkuvat alustat huomioiden)
+        function trBossSimFrom(vy0, vx, doubleAtApex) {
             const b = trBoss, s = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
-            let y = b.y, vy = trPlayer.jumpPower, used = false;
-            for (let t = 1; t < 160; t++) {
-                vy += trPlayer.gravity; y += vy;
-                if (useDouble && !used && vy > -1) { vy = trPlayer.doubleJumpPower; used = true; }
+            let y = b.y, x = b.x, vy = vy0, used = false;
+            for (let t = 1; t < 170; t++) {
+                vy += trPlayer.gravity; y += vy; x += vx;
+                if (doubleAtApex && !used && vy > -1) { vy = trPlayer.doubleJumpPower; used = true; }
                 for (let i = 0; i < trPlatforms.length; i++) {
                     const p = trPlatforms[i];
                     const px = p.x - s * t;
                     const py = p.mover ? p.mover.baseY + Math.sin((trGlobalFrames + t) * p.mover.speed + p.mover.phase) * p.mover.amp : p.y;
-                    if (vy > 0 && b.x + b.w > px + 4 && b.x < px + p.w - 4 && y + b.h >= py && y + b.h <= py + vy + 12) return true;
+                    if (vy > 0 && x + b.w > px + 4 && x < px + p.w - 4 && y + b.h >= py && y + b.h <= py + vy + 12) return true;
                 }
                 if (y > canvasHeight + 60) return false;
             }
             return false;
         }
+        function trBossSimJump(useDouble) { return trBossSimFrom(trPlayer.jumpPower, 0, useDouble); }
 
         // Väsynyt Roxy: liukuu ruudun vasempaan reunaan ja pysyy kattojen päällä
         function updateTrBossTired() {
@@ -4516,11 +4502,6 @@ class ChiptuneEngine {
             };
             trPlatforms.push(newPlat);
 
-            const obstacleChance = trRound === 1 ? (trChaseProgress > 20 ? 0.14 : 0) : 0.2 + diff * 0.1;
-            if (!mover && w >= 190 && Math.random() < obstacleChance) {
-                trObstacles.push({ plat: newPlat, offX: w * (0.4 + Math.random() * 0.25), w: 12, h: 36, x: 0, y: 0 });
-            }
-
             if (trHeartsSpawned < trHeartsTarget && Math.random() > 0.4) {
                 trHearts.push({
                     x: newPlat.x + w / 2,
@@ -4534,7 +4515,7 @@ class ChiptuneEngine {
             if (Math.random() > 0.65 && !mover && (trCheckpoints.length === 0 || last.x - trCheckpoints[trCheckpoints.length - 1].x > 500)) {
                 trCheckpoints.push({
                     x: newPlat.x + 40,
-                    y: newPlat.y - 25,
+                    y: newPlat.y,
                     platId: newPlat.id,
                     active: false
                 });
@@ -4563,18 +4544,35 @@ class ChiptuneEngine {
             setTimeout(() => {
                 const home = trPlayerHomeX();
                 trPlatforms = trPlatforms.filter(p => !p.isArena);
-                const covers = p => p && p.x < home - 10 && p.x + p.w > home + trPlayer.w + 40;
-                let respawnPlat = null;
-                if (trActiveCheckpoint) respawnPlat = trPlatforms.find(p => p.id === trActiveCheckpoint.platId);
-                if (!covers(respawnPlat)) respawnPlat = trPlatforms.find(covers) || null;
-
-                if (!respawnPlat) {
+                trBossProjectiles = [];
+                let P = null;
+                if (trActiveCheckpoint) P = trPlatforms.find(p => p.id === trActiveCheckpoint.platId) || null;
+                if (!P) {
+                    // lähin alusta pelaajan takana (tai ensimmäinen alusta)
+                    const behind = trPlatforms.filter(p => p.x + p.w * 0.5 <= home + 40);
+                    P = behind.length ? behind[behind.length - 1] : (trPlatforms[0] || null);
+                }
+                if (!P) {
                     generateTrSafeStartPlatform();
                 } else {
+                    // siirretään koko maailma niin, että valittu alusta on pelaajan alla
+                    const dx = (home - Math.min(70, P.w * 0.3)) - P.x;
+                    trPlatforms.forEach(p => { p.x += dx; });
+                    trHearts.forEach(h => { h.x += dx; });
+                    trCheckpoints.forEach(c => { c.x += dx; });
                     trPlayer.x = home;
-                    trPlayer.y = respawnPlat.y - trPlayer.h - 10;
+                    trPlayer.y = P.y - trPlayer.h - 4;
                     trPlayer.vy = 0;
                     trPlayer.jumps = 0;
+                    // Roxy siirretään alustalle, jotta hän ei jää tyhjän päälle maailman siirron jälkeen
+                    const under = trPlatforms.find(p => trBoss.x + trBoss.w > p.x + 4 && trBoss.x < p.x + p.w - 4);
+                    if (under) {
+                        trBoss.y = under.y - trBoss.h; trBoss.vy = 0; trBoss.grounded = true; trBoss.platform = under;
+                    } else {
+                        const cands = trPlatforms.filter(p => p.x + p.w > 40 && p.x < trPlayer.x).sort((a, b) => b.x - a.x);
+                        const lp = cands[0] || trPlatforms[0];
+                        placeTrBossOnPlatform(lp, Math.min(Math.max(trBoss.x, lp.x + 8), lp.x + lp.w - trBoss.w - 8));
+                    }
                 }
 
                 trChaseProgress = Math.max(0, trChaseProgress - 15);
@@ -4806,19 +4804,6 @@ class ChiptuneEngine {
                     if (!lastPlat.isArena && lastPlat.x + lastPlat.w < canvasWidth + 250) {
                         generateTrNextPlatform();
                     }
-                }
-            }
-
-            // laserportit
-            for (let i = trObstacles.length - 1; i >= 0; i--) {
-                const o = trObstacles[i];
-                if (!trPlatforms.includes(o.plat)) { trObstacles.splice(i, 1); continue; }
-                o.x = o.plat.x + o.offX;
-                o.y = o.plat.y - o.h;
-                if ((trGameState === 'CHASE' || trGameState === 'TRANSITION') && trInvuln <= 0 &&
-                    trPlayer.x + trPlayer.w - 5 > o.x && trPlayer.x + 5 < o.x + o.w &&
-                    trPlayer.y + trPlayer.h - 3 > o.y && trPlayer.y + 3 < o.y + o.h) {
-                    trTakeHit("OSUMA!", "Laserportti!");
                 }
             }
 
