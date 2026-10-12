@@ -220,6 +220,15 @@
             background-position: 0 0, 2px 2px;
         }
 
+        /* Asetus "Iso teksti": suurentaa pienet tekstit (ei painikkeita, ettei asettelu rikkoudu) */
+        html.big-text .text-xs:not(.jrpg-btn), html.big-text .sm\:text-xs:not(.jrpg-btn) { font-size: 0.95rem !important; line-height: 1.3 !important; }
+        html.big-text .text-sm:not(.jrpg-btn), html.big-text .sm\:text-sm:not(.jrpg-btn) { font-size: 1.1rem !important; line-height: 1.4 !important; }
+        html.big-text .font-sans.text-base:not(.jrpg-btn), html.big-text .font-sans.text-lg:not(.jrpg-btn) { font-size: 1.4rem !important; }
+        html.big-text .font-sans.text-xl:not(.jrpg-btn) { font-size: 1.65rem !important; }
+        html.big-text .hint-line { font-size: 0.8rem; }
+        html.big-text .win-title { font-size: 0.8rem; }
+        html.big-text #verb-table-body { font-size: 1.7rem; }
+
         #ss-boss-hud {
             background: rgba(20, 10, 51, 0.92) !important;
             border-color: var(--pink) !important;
@@ -1384,8 +1393,7 @@ class ChiptuneEngine {
                 ssState = ssPausedState || 'playing';
                 ssPausedState = null;
             } else if (prevMode === 'runner' && wasRunner) {
-                trGameState = trPausedState || 'CHASE';
-                trPausedState = null;
+                trResumeFromPause();
             } else if (prevMode === 'bubble' && wasBubble) {
                 isBubblePlaying = true;
             }
@@ -1596,6 +1604,7 @@ class ChiptuneEngine {
         let ssCurrentVerb = null;
         let ssLastShot = 0;
         let ssLastTargetSpawn = 0;
+        let ssNextSpawnAt = 0;
         let ssLastEnemyShot = 0;
         let ssLastHeartSpawn = 0;
         let ssTime = 0;
@@ -1618,6 +1627,7 @@ class ChiptuneEngine {
             ssHearts = [];
             ssTexts = [];
             ssCorrectWords = 0;
+            ssCurrentVerb = null; ssNextSpawnAt = 0;
             
             ssBoss.active = false;
             ssBoss.hp = ssBoss.maxHp;
@@ -2084,42 +2094,54 @@ class ChiptuneEngine {
             }
         }
 
-        function spawnSsTargets() {
+        // ---- Space Shooter: verbit tulevat tasaisena virtana, ja ruudulla on aina vähintään yksi ammuttava ----
+        function ssPickPrompt() {
             if (activeVerbs.length === 0) return;
-            
             const verb = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
-            const fIdx = Math.floor(Math.random() * 3);
-            ssCurrentVerb = { verb: verb, formIndex: fIdx };
-            
+            ssCurrentVerb = { verb: verb, formIndex: Math.floor(Math.random() * 3) };
+        }
+
+        function ssIsCorrect(text) {
+            if (!ssCurrentVerb) return false;
             const forms = ['base', 'past', 'participle'];
-            const correctText = verb[forms[fIdx]].split('/')[0].trim();
-            
-            const numTargets = 3;
-            let texts = [correctText];
-            
-            while(texts.length < numTargets) {
-                const randV = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
-                const randF = forms[Math.floor(Math.random() * 3)];
-                const randText = randV[randF].split('/')[0].trim();
-                if (!texts.includes(randText)) texts.push(randText);
+            const alts = ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]].split('/').map(s => s.trim().toLowerCase());
+            return alts.includes(String(text).toLowerCase());
+        }
+
+        function ssHasCorrectTarget() {
+            return ssTargets.some(t => ssIsCorrect(t.text));
+        }
+
+        function spawnSsTarget(forceCorrect) {
+            if (!ssCurrentVerb || activeVerbs.length === 0) return;
+            const forms = ['base', 'past', 'participle'];
+            const correctText = ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]].split('/')[0].trim();
+            let text = null;
+            if (forceCorrect) {
+                text = correctText;
+            } else {
+                for (let k = 0; k < 25; k++) {
+                    const v = activeVerbs[Math.floor(Math.random() * activeVerbs.length)];
+                    const tx = v[forms[Math.floor(Math.random() * 3)]].split('/')[0].trim();
+                    if (!ssIsCorrect(tx)) { text = tx; break; }
+                }
+                if (!text) text = correctText;
             }
-            
-            texts.sort(() => Math.random() - 0.5);
-            
-            const startY = 100;
-            const spacing = (canvasHeight - 200) / numTargets;
-            
-            texts.forEach((text, i) => {
-                ctx.font = '12px "Press Start 2P"';
-                const tw = ctx.measureText(text).width + 20;
-                ssTargets.push({
-                    x: canvasWidth + Math.random()*100,
-                    y: startY + i * spacing + (Math.random()*40 - 20),
-                    width: Math.max(tw, 80),
-                    height: 30,
-                    speed: 2 + Math.random()*1.5,
-                    text: text
-                });
+            ctx.font = '12px "Press Start 2P"';
+            const tw = ctx.measureText(text).width + 20;
+            // vapaa korkeus: ei päällekkäin uusimpien sanojen kanssa
+            let y = 100;
+            for (let tries = 0; tries < 10; tries++) {
+                y = 90 + Math.random() * Math.max(60, canvasHeight - 190);
+                if (!ssTargets.some(t => t.x > canvasWidth - 240 && Math.abs(t.y - y) < 48)) break;
+            }
+            ssTargets.push({
+                x: forceCorrect ? canvasWidth - 20 : canvasWidth + 10 + Math.random() * 40,   // ammuttava sana näkyy heti
+                y: y,
+                width: Math.max(tw, 80),
+                height: 30,
+                speed: 2 + Math.random() * 1.5,
+                text: text
             });
         }
 
@@ -2439,11 +2461,11 @@ class ChiptuneEngine {
             }
 
             if (e.key === 'Escape') {
-                if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'TRANSITION')) {
+                if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'TRANSITION' || trGameState === 'COUNTDOWN')) {
                     trPausedState = trGameState;
                     trGameState = 'PAUSED';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
-                                 <button onclick="trGameState=trPausedState||'CHASE'; trPausedState=null; hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
+                                 <button onclick="trResumeFromPause(); hideOverlay();" class="jrpg-btn jrpg-btn-primary px-6 py-4 mt-5 w-full">JATKA</button>
                                  <button onclick="enterMainMenu()" class="jrpg-btn px-6 py-4 mt-3 w-full">LOPETA</button>`);
                     return;
                 }
@@ -2587,6 +2609,18 @@ class ChiptuneEngine {
             if (ai) ai.className = audio.sfxEnabled ? 'fa-solid fa-volume-high text-yellow-300' : 'fa-solid fa-volume-xmark text-red-500';
         }
 
+        // Iso teksti -asetus (tallennetaan selaimen muistiin)
+        function applyBigText() {
+            document.documentElement.classList.toggle('big-text', localStorage.getItem('vm2000_bigtext') === 'true');
+            if (typeof canvas !== 'undefined' && canvas) resizeCanvas();
+        }
+        function toggleBigTextOverlay() {
+            audio.playSelect();
+            localStorage.setItem('vm2000_bigtext', localStorage.getItem('vm2000_bigtext') === 'true' ? 'false' : 'true');
+            applyBigText();
+            showOptionsMenu();
+        }
+
         function toggleSfxOverlay() {
             audio.sfxEnabled = !audio.sfxEnabled;
             if (audio.sfxEnabled) audio.playSelect();
@@ -2613,6 +2647,10 @@ class ChiptuneEngine {
                     <button onclick="toggleMusicOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
                         <span>Musiikki</span>
                         <span class="${audio.musicEnabled ? 'text-green-400' : 'text-red-400'}">${audio.musicEnabled ? 'PÄÄLLÄ' : 'POIS'}</span>
+                    </button>
+                    <button onclick="toggleBigTextOverlay()" class="jrpg-btn p-4 flex justify-between items-center text-sm sm:text-base">
+                        <span>Iso teksti</span>
+                        <span class="${localStorage.getItem('vm2000_bigtext') === 'true' ? 'text-green-400' : 'text-red-400'}">${localStorage.getItem('vm2000_bigtext') === 'true' ? 'PÄÄLLÄ' : 'POIS'}</span>
                     </button>
                     <button onclick="hideOverlay()" class="mt-4 jrpg-btn text-sm sm:text-base p-3 w-full text-slate-400 hover:text-white">TAKAISIN</button>
                 </div>
@@ -2782,7 +2820,7 @@ class ChiptuneEngine {
             let modeBGM = "";
             if (mode === 'bubble') modeBGM = "alex-morgan-video-game-pixel-chiptune-music-583271.mp3";
             else if (mode === 'spaceshooter') modeBGM = "alex-morgan-gaming-stream-arcade-session-578484.mp3";
-            else if (mode === 'runner') modeBGM = "psychronic-singularity-drive-392053.mp3"; 
+            else if (mode === 'runner') modeBGM = "Velocity_at_Midnight-gemini.mp3"; 
             else if (mode === 'scramble') modeBGM = "kaazoom-run-and-catch-x27em-full-version-retro-platform-game-music-442980.mp3"; 
             else if (mode === 'typing') modeBGM = "kaazoom-chase-that-rabbit-full-version-retro-platform-game-music-442974.mp3";
             else if (mode === 'cards') modeBGM = "kissan4-secret-level-reggae-571050.mp3";
@@ -3369,7 +3407,7 @@ class ChiptuneEngine {
         //  - anchorX = vaakaankkuri hitboxin sisällä (0 = vasen reuna, 0.5 = keskikohta, 1 = oikea reuna).
         //  - offsetX / offsetY = hienosäätö pikseleinä (positiivinen offsetY siirtää hahmoa alaspäin).
         //  - flipX   = true peilaa kuvan vaakasuunnassa (jos hahmo katsoo väärään suuntaan).
-        //  - bossTired = väsynyt Roxy taistelussa (tiedostoa ei vielä ole, katso kommentti alla).
+        //  - bossTired = väsynyt/hengästynyt Roxy taukokohdissa (roxyhengg.gif).
         //  - bossShoot.playFrames = kuinka monta ruutua ampumakuvaa näytetään laukauksen jälkeen.
         //  - bossShoot.muzzleX = mistä kohtaa kuvaa (0 = vasen reuna, 1 = oikea reuna) luoti lähtee.
         //  - GIF-animaatio toimii, kun peli ajetaan palvelimelta (esim. GitHub Pages tai paikallinen palvelin).
@@ -3382,10 +3420,10 @@ class ChiptuneEngine {
             bossMove:  { src: 'turbogif.gif',   drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
             // Roxy Blaize ampuu
             bossShoot: { src: 'turboshoot.gif', drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false, playFrames: 50, muzzleX: 0.92 },
-            // Väsynyt Roxy taistelussa (ruudun vasemmassa reunassa). Spriteä ei ole vielä:
-            // kirjoita tiedostonimi 'src'-kohtaan, kun kuva on valmis. Tyhjällä 'src'-arvolla käytetään
-            // toistaiseksi liikkumis-GIFin ensimmäistä kuvaa paikallaan.
-            bossTired: { src: '',               drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false }
+            // Väsynyt/hengästynyt Roxy: näkyy taukokohdissa (kun hän on väsähtänyt ja ruudun vasemmassa
+            // reunassa, eli siirtymässä ja verbitaistelussa). Jos tiedostoa ei löydy, käytetään
+            // liikkumis-GIFin ensimmäistä kuvaa paikallaan.
+            bossTired: { src: 'roxyhengg.gif',   drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false }
         };
         // Musiikin tahtiin sykkivä tausta (toimii vain kun peli ajetaan palvelimelta). false = pois päältä.
         const RUNNER_MUSIC_REACTIVE = true;
@@ -4002,7 +4040,10 @@ class ChiptuneEngine {
             ctx.strokeStyle = inner || '#22e6ff'; ctx.lineWidth = 1; ctx.strokeRect(x + 5.5, y + 5.5, w - 11, h - 11);
         }
 
+        function uiScale() { return document.documentElement.classList.contains('big-text') ? 1.18 : 1; }
+
         function trText(str, x, y, color, size, align) {
+            size = Math.round(size * uiScale());
             ctx.font = size + 'px "Press Start 2P"';
             ctx.textAlign = align || 'left';
             ctx.fillStyle = '#000000'; ctx.fillText(str, x + 2, y + 2);
@@ -4197,25 +4238,37 @@ class ChiptuneEngine {
 
         function drawTrUI() {
             const gs = trGameState;
+            const s = uiScale();
+            const pw0 = Math.round(300 * s);
+            if (gs === 'COUNTDOWN') {
+                const n = Math.max(1, Math.min(3, Math.ceil(trCountdownMs / 800)));
+                const cx = canvasWidth / 2, cy = canvasHeight * 0.32;
+                trPanel(cx - 130, cy - 98, 260, 190, '#ff2e97', '#22e6ff');
+                trText('VALMIINA?', cx, cy - 62, '#bdb4e6', 14, 'center');
+                trBigText(String(n), cx, cy + 50, 96, n === 3 ? '#22e6ff' : (n === 2 ? '#ffd23f' : '#ff2e97'));
+            } else if (trGoTimer > 0) {
+                trPanel(canvasWidth / 2 - 130, canvasHeight * 0.32 - 70, 260, 130, '#ffe600', '#ff2e97');
+                trBigText('GO!', canvasWidth / 2, canvasHeight * 0.32 + 28, 64, '#ffe600');
+            }
             // vasen paneeli: kierros, pisteet, sydämet, jahtipalkki
-            trPanel(14, 12, 300, 98, '#ff2e97', '#22e6ff');
+            trPanel(14, 12, pw0, 98, '#ff2e97', '#22e6ff');
             trText('RND ' + trRound + '/3', 30, 36, '#22e6ff', 13);
-            trText('PTS ' + score, 300, 36, '#ffd23f', 13, 'right');
+            trText('PTS ' + score, pw0, 36, '#ffd23f', 13, 'right');
             for (let i = 0; i < trMaxLives; i++) trPixelHeart(30 + i * 26, 44, 3, i < trPlayerLives ? '#ff2e97' : '#2a1260', i < trPlayerLives);
             if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
                 const goal = trRoundGoals[trRound - 1];
                 trText('SUPERLATAUS', 30, 84, '#ffe600', 10);
-                trSegBar(150, 72, 150, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
+                const bx1 = 30 + Math.round(120 * s); trSegBar(bx1, 72, pw0 - bx1, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
             } else {
                 trText('ROXY', 30, 84, '#ff6ec7', 10);
                 const full = trChaseProgress >= 100;
-                trSegBar(110, 72, 190, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
+                const bx2 = 30 + Math.round(80 * s); trSegBar(bx2, 72, pw0 - bx2, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
             }
 
             // pomon HP-palkki (taistelu)
             if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
                 const goal = trRoundGoals[trRound - 1];
-                const bx = Math.max(322, canvasWidth / 2 - 170);
+                const bx = Math.max(14 + pw0 + 8, canvasWidth / 2 - 170);
                 trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 12, 'center');
                 trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trVerbsCompleted) / goal, '#ff2e97', Math.max(goal, 5) * 2);
             }
@@ -4286,6 +4339,7 @@ class ChiptuneEngine {
         let trObstacles = [], trPlayerShots = [];
         let trCoyote = 0, trJumpBuffer = 0, trInvuln = 0, trHitStop = 0, trGlitch = 0, trErrorStreak = 0;
         let trWasGrounded = false, trPausedState = null, trBossShootAnimUntil = 0, trLastTs = 0, trBossShotMs = 0;
+        let trCountdownMs = 0, trCountdownNext = 'CHASE', trGoTimer = 0;
         trBoss.hitFlash = 0;
         trBoss.w = trPlayer.w; trBoss.h = trPlayer.h; trBoss.vy = 0; trBoss.grounded = false; trBoss.jumps = 0; trBoss.platform = null; trBoss.needDouble = false;
 
@@ -4576,8 +4630,7 @@ class ChiptuneEngine {
                 }
 
                 trChaseProgress = Math.max(0, trChaseProgress - 15);
-                trInvuln = 60;
-                trGameState = 'CHASE';
+                trStartCountdown('CHASE');
             }, 650);
         }
 
@@ -4644,6 +4697,15 @@ class ChiptuneEngine {
             for (let i = trAfterimages.length - 1; i >= 0; i--) {
                 trAfterimages[i].life -= 0.12;
                 if (trAfterimages[i].life <= 0) trAfterimages.splice(i, 1);
+            }
+
+            if (trGoTimer > 0) trGoTimer--;
+            if (trGameState === 'COUNTDOWN') {
+                const prevN = Math.ceil(trCountdownMs / 800);
+                trCountdownMs -= dtMs;
+                if (trCountdownMs > 0 && Math.ceil(trCountdownMs / 800) !== prevN) audio.playSelect();
+                if (trCountdownMs <= 0) { trInvuln = 60; trGoTimer = 45; trGameState = trCountdownNext; audio.playCorrect(); }
+                return;
             }
 
             if (trGameState === 'START' || trGameState === 'GAMEOVER' || trGameState === 'VICTORY' || trGameState === 'RESPAWNING' || trGameState === 'PAUSED') {
@@ -4751,7 +4813,7 @@ class ChiptuneEngine {
                         trHeartsTarget = Math.floor(Math.random() * 2) + 1;
                         trPlatforms = trPlatforms.filter(p => !p.isArena);
                         generateTrSafeStartPlatform();
-                        trGameState = 'CHASE';
+                        trStartCountdown('CHASE');
                         showTrMessage("SE JATKUU!", "Jatka pakoa!", 90);
                     }
                 }
@@ -4866,6 +4928,25 @@ class ChiptuneEngine {
                     audio.playHit();
                 }
             }
+        }
+
+        // Lähtölaskenta (3-2-1) ennen pelin jatkumista: aloitus, respawn, kierroksen vaihto ja tauon jälkeen
+        function trStartCountdown(nextState) {
+            trCountdownNext = nextState || 'CHASE';
+            trCountdownMs = 2400;
+            trInvuln = 0;
+            trGameState = 'COUNTDOWN';
+        }
+        function trResumeFromPause() {
+            const s = trPausedState || 'CHASE';
+            trPausedState = null;
+            if (s === 'CHASE' || s === 'TRANSITION') trStartCountdown(s); else trGameState = s;
+        }
+        function trBigText(str, x, y, size, color) {
+            ctx.font = size + 'px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#07011a'; ctx.fillText(str, x + Math.round(size / 10), y + Math.round(size / 10));
+            ctx.fillStyle = color; ctx.fillText(str, x, y);
         }
 
         // Hyppy: coyote time, hyppypuskuri ja tuplahyppy
@@ -5034,7 +5115,7 @@ class ChiptuneEngine {
             combo = 0;
 
             generateTrSafeStartPlatform();
-            trGameState = 'CHASE';
+            trStartCountdown('CHASE');
         }
 
 
@@ -5139,25 +5220,31 @@ class ChiptuneEngine {
             }
 
             if (ssState === 'playing') {
-                if (ssTargets.length === 0 && ssTime - ssLastTargetSpawn > 1000) {
-                    spawnSsTargets(); ssLastTargetSpawn = ssTime;
+                if (!ssCurrentVerb) ssPickPrompt();
+                // tasainen verbivirta: yksi sana kerrallaan satunnaisin väliajoin
+                if (ssTime >= ssNextSpawnAt) {
+                    spawnSsTarget(!ssHasCorrectTarget() || Math.random() < 0.3);
+                    ssNextSpawnAt = ssTime + 1000 + Math.random() * 700;
+                } else if (!ssHasCorrectTarget() && ssNextSpawnAt - ssTime > 250) {
+                    ssNextSpawnAt = ssTime + 250;   // ammuttava sana tulee pian ruutuun
                 }
                 for (let i = ssTargets.length - 1; i >= 0; i--) {
                     let t = ssTargets[i];
                     t.x -= t.speed;
                     if (t.x < -t.width) {
-                        const forms = ['base', 'past', 'participle'];
-                        if (ssCurrentVerb && t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) ssTakeDamage();
-                        ssTargets.splice(i, 1); continue;
+                        const wasCorrect = ssIsCorrect(t.text);
+                        ssTargets.splice(i, 1);
+                        if (wasCorrect) { ssTakeDamage(); if (!ssHasCorrectTarget()) ssPickPrompt(); }
+                        continue;
                     }
                     for (let j = ssBullets.length - 1; j >= 0; j--) {
                         let b = ssBullets[j];
                         if (b.x > t.x && b.x < t.x + t.width && b.y > t.y && b.y < t.y + t.height) {
-                            const forms = ['base', 'past', 'participle'];
-                            if (t.text === ssCurrentVerb.verb[forms[ssCurrentVerb.formIndex]]) {
+                            if (ssIsCorrect(t.text)) {
                                 audio.playExplosion(); addScore(15); combo++;
                                 createSsParticle(t.x, t.y, '#10b981', 15); ssCorrectWords++;
-                                
+                                ssTargets.splice(i, 1); ssBullets.splice(j, 1);
+
                                 // Bossi saapuu aina 10 sanan välein (HP määrittää loput)
                                 if (ssCorrectWords >= 10) {
                                     ssState = 'boss'; 
@@ -5167,12 +5254,15 @@ class ChiptuneEngine {
                                     ssBoss.y = canvasHeight / 2 - ssBoss.height / 2;
                                     document.getElementById('ss-boss-hud').classList.remove('hidden'); 
                                     document.getElementById('ss-boss-hp-bar').style.width = (ssBoss.hp / ssBoss.maxHp * 100) + '%';
+                                    ssTargets.length = 0;
+                                } else {
+                                    ssPickPrompt();
                                 }
-                                ssTargets.length = 0; ssBullets.splice(j, 1); i = -1; break; 
                             } else {
                                 audio.playExplosion(); ssTakeDamage(); createSsParticle(t.x, t.y, '#ef4444', 10);
-                                ssTargets.splice(i, 1); ssBullets.splice(j, 1); break; 
+                                ssTargets.splice(i, 1); ssBullets.splice(j, 1);
                             }
+                            break;
                         }
                     }
                 }
@@ -5194,6 +5284,7 @@ class ChiptuneEngine {
                         ssBoss.active = false;
                         ssState = 'playing';
                         ssCorrectWords = 0;
+                        ssPickPrompt(); ssNextSpawnAt = ssTime + 1200;
                         document.getElementById('ss-boss-hud').classList.add('hidden');
                     }
                 } 
@@ -5998,6 +6089,7 @@ class ChiptuneEngine {
         window.addEventListener('resize', fitGameStage);
         window.addEventListener('orientationchange', () => setTimeout(fitGameStage, 150));
         fitGameStage();
+        applyBigText();
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitGameStage);
 
         // Pidetään canvas ajan tasalla, jos pelialueen koko muuttuu muusta syystä (esim. fontin latautuminen)
