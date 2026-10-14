@@ -2174,14 +2174,23 @@ class ChiptuneEngine {
             const sat = ssSatReady();
             let bw = Math.max(tw, 80), bh = 30;
             if (sat) {
-                bw = Math.max(tw + 36, 130);
+                bw = Math.round(Math.max(tw + 36, 130) * 1.5);
                 bh = Math.round(bw * satelliteImg.naturalHeight / satelliteImg.naturalWidth);
             }
-            // vapaa korkeus: ei päällekkäin uusimpien sanojen kanssa
-            let y = 100;
-            for (let tries = 0; tries < 10; tries++) {
-                y = 90 + Math.random() * Math.max(60, canvasHeight - 160 - bh);
-                if (!ssTargets.some(t => t.x > canvasWidth - 240 - bw && Math.abs(t.y - y) < Math.max(t.height, bh) + 8)) break;
+            // vapaa korkeus: satelliitit pidetään kaukana toisistaan (valitaan kohta, jossa väli lähimpään on suurin)
+            const gapY = 50;
+            const yMax = Math.max(0, canvasHeight - 70 - bh - 90);
+            let y = 90, bestSpace = -1e9;
+            for (let tries = 0; tries < 30; tries++) {
+                const cy = 90 + Math.random() * yMax;
+                let space = 1e9;
+                for (const t of ssTargets) {
+                    if (t.x + t.width < -40) continue;
+                    const d = (cy < t.y) ? (t.y - (cy + bh)) : (cy - (t.y + t.height));
+                    if (d < space) space = d;
+                }
+                if (space > bestSpace) { bestSpace = space; y = cy; }
+                if (space >= gapY) break;
             }
             ssTargets.push({
                 x: forceCorrect ? canvasWidth - 20 : canvasWidth + 10 + Math.random() * 40,   // ammuttava sana näkyy heti
@@ -2361,7 +2370,7 @@ class ChiptuneEngine {
         // ==========================================
         let trGameState = 'START'; // START, CHASE, TRANSITION, COMBAT, KNOCKBACK, RESPAWNING, VICTORY, GAMEOVER, PAUSED
         let trRound = 1; 
-        const trRoundGoals = [3, 4, 5];   // osumia Roxyyn per kierros; viimeinen osuma sinkoaa hänet kauemmas
+        const trRoundGoals = [5, 7, 10];   // verbejä (osumia Roxyyn) per kierros; viimeinen osuma sinkoaa hänet kauemmas
         
         
         let trPlayerLives = 3;
@@ -2389,7 +2398,7 @@ class ChiptuneEngine {
         // Siirtymä taisteluun: 'RUN' = kamera lukittu pelaajaan, 'PANBACK' = kamera asettuu taisteluasentoon
         let trTransPhase = 'RUN';
         let trPanBackT = 0, trPanBackE = 0, trPanBackCam = 0, trPanBackPlayer = 0;
-        const TR_PANBACK_FRAMES = 80;
+        let trPanBackFrames = 60;
         let trRoxyHits = 0;          // montako osumaa Roxy on ottanut tässä taistelussa
         let trCombatLocked = false;  // viimeinen verbi kirjoitettu: odotetaan viimeistä osumaa
         let trCurScroll = 0;         // tämän ruudun vierityksen nopeus (Roxyn hyppyennusteelle)
@@ -3485,15 +3494,15 @@ class ChiptuneEngine {
         //    jolloin näkyy GIFin ensimmäinen kuva (peli toimii silti normaalisti).
         const RUNNER_SPRITES = {
             // pelaaja (rullaluistelija)
-            player:    { src: 'motogif.gif',    drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
+            player:    { src: 'motogif.gif',    drawH: 86, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
             // Roxy Blaize liikkuu (sama koko kuin pelaaja)
-            bossMove:  { src: 'turbogif.gif',   drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
+            bossMove:  { src: 'turbogif.gif',   drawH: 86, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false },
             // Roxy Blaize ampuu
-            bossShoot: { src: 'turboshoot.gif', drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false, playFrames: 50, muzzleX: 0.92 },
+            bossShoot: { src: 'turboshoot.gif', drawH: 86, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false, playFrames: 50, muzzleX: 0.92 },
             // Väsynyt/hengästynyt Roxy: näkyy taukokohdissa (kun hän on väsähtänyt ja ruudun vasemmassa
             // reunassa, eli siirtymässä ja verbitaistelussa). Jos tiedostoa ei löydy, käytetään
             // liikkumis-GIFin ensimmäistä kuvaa paikallaan.
-            bossTired: { src: 'roxyhengg.gif',   drawH: 72, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false }
+            bossTired: { src: 'roxyhengg.gif',   drawH: 86, anchorX: 0.5, offsetX: 0, offsetY: 6, flipX: false }
         };
         // Musiikin tahtiin sykkivä tausta (toimii vain kun peli ajetaan palvelimelta). false = pois päältä.
         const RUNNER_MUSIC_REACTIVE = true;
@@ -4330,7 +4339,7 @@ class ChiptuneEngine {
                 const goal = trRoundGoals[trRound - 1];
                 const bx = Math.max(14 + pw0 + 8, canvasWidth / 2 - 170);
                 trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 12, 'center');
-                trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trRoxyHits) / goal, '#ff2e97', goal * 2);
+                trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trRoxyHits) / goal, '#ff2e97', Math.max(goal, 5) * 2);
             }
 
             // Roxy-ilmaisin: nuoli vasemmassa reunassa, kun Roxy on vielä ruudun ulkopuolella
@@ -4727,6 +4736,7 @@ class ChiptuneEngine {
             trPanBackT = 0; trPanBackE = 0;
             trPanBackCam = trBossLeftX() - trBoss.x;
             trPanBackPlayer = trPlayerRightX() - trPlayer.x;
+            trPanBackFrames = Math.max(20, Math.ceil(trPanBackPlayer / trScrollSpeed));
             trBossProjectiles = [];
             trBoss.vy = 0; trBoss.stopped = true;
             trBoss.y = ar.y - trBoss.h;
@@ -4858,19 +4868,20 @@ class ChiptuneEngine {
                     trBoss.x += ((homeX - 150) - trBoss.x) * 0.05;
                     if (arenaPlat) {
                         const dist = arenaPlat.x - (homeX - 260);   // vierittäminen loppuu, kun pelaajan alla on tasainen areena
-                        currentScrollSpeed = dist > 0 ? Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035)) : 0;
+                        currentScrollSpeed = dist > 0 ? trScrollSpeed : 0;   // vauhti ei hidastu ennen taistelutasoa
                     }
                 } else {
                     // Kamera siirtyy taisteluasentoon: Roxy ja pelaaja ruudun eri laitoihin
                     currentScrollSpeed = 0;
                     trPanBackT++;
-                    const k = Math.min(1, trPanBackT / TR_PANBACK_FRAMES);
+                    // pelaaja jatkaa samalla vauhdilla oikeaan laitaan, kamera seuraa samassa tahdissa
+                    const k = Math.min(1, trPanBackT / trPanBackFrames);
                     const e = k * k * (3 - 2 * k);
                     const de = e - trPanBackE; trPanBackE = e;
                     const cam = trPanBackCam * de;
                     trPlatforms.forEach(p => { p.x += cam; });
                     trBoss.x += cam;
-                    trPlayer.x += trPanBackPlayer * de;
+                    trPlayer.x += Math.min(trScrollSpeed, Math.max(0, trPlayerRightX() - trPlayer.x));
                     if (k >= 1) {
                         trGameState = 'COMBAT';
                         trVerbsCompleted = 0; trRoxyHits = 0; trCombatLocked = false;
@@ -4964,7 +4975,7 @@ class ChiptuneEngine {
                     updateTrBoss();
                     // kun pelaaja seisoo areenalla, vieritys on loppunut ja Roxy on pysähtynyt, siirrytään taisteluasentoon
                     const ar = trPlatforms.find(p => p.isArena);
-                    if (ar && currentScrollSpeed === 0 && trPlayer.grounded && Math.abs(trPlayer.y + trPlayer.h - ar.y) < 2 &&
+                    if (ar && currentScrollSpeed === 0 && trPlayer.y + trPlayer.h <= ar.y + 2 &&
                         trPlayer.x > ar.x + 40 && trBoss.grounded && trBoss.platform === ar && trBoss.x > ar.x + 60) {
                         trStartPanBack(ar);
                     }
@@ -5368,7 +5379,7 @@ class ChiptuneEngine {
                 // tasainen verbivirta: yksi sana kerrallaan satunnaisin väliajoin
                 if (ssTime >= ssNextSpawnAt) {
                     spawnSsTarget(!ssHasCorrectTarget());
-                    ssNextSpawnAt = ssTime + 1000 + Math.random() * 700;
+                    ssNextSpawnAt = ssTime + 1400 + Math.random() * 800;
                 } else if (!ssHasCorrectTarget() && ssNextSpawnAt - ssTime > 250) {
                     ssNextSpawnAt = ssTime + 250;   // ammuttava sana tulee pian ruutuun
                 }
