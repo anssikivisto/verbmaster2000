@@ -961,6 +961,10 @@ const playerImg = new Image();
 playerImg.src = 'shipnobg.png';
 const enemyImg = new Image();
 enemyImg.src = 'enemynobg.png';
+// Lentävät verbit ovat satelliitteja: verbi piirretään kuvan keskelle (jos kuvaa ei löydy, käytetään vanhaa laatikkoa)
+const satelliteImg = new Image();
+satelliteImg.src = 'satellite.png';
+function ssSatReady() { return satelliteImg.complete && satelliteImg.naturalWidth > 0; }
 
 // --- WELCOME SCREEN -MUUTTUJAT ---
 let welcomeIndex = 0;
@@ -1367,7 +1371,7 @@ class ChiptuneEngine {
         function pauseGameForCutscene(sceneId, callback) {
             const wasBubble = isBubblePlaying;
             const wasSS = (gameMode === 'spaceshooter' && (ssState === 'playing' || ssState === 'boss'));
-            const wasRunner = (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'TRANSITION' || trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK'));
+            const wasRunner = (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'TRANSITION' || trGameState === 'COMBAT' || trGameState === 'KNOCKBACK'));
             const prevMode = gameMode;
             const prevBGM = audio.currentTrack;
             // jos ruudulla on tulos- tai game over -ruutu, se palautetaan cutscenen jälkeen
@@ -1976,15 +1980,27 @@ class ChiptuneEngine {
                 });
 
                 ssTargets.forEach(t => {
-                    ctx.fillStyle = 'rgba(20, 10, 51, 0.92)';
-                    ctx.strokeStyle = '#22e6ff';
-                    ctx.lineWidth = 2;
-                    ctx.fillRect(t.x, t.y, t.width, t.height);
-                    ctx.strokeRect(t.x, t.y, t.width, t.height);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '12px "Press Start 2P"';
                     ctx.textAlign = 'center';
-                    ctx.fillText(t.text, t.x + t.width/2, t.y + t.height/2 + 4);
+                    ctx.font = '12px "Press Start 2P"';
+                    if (t.sat && ssSatReady()) {
+                        // satelliitti: verbi keskitetty kuvan keskelle
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(satelliteImg, t.x, t.y, t.width, t.height);
+                        const cx = t.x + t.width / 2, cy = t.y + t.height / 2 + 4;
+                        ctx.lineWidth = 4; ctx.lineJoin = 'round';
+                        ctx.strokeStyle = '#07011a';
+                        ctx.strokeText(t.text, cx, cy);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(t.text, cx, cy);
+                    } else {
+                        ctx.fillStyle = 'rgba(20, 10, 51, 0.92)';
+                        ctx.strokeStyle = '#22e6ff';
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(t.x, t.y, t.width, t.height);
+                        ctx.strokeRect(t.x, t.y, t.width, t.height);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(t.text, t.x + t.width / 2, t.y + t.height / 2 + 4);
+                    }
                 });
 
                 // Uusi suoja-powerup ulkoasu (sininen pallo "S" kirjaimella)
@@ -2154,18 +2170,26 @@ class ChiptuneEngine {
             if (ssRecentTexts.length > 8) ssRecentTexts.shift();
             ctx.font = '12px "Press Start 2P"';
             const tw = ctx.measureText(text).width + 20;
+            // satelliitin koko: leveys riittää verbille, korkeus seuraa kuvan kuvasuhdetta
+            const sat = ssSatReady();
+            let bw = Math.max(tw, 80), bh = 30;
+            if (sat) {
+                bw = Math.max(tw + 36, 130);
+                bh = Math.round(bw * satelliteImg.naturalHeight / satelliteImg.naturalWidth);
+            }
             // vapaa korkeus: ei päällekkäin uusimpien sanojen kanssa
             let y = 100;
             for (let tries = 0; tries < 10; tries++) {
-                y = 90 + Math.random() * Math.max(60, canvasHeight - 190);
-                if (!ssTargets.some(t => t.x > canvasWidth - 240 && Math.abs(t.y - y) < 48)) break;
+                y = 90 + Math.random() * Math.max(60, canvasHeight - 160 - bh);
+                if (!ssTargets.some(t => t.x > canvasWidth - 240 - bw && Math.abs(t.y - y) < Math.max(t.height, bh) + 8)) break;
             }
             ssTargets.push({
                 x: forceCorrect ? canvasWidth - 20 : canvasWidth + 10 + Math.random() * 40,   // ammuttava sana näkyy heti
                 verbRef: verbRef,
                 y: y,
-                width: Math.max(tw, 80),
-                height: 30,
+                width: bw,
+                height: bh,
+                sat: sat,
                 speed: 2 + Math.random() * 1.5,
                 text: text
             });
@@ -2335,9 +2359,10 @@ class ChiptuneEngine {
         // ==========================================
         // SYNTH RUNNER GLOBAALIT
         // ==========================================
-        let trGameState = 'START'; // START, CHASE, TRANSITION, COMBAT, SUPER_ATTACK, RESPAWNING, VICTORY, GAMEOVER, PAUSED
+        let trGameState = 'START'; // START, CHASE, TRANSITION, COMBAT, KNOCKBACK, RESPAWNING, VICTORY, GAMEOVER, PAUSED
         let trRound = 1; 
-        const trRoundGoals = [5, 7, 10]; 
+        const trRoundGoals = [3, 4, 5];   // osumia Roxyyn per kierros; viimeinen osuma sinkoaa hänet kauemmas
+        
         
         let trPlayerLives = 3;
         const trMaxLives = 5;
@@ -2360,7 +2385,14 @@ class ChiptuneEngine {
         let trFlashError = 0;
         let trTypingFeedback = null;
         let trFeedbackTimer = 0;
-        let trSuperAttackTimer = 0;
+        let trKnockTimer = 0;
+        // Siirtymä taisteluun: 'RUN' = kamera lukittu pelaajaan, 'PANBACK' = kamera asettuu taisteluasentoon
+        let trTransPhase = 'RUN';
+        let trPanBackT = 0, trPanBackE = 0, trPanBackCam = 0, trPanBackPlayer = 0;
+        const TR_PANBACK_FRAMES = 80;
+        let trRoxyHits = 0;          // montako osumaa Roxy on ottanut tässä taistelussa
+        let trCombatLocked = false;  // viimeinen verbi kirjoitettu: odotetaan viimeistä osumaa
+        let trCurScroll = 0;         // tämän ruudun vierityksen nopeus (Roxyn hyppyennusteelle)
 
         let trArenaY = 350;
 
@@ -2441,7 +2473,7 @@ class ChiptuneEngine {
 
             // Synth Runner typing
             if (gameMode === 'runner' && trGameState === 'COMBAT') {
-                if (trFeedbackTimer > 0) return;
+                if (trFeedbackTimer > 0 || trCombatLocked) return;
 
                 if (e.key.length === 1 && /[a-zA-ZäöåÄÖÅ]/.test(e.key)) {
                     let char = e.key.toUpperCase();
@@ -2460,7 +2492,7 @@ class ChiptuneEngine {
                                 trErrorStreak = 0;
                                 
                                 setTimeout(() => {
-                                    applyTrSupercharge();
+                                    trAfterCorrectVerb();
                                     trTypingFeedback = null;
                                 }, 280);
                             } else {
@@ -2487,7 +2519,7 @@ class ChiptuneEngine {
             }
 
             if (e.key === 'Escape') {
-                if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'TRANSITION' || trGameState === 'COUNTDOWN' || trGameState === 'PAN')) {
+                if (gameMode === 'runner' && (trGameState === 'CHASE' || trGameState === 'COMBAT' || trGameState === 'KNOCKBACK' || trGameState === 'TRANSITION' || trGameState === 'COUNTDOWN' || trGameState === 'PAN')) {
                     trPausedState = trGameState;
                     trGameState = 'PAUSED';
                     showOverlay(`<h2 class="text-3xl font-pixel text-yellow-300">PAUSE</h2>
@@ -4209,7 +4241,7 @@ class ChiptuneEngine {
                 const hurt = trBoss.state === 'hurt';
                 const flash = trBoss.hitFlash > 0 || (hurt && trGlobalFrames % 6 < 3);
                 if (br.spr) {
-                    drawSpriteSource(br.spr.source(now, br.freeze), br.x, br.y, br.w, br.h, { flip: br.spr.cfg.flipX, tint: flash ? '#ffffff' : null, tintAlpha: 0.8 });
+                    drawSpriteSource(br.spr.source(now, br.freeze), br.x, br.y, br.w, br.h, { flip: br.spr.cfg.flipX, rot: trGameState === 'KNOCKBACK' ? trBoss.spin : 0, tint: flash ? '#ffffff' : null, tintAlpha: 0.8 });
                 } else {
                     drawTrBossFallback(br.x, br.y);
                 }
@@ -4226,7 +4258,8 @@ class ChiptuneEngine {
             });
 
             // pelaaja
-            const facingLeft = (trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK');
+            const effSt = trEffState();
+            const facingLeft = (effSt === 'COMBAT' || effSt === 'KNOCKBACK');
             const blink = trInvuln > 0 && Math.floor(trInvuln / 4) % 2 === 0;
             if (trGameState !== 'GAMEOVER' && trGameState !== 'RESPAWNING' && !blink) {
                 if (trSprites.player.ready) {
@@ -4246,14 +4279,6 @@ class ChiptuneEngine {
                 ctx.fillStyle = '#ffe600'; ctx.fillRect(s.x - 6, s.y - 4, 22, 8);
                 ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - 2, s.y - 1, 12, 2);
             });
-
-            // superhyökkäys: säde vasemmalle
-            if (trGameState === 'SUPER_ATTACK' && trSuperAttackTimer > 80) {
-                const by = trPlayer.y + trPlayer.h * 0.45, bx = trPlayer.x;
-                ctx.fillStyle = '#ffe600'; ctx.fillRect(0, by - 14, bx, 28);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, by - 6, bx, 12);
-                ctx.fillStyle = '#ff2e97'; ctx.fillRect(0, by - 18, bx, 4); ctx.fillRect(0, by + 14, bx, 4);
-            }
 
             // hiukkaset
             trEnergyParticles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size)); });
@@ -4294,22 +4319,18 @@ class ChiptuneEngine {
             trText('RND ' + trRound + '/3', 30, 36, '#22e6ff', 13);
             trText('PTS ' + score, pw0, 36, '#ffd23f', 13, 'right');
             for (let i = 0; i < trMaxLives; i++) trPixelHeart(30 + i * 26, 44, 3, i < trPlayerLives ? '#ff2e97' : '#2a1260', i < trPlayerLives);
-            if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
-                const goal = trRoundGoals[trRound - 1];
-                trText('SUPERLATAUS', 30, 84, '#ffe600', 10);
-                const bx1 = 30 + Math.round(120 * s); trSegBar(bx1, 72, pw0 - bx1, 16, Math.min(goal, trVerbsCompleted) / goal, '#ffe600', goal);
-            } else {
+            if (gs !== 'COMBAT' && gs !== 'KNOCKBACK') {
                 trText('ROXY', 30, 84, '#ff6ec7', 10);
                 const full = trChaseProgress >= 100;
                 const bx2 = 30 + Math.round(80 * s); trSegBar(bx2, 72, pw0 - bx2, 16, trChaseProgress / 100, full && trGlobalFrames % 10 < 5 ? '#ffffff' : '#22e6ff', 20);
             }
 
             // pomon HP-palkki (taistelu)
-            if (gs === 'COMBAT' || gs === 'SUPER_ATTACK') {
+            if (gs === 'COMBAT' || gs === 'KNOCKBACK') {
                 const goal = trRoundGoals[trRound - 1];
                 const bx = Math.max(14 + pw0 + 8, canvasWidth / 2 - 170);
                 trText('ROXY BLAIZE', canvasWidth / 2, 30, '#ff6ec7', 12, 'center');
-                trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trVerbsCompleted) / goal, '#ff2e97', Math.max(goal, 5) * 2);
+                trSegBar(bx, 38, 340, 18, 1 - Math.min(goal, trRoxyHits) / goal, '#ff2e97', goal * 2);
             }
 
             // Roxy-ilmaisin: nuoli vasemmassa reunassa, kun Roxy on vielä ruudun ulkopuolella
@@ -4366,7 +4387,7 @@ class ChiptuneEngine {
                 const mw = Math.min(430, canvasWidth * 0.44), mh = 74;
                 const mx = canvasWidth - mw - 14, my = (gs === 'COUNTDOWN' || trGoTimer > 0) ? 116 : 64;
                 trPanel(mx, my, mw, mh, '#ff2e97', '#22e6ff');
-                const bigCol = gs === 'SUPER_ATTACK' ? '#ffe600' : '#22e6ff';
+                const bigCol = gs === 'KNOCKBACK' ? '#ffe600' : '#22e6ff';
                 trText(trBigMessage, mx + mw / 2, my + 33, bigCol, 15, 'center');
                 trText(trSmallMessage, mx + mw / 2, my + 58, '#ffffff', 10, 'center');
             }
@@ -4472,7 +4493,7 @@ class ChiptuneEngine {
 
         // Ennustaa, laskeutuuko Roxy alustalle (liikkuvat alustat huomioiden)
         function trBossSimFrom(vy0, vx, doubleAtApex) {
-            const b = trBoss, s = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trScrollSpeed : 0;
+            const b = trBoss, s = (trGameState === 'CHASE' || trGameState === 'TRANSITION') ? trCurScroll : 0;
             let y = b.y, x = b.x, vy = vy0, used = false;
             for (let t = 1; t < 170; t++) {
                 vy += trPlayer.gravity; y += vy; x += vx;
@@ -4489,25 +4510,23 @@ class ChiptuneEngine {
         }
         function trBossSimJump(useDouble) { return trBossSimFrom(trPlayer.jumpPower, 0, useDouble); }
 
-        // Väsynyt Roxy: liukuu ruudun vasempaan reunaan ja pysyy kattojen päällä
-        function updateTrBossTired() {
+        // Roxy seisoo paikallaan areenalla (kamera liikuttaa häntä, hän ei itse liu'u)
+        function holdTrBossStill(arenaY) {
             const b = trBoss;
-            const dx = trBossLeftX() - b.x;
-            b.x += Math.max(-4, Math.min(4, dx));
-            let ty = null;
-            for (let i = 0; i < trPlatforms.length; i++) {
-                const p = trPlatforms[i];
-                if (b.x + b.w > p.x + 2 && b.x < p.x + p.w - 2 && (ty === null || p.y < ty)) ty = p.y;
-            }
-            if (ty === null) ty = trArenaY;
-            const dyT = (ty - b.h) - b.y;
-            b.y += Math.max(-8, Math.min(8, dyT));
-            b.vy = 0; b.grounded = true;
-            b.stopped = Math.abs(dx) < 0.6 && Math.abs(dyT) < 1;
+            b.y = arenaY - b.h; b.vy = 0; b.grounded = true; b.stopped = true;
+        }
+
+        // Pelin "todellinen" tila: tauon ja lähtölaskennan aikana käytetään tilaa, johon palataan
+        function trEffState() {
+            if (trGameState === 'PAUSED' && trPausedState) return trPausedState;
+            if (trGameState === 'COUNTDOWN') return trCountdownNext;
+            return trGameState;
         }
 
         function getTrBossRect() {
-            const tired = (trGameState === 'COMBAT' || trGameState === 'SUPER_ATTACK' || (trGameState === 'TRANSITION' && trBoss.stopped));
+            // hengästynyt-kuva vain kun Roxy on kokonaan pysähtynyt (maailma ei vieri, Roxy ei liiku)
+            const eff = trEffState();
+            const tired = (eff === 'COMBAT' || eff === 'KNOCKBACK' || (eff === 'TRANSITION' && trBoss.stopped));
             const shooting = trGlobalFrames < trBossShootAnimUntil;
             let spr = null, freeze = false;
             if (tired) {
@@ -4681,7 +4700,8 @@ class ChiptuneEngine {
             trHearts = [];
             trCheckpoints = [];
             trObstacles = [];
-            showTrMessage("ROXY ON VÄSYNYT!", "Aika kerätä superlataus!", 90);
+            trTransPhase = 'RUN';
+            trBoss.stopped = false;
 
             let last = trPlatforms.length > 0 ? trPlatforms[trPlatforms.length - 1] : { x: 0, y: canvasHeight * 0.7, w: 400, h: 20 };
             trArenaY = Math.max(canvasHeight * 0.62, Math.min(canvasHeight * 0.8, last.y));
@@ -4699,6 +4719,18 @@ class ChiptuneEngine {
                 x: arenaStartX, y: trArenaY, w: 3200, h: canvasHeight - trArenaY,
                 isArena: true, id: trGlobalFrames + 1, xSeed: 999
             });
+        }
+
+        // Pelaaja on tasaisella taistelutasolla ja Roxy on pysähtynyt: kamera siirtyy taistelun asetelmaan
+        function trStartPanBack(ar) {
+            trTransPhase = 'PANBACK';
+            trPanBackT = 0; trPanBackE = 0;
+            trPanBackCam = trBossLeftX() - trBoss.x;
+            trPanBackPlayer = trPlayerRightX() - trPlayer.x;
+            trBossProjectiles = [];
+            trBoss.vy = 0; trBoss.stopped = true;
+            trBoss.y = ar.y - trBoss.h;
+            showTrMessage("ROXY ON HENGÄSTYNYT!", "Ammu häntä kirjoittamalla verbit!", 100);
         }
 
         function updateRunner(timestamp) {
@@ -4778,14 +4810,14 @@ class ChiptuneEngine {
             let currentScrollSpeed = bgScrollSpeed;
             const homeX = trPlayerHomeX();
 
-            if (trGameState !== 'SUPER_ATTACK' && trGameState !== 'COMBAT') {
+            if (trGameState !== 'KNOCKBACK' && trGameState !== 'COMBAT') {
                 trPlayer.vy += trPlayer.gravity;
                 trPlayer.y += trPlayer.vy;
             }
 
-            // pelaaja pysyy ruudun keskellä; taistelussa oikeassa reunassa
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
-                const tx = trGameState === 'TRANSITION' ? trPlayerRightX() : homeX;
+            // pelaaja pysyy ruudun keskellä (kamera lukittu) kunnes taistelutaso on saavutettu
+            if (trGameState === 'CHASE' || (trGameState === 'TRANSITION' && trTransPhase === 'RUN')) {
+                const tx = homeX;
                 trPlayer.x += Math.max(-3, Math.min(3, tx - trPlayer.x));
                 if (trPlayer.jumps === 2 && !trPlayer.grounded && trGlobalFrames % 2 === 0) {
                     trAfterimages.push({ x: trPlayer.x, y: trPlayer.y, life: 1 });
@@ -4819,23 +4851,36 @@ class ChiptuneEngine {
             }
 
             if (trGameState === 'TRANSITION') {
-                let arenaPlat = trPlatforms.find(p => p.isArena);
-
-                if (arenaPlat) {
-                    let dist = arenaPlat.x - 0;
-                    if (dist > 0) {
-                        currentScrollSpeed = Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035));
-                    } else {
-                        currentScrollSpeed = 0;
+                const arenaPlat = trPlatforms.find(p => p.isArena);
+                trBoss.offsetY = 0;
+                if (trTransPhase === 'RUN') {
+                    // Kamera pysyy lukittuna pelaajaan. Roxy ei hengästy vielä: hän jatkaa vauhdilla ja jää hieman taaemmas.
+                    trBoss.x += ((homeX - 150) - trBoss.x) * 0.05;
+                    if (arenaPlat) {
+                        const dist = arenaPlat.x - (homeX - 260);   // vierittäminen loppuu, kun pelaajan alla on tasainen areena
+                        currentScrollSpeed = dist > 0 ? Math.max(0.6, Math.min(trScrollSpeed, dist * 0.035)) : 0;
+                    }
+                } else {
+                    // Kamera siirtyy taisteluasentoon: Roxy ja pelaaja ruudun eri laitoihin
+                    currentScrollSpeed = 0;
+                    trPanBackT++;
+                    const k = Math.min(1, trPanBackT / TR_PANBACK_FRAMES);
+                    const e = k * k * (3 - 2 * k);
+                    const de = e - trPanBackE; trPanBackE = e;
+                    const cam = trPanBackCam * de;
+                    trPlatforms.forEach(p => { p.x += cam; });
+                    trBoss.x += cam;
+                    trPlayer.x += trPanBackPlayer * de;
+                    if (k >= 1) {
                         trGameState = 'COMBAT';
-                        trVerbsCompleted = 0;
+                        trVerbsCompleted = 0; trRoxyHits = 0; trCombatLocked = false;
                         trErrorStreak = 0;
+                        trPlayer.x = trPlayerRightX();
                         trPlayer.y = trArenaY - trPlayer.h; trPlayer.vy = 0; trPlayer.grounded = true; trPlayer.jumps = 0;
                         trBoss.x = trBossLeftX();
                         setupTrNextVerb();
                     }
                 }
-                trBoss.offsetY = 0;
             }
 
             if (trGameState === 'COMBAT') {
@@ -4846,28 +4891,24 @@ class ChiptuneEngine {
                 trBoss.offsetY = 0;
             }
 
-            if (trGameState === 'SUPER_ATTACK') {
+            if (trGameState === 'KNOCKBACK') {
                 currentScrollSpeed = 0;
-                trSuperAttackTimer--;
-
-                if (trSuperAttackTimer > 80) {
-                    trScreenShake = 10;
-                    if (trSuperAttackTimer % 10 === 0) audio.playHit();
-                }
-
+                trKnockTimer--;
                 trBoss.state = 'hurt';
+                trBoss.kvy += 0.55;
+                trBoss.x += trBoss.kvx;
+                trBoss.y += trBoss.kvy;
+                trBoss.spin -= 0.5;
+                createTrParticles(trBoss.x + trBoss.w / 2, trBoss.y + trBoss.h / 2, 2, '#ffe600', 2);
 
-                trBoss.x -= 8;
-                if (trBoss.x < -150) trBoss.x = -150;
-
-                createTrParticles(trBoss.x + trBoss.w, trBoss.y + trBoss.h / 2, 2, '#ffe600', 3);
-
-                if (trSuperAttackTimer <= 0) {
+                if (trKnockTimer <= 0) {
                     trBoss.state = 'normal';
+                    trBoss.spin = 0; trBoss.vy = 0; trBoss.stopped = false;
+                    trBoss.x = -150;
                     if (trRound >= 3) {
                         trGameState = 'VICTORY';
                         showTrMessage("VOITTO!", "ROXY BLAIZE ON LYÖTY!", 9999);
-                        createTrParticles(trBoss.x + trBoss.w / 2, trBoss.y + trBoss.h / 2, 120, '#ff007f', 3);
+                        createTrParticles(80, trArenaY - 50, 120, '#ff007f', 3);
                         audio.playExplosion();
                     } else {
                         trRound++;
@@ -4916,8 +4957,21 @@ class ChiptuneEngine {
             }
 
             // Roxy liikkuu kattojen päällä
+            trCurScroll = currentScrollSpeed;
             if (trGameState === 'CHASE') updateTrBoss();
-            else if (trGameState === 'TRANSITION') updateTrBossTired();
+            else if (trGameState === 'TRANSITION') {
+                if (trTransPhase === 'RUN') {
+                    updateTrBoss();
+                    // kun pelaaja seisoo areenalla, vieritys on loppunut ja Roxy on pysähtynyt, siirrytään taisteluasentoon
+                    const ar = trPlatforms.find(p => p.isArena);
+                    if (ar && currentScrollSpeed === 0 && trPlayer.grounded && Math.abs(trPlayer.y + trPlayer.h - ar.y) < 2 &&
+                        trPlayer.x > ar.x + 40 && trBoss.grounded && trBoss.platform === ar && trBoss.x > ar.x + 60) {
+                        trStartPanBack(ar);
+                    }
+                } else {
+                    holdTrBossStill(trArenaY);
+                }
+            }
 
             // coyote time, hyppypuskuri ja laskeutumispöly
             if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
@@ -5000,6 +5054,11 @@ class ChiptuneEngine {
                     trBoss.hitFlash = 8;
                     createTrParticles(br.x + br.w * 0.5, br.y + br.h * 0.5, 12, '#ffe600', 1.6);
                     audio.playHit();
+                    if (trGameState === 'COMBAT') {
+                        trRoxyHits++;
+                        trScreenShake = Math.max(trScreenShake, 6);
+                        if (trRoxyHits >= trRoundGoals[trRound - 1]) trStartKnockback();
+                    }
                 }
             }
         }
@@ -5050,7 +5109,7 @@ class ChiptuneEngine {
                 }
                 return;
             }
-            if (trGameState === 'CHASE' || trGameState === 'TRANSITION') {
+            if (trGameState === 'CHASE' || (trGameState === 'TRANSITION' && trTransPhase === 'RUN')) {
                 if (!tryTrJump()) trJumpBuffer = 7;
             }
         }
@@ -5131,24 +5190,34 @@ class ChiptuneEngine {
             trErrorStreak = trErrorStreak || 0;
         }
 
-        function applyTrSupercharge() {
-            trTypingCurrent = ""; 
+        // Oikea verbi kirjoitettu: laukaus on jo matkalla. Kun kierroksen viimeinen verbi on kirjoitettu, odotetaan viimeistä osumaa.
+        function trAfterCorrectVerb() {
+            trTypingCurrent = "";
             trVerbsCompleted++;
             addScore(10);
             combo++;
-            
+
             if (trVerbsCompleted < trRoundGoals[trRound - 1]) {
                 setTimeout(setupTrNextVerb, 200);
             } else {
-                trGameState = 'SUPER_ATTACK';
-                trSuperAttackTimer = 120;
-                showTrMessage("SUPERLATAUS VALMIS!", "VASTAISKU!", 120);
-                trScreenShake = 15;
-                trHitStop = 5;
+                trCombatLocked = true;
+                trTargetVerb = null;
             }
         }
 
-
+        // Viimeinen osuma: Roxy sinkoutuu kauemmas ja takaa-ajo jatkuu
+        function trStartKnockback() {
+            trGameState = 'KNOCKBACK';
+            trKnockTimer = 50;
+            trCombatLocked = true;
+            trTargetVerb = null;
+            trBoss.state = 'hurt';
+            trBoss.kvx = -10; trBoss.kvy = -12; trBoss.spin = 0;
+            showTrMessage("ROXY SINKOUTUU!", trRound >= 3 ? "Voitit pelin!" : "Takaa-ajo jatkuu!", 80);
+            trScreenShake = 15;
+            trHitStop = 5;
+            audio.playExplosion();
+        }
 
         function initTrGame() {
             loadRunnerSprites();
@@ -5181,7 +5250,8 @@ class ChiptuneEngine {
             trFlashError = 0;
             trBgScroll = [0, 0, 0];
             
-            trVerbsCompleted = 0;
+            trVerbsCompleted = 0; trRoxyHits = 0; trCombatLocked = false; trTransPhase = 'RUN';
+            trBoss.stopped = false; trBoss.spin = 0;
             trMessageTimer = 0;
             trGlobalFrames = 0;
             
