@@ -1600,7 +1600,8 @@ class ChiptuneEngine {
         let ssBoss = { 
             active: false, x: 800, y: 200, width: 280, height: 150,
             hp: 90, maxHp: 90, phase: 1, shield: false, shieldTimer: 0, vy: 0, 
-            state: 'entering', isCharging: false, lastCharge: 0, chargeStart: 0
+            state: 'entering', isCharging: false, lastCharge: 0, chargeStart: 0,
+            lastBurst: 0, burstLeft: 0, burstNext: 0   // sarjatuli (kierrokset 2 ja 3)
         };
         
         let ssState = 'menu'; 
@@ -1642,6 +1643,7 @@ class ChiptuneEngine {
             ssBoss.shieldTimer = 0;
             ssBoss.vy = 0;
             ssBoss.finalBlast = false;
+            ssBoss.lastBurst = 0; ssBoss.burstLeft = 0; ssBoss.burstNext = 0;
             ssPausedState = null;
             ssWarp = 1; ssBgPhaseSeen = 1; ssBgFlash = 0; ssBgLastT = 0; ssBgOff = [0, 0, 0];
             
@@ -1986,7 +1988,7 @@ class ChiptuneEngine {
                         // satelliitti: verbi keskitetty kuvan keskelle
                         ctx.imageSmoothingEnabled = false;
                         ctx.drawImage(satelliteImg, t.x, t.y, t.width, t.height);
-                        const cx = t.x + t.width / 2, cy = t.y + t.height / 2 + 4;
+                        const cx = t.x + t.width / 2, cy = t.y + t.height * 0.55 + 4;   // hieman kuvan keskikohdan alapuolella
                         ctx.lineWidth = 4; ctx.lineJoin = 'round';
                         ctx.strokeStyle = '#07011a';
                         ctx.strokeText(t.text, cx, cy);
@@ -2205,7 +2207,7 @@ class ChiptuneEngine {
         }
 
         // ---- Bossin räjähdysanimaatio ----
-        const SS_BOSS_DEATH_MS = 3000;   // koko animaation kesto
+        const SS_BOSS_DEATH_MS = 5000;   // koko animaation kesto (voittoruutu tulee vasta tämän jälkeen)
         const SS_BOSS_FINAL_MS = 900;    // loppuräjähdyksen kesto (osa kokonaiskestosta)
 
         function ssInEllipse(px, py, cx, cy, rx, ry) {
@@ -2397,8 +2399,8 @@ class ChiptuneEngine {
         let trKnockTimer = 0;
         // Siirtymä taisteluun: 'RUN' = kamera lukittu pelaajaan, 'PANBACK' = kamera asettuu taisteluasentoon
         let trTransPhase = 'RUN';
-        let trPanBackT = 0, trPanBackE = 0, trPanBackCam = 0, trPanBackPlayer = 0;
-        let trPanBackFrames = 60;
+        let trPanBackT = 0;
+        const TR_SETTLE_FRAMES = 45;   // montako ruutua maailman hidastuminen pysähdykseen kestää
         let trRoxyHits = 0;          // montako osumaa Roxy on ottanut tässä taistelussa
         let trCombatLocked = false;  // viimeinen verbi kirjoitettu: odotetaan viimeistä osumaa
         let trCurScroll = 0;         // tämän ruudun vierityksen nopeus (Roxyn hyppyennusteelle)
@@ -4467,7 +4469,8 @@ class ChiptuneEngine {
             if (b.grounded && b.platform) {
                 const cur = b.platform, front = b.x + b.w;
                 const endDist = cur.x + cur.w - front;
-                if (endDist < 14) {
+                const enteringArena = trGameState === 'TRANSITION' && trPlatforms.some(q => q.isArena && q.x < front - 6);
+                if (endDist < 14 && !enteringArena) {
                     // Roxy simuloi hypyn etukäteen: yksi hyppy riittää vai tarvitaanko tuplahyppy
                     b.needDouble = !trBossSimJump(false) && trBossSimJump(true);
                     b.vy = trPlayer.jumpPower; b.jumps = 1; b.grounded = false;
@@ -4730,19 +4733,6 @@ class ChiptuneEngine {
             });
         }
 
-        // Pelaaja on tasaisella taistelutasolla ja Roxy on pysähtynyt: kamera siirtyy taistelun asetelmaan
-        function trStartPanBack(ar) {
-            trTransPhase = 'PANBACK';
-            trPanBackT = 0; trPanBackE = 0;
-            trPanBackCam = trBossLeftX() - trBoss.x;
-            trPanBackPlayer = trPlayerRightX() - trPlayer.x;
-            trPanBackFrames = Math.max(20, Math.ceil(trPanBackPlayer / trScrollSpeed));
-            trBossProjectiles = [];
-            trBoss.vy = 0; trBoss.stopped = true;
-            trBoss.y = ar.y - trBoss.h;
-            showTrMessage("ROXY ON HENGÄSTYNYT!", "Ammu häntä kirjoittamalla verbit!", 100);
-        }
-
         function updateRunner(timestamp) {
             if (trHitStop > 0) { trHitStop--; return; }
             const nowT = (typeof timestamp === 'number') ? timestamp : performance.now();
@@ -4863,26 +4853,21 @@ class ChiptuneEngine {
             if (trGameState === 'TRANSITION') {
                 const arenaPlat = trPlatforms.find(p => p.isArena);
                 trBoss.offsetY = 0;
+                // Roxy jää vähitellen taakse kohti vasenta laitaa (hänen vauhtinsa hiipuu pelaajan vauhtiin verrattuna)
+                if (!trBoss.stopped) trBoss.x -= Math.min(2.2, Math.max(0, trBoss.x - trBossLeftX()));
                 if (trTransPhase === 'RUN') {
-                    // Kamera pysyy lukittuna pelaajaan. Roxy ei hengästy vielä: hän jatkaa vauhdilla ja jää hieman taaemmas.
-                    trBoss.x += ((homeX - 150) - trBoss.x) * 0.05;
-                    if (arenaPlat) {
-                        const dist = arenaPlat.x - (homeX - 260);   // vierittäminen loppuu, kun pelaajan alla on tasainen areena
-                        currentScrollSpeed = dist > 0 ? trScrollSpeed : 0;   // vauhti ei hidastu ennen taistelutasoa
-                    }
+                    // Kamera lukittuna pelaajaan, vauhti ei hidastu
+                    if (arenaPlat) currentScrollSpeed = trScrollSpeed;
                 } else {
-                    // Kamera siirtyy taisteluasentoon: Roxy ja pelaaja ruudun eri laitoihin
-                    currentScrollSpeed = 0;
+                    // Maailma hidastuu pysähdyksiin ja samalla pelaaja kiihdyttää ruudulla oikealle:
+                    // pelaajan vauhti maastoon nähden pysyy vakiona, eikä hän pysähdy missään vaiheessa.
                     trPanBackT++;
-                    // pelaaja jatkaa samalla vauhdilla oikeaan laitaan, kamera seuraa samassa tahdissa
-                    const k = Math.min(1, trPanBackT / trPanBackFrames);
-                    const e = k * k * (3 - 2 * k);
-                    const de = e - trPanBackE; trPanBackE = e;
-                    const cam = trPanBackCam * de;
-                    trPlatforms.forEach(p => { p.x += cam; });
-                    trBoss.x += cam;
-                    trPlayer.x += Math.min(trScrollSpeed, Math.max(0, trPlayerRightX() - trPlayer.x));
-                    if (k >= 1) {
+                    const k = Math.min(1, trPanBackT / TR_SETTLE_FRAMES);
+                    currentScrollSpeed = trScrollSpeed * (1 - k);
+                    const room = Math.max(0, trPlayerRightX() - trPlayer.x);
+                    trPlayer.x += Math.min(room, trScrollSpeed - currentScrollSpeed);
+                    // taisteluun, kun Roxy on pysähtynyt ja pelaaja on oikeassa laidassa
+                    if (trBoss.stopped && room <= 0.01) {
                         trGameState = 'COMBAT';
                         trVerbsCompleted = 0; trRoxyHits = 0; trCombatLocked = false;
                         trErrorStreak = 0;
@@ -4971,16 +4956,27 @@ class ChiptuneEngine {
             trCurScroll = currentScrollSpeed;
             if (trGameState === 'CHASE') updateTrBoss();
             else if (trGameState === 'TRANSITION') {
+                const ar = trPlatforms.find(p => p.isArena);
                 if (trTransPhase === 'RUN') {
+                    // hidastus alkaa niin, että Roxy pysähtyy juuri vasempaan laitaan areenan päälle
                     updateTrBoss();
-                    // kun pelaaja seisoo areenalla, vieritys on loppunut ja Roxy on pysähtynyt, siirrytään taisteluasentoon
-                    const ar = trPlatforms.find(p => p.isArena);
-                    if (ar && currentScrollSpeed === 0 && trPlayer.y + trPlayer.h <= ar.y + 2 &&
-                        trPlayer.x > ar.x + 40 && trBoss.grounded && trBoss.platform === ar && trBoss.x > ar.x + 60) {
-                        trStartPanBack(ar);
+                    if (ar && ar.x <= trBossLeftX() - 60 + trScrollSpeed * TR_SETTLE_FRAMES / 2 && trPlayer.x > ar.x + 40) {
+                        trTransPhase = 'PANBACK';
+                        trPanBackT = 0;
+                        trBossProjectiles = [];
                     }
                 } else {
-                    holdTrBossStill(trArenaY);
+                    if (trBoss.stopped) {
+                        holdTrBossStill(trArenaY);
+                    } else {
+                        updateTrBoss();
+                        // Roxy on kokonaan pysähtynyt vasta kun maailma seisoo ja hän seisoo areenalla
+                        if (ar && currentScrollSpeed === 0 && trBoss.grounded && trBoss.platform === ar) {
+                            trBoss.stopped = true;
+                            trBoss.x = trBossLeftX();
+                            showTrMessage("ROXY ON HENGÄSTYNYT!", "Ammu häntä kirjoittamalla verbit!", 100);
+                        }
+                    }
                 }
             }
 
@@ -5432,6 +5428,7 @@ class ChiptuneEngine {
                     ssBoss.x -= 3; 
                     if (ssBoss.x <= targetX) { 
                         ssBoss.state = 'fighting'; 
+                        ssBoss.lastBurst = ssTime; ssBoss.burstLeft = 0;
                         ssBoss.lastCharge = ssTime; 
                     }
                 } 
@@ -5482,6 +5479,24 @@ class ChiptuneEngine {
                                 for(let angle = -0.4; angle <= 0.4; angle += 0.2) {
                                     ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2, speed: 6, vx: -Math.cos(angle)*6, vy: Math.sin(angle)*6, width: 25, height: 25, isEnergyBall: true });
                                 }
+                            }
+                        }
+                    }
+
+                    // Sarjatuli (kierrokset 2 ja 3): 5 ammusta 1500 ms aikana, kierroksella 2 joka 10 s ja kierroksella 3 joka 7 s
+                    if (ssBoss.phase >= 2) {
+                        if (ssBoss.shield || ssBoss.isCharging) {
+                            ssBoss.burstLeft = 0;
+                        } else {
+                            const burstEvery = ssBoss.phase === 3 ? 7000 : 10000;
+                            if (ssBoss.burstLeft === 0 && ssTime - ssBoss.lastBurst > burstEvery) {
+                                ssBoss.burstLeft = 5; ssBoss.burstNext = ssTime; ssBoss.lastBurst = ssTime;
+                            }
+                            if (ssBoss.burstLeft > 0 && ssTime >= ssBoss.burstNext) {
+                                audio.playLaser();
+                                ssEnemyBullets.push({ x: ssBoss.x, y: ssBoss.y + ssBoss.height/2 + (Math.random()*40-20), speed: 8, width: 20, height: 4 });
+                                ssBoss.burstLeft--;
+                                ssBoss.burstNext = ssTime + 375;   // 4 väliä x 375 ms = 1500 ms
                             }
                         }
                     }
