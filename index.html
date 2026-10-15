@@ -503,6 +503,7 @@
                 <div class="text-right hidden sm:block border-2 border-cyan-500 bg-blue-950 px-3 py-1.5">
                     <div class="text-xs font-pixel text-cyan-300">TOTAL EXP</div>
                     <div id="total-score-display" class="font-pixel text-sm text-yellow-300 pixel-shadow">0</div>
+                    <div id="score-lock-display" class="hidden font-pixel text-red-300 mt-1" style="font-size:9px"></div>
                 </div>
 
                 <button id="music-toggle" onclick="toggleMusic()" title="Taustamusiikki" class="jrpg-btn w-10 h-10 flex items-center justify-center p-0">
@@ -920,12 +921,21 @@
                 "You now have access to a new mode: SPACE SHOOTER!"
             ]
         },
-        cutscene_1000: {
+        cutscene_final: {
             image: "image1.jpeg", 
             music: "gh0stly-the-infinite-fall-271940.mp3",
             lines: [
                 "Enough games!", 
                 "I, Boss Katsuyoshi, will finish you personally!"
+            ]
+        },
+        // Roxy Blaize voitettu (Rooftop Rider). TODO: väliaikainen teksti, korvaa oikealla.
+        cutscene_henchman1_beaten: {
+            image: "image2.jpeg",
+            music: "gh0stly-the-infinite-fall-271940.mp3",
+            lines: [
+                "Roxy Blaize is down...",
+                "Boss Katsuyoshi will not be pleased about this."
             ]
         },
         // TODO: Space Shooter -voiton cutscene (Boss Katsuyoshi raivoaa, kun apuri Captain Conjugator hävisi).
@@ -1341,30 +1351,122 @@ class ChiptuneEngine {
         const overlayPanel = document.getElementById('overlay-panel');
         const overlayContent = document.getElementById('overlay-content');
 
-        // --- UUSI MILESTONE-JÄRJESTELMÄ GLOBAALILLA PAUSELLA ---
+        // ==========================================
+        // TARINAN ETENEMINEN: pisterajat, portit ja säästetyt pisteet
+        // ==========================================
+        // at       = kokonaispisteraja, jolla kohtaus laukeaa
+        // unlock   = pelimoodi, joka avataan rajalla
+        // requires = lippu, joka pitää saada ENNEN kuin tämän rajan yli pääsee (henchman voitettava)
+        // boss     = portin nimi pelaajalle
+        // afterGame = kohtaus odottaa, kunnes käynnissä oleva peli on pelattu loppuun
+        const STORY_MILESTONES = [
+            { at: 100,  key: 'ms_100',   scene: 'cutscene_100' },
+            { at: 300,  key: 'ms_300',   scene: 'cutscene_300', unlock: 'runner',
+              alert: "UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>ROOFTOP RIDER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta." },
+            { at: 600,  key: 'ms_600',   scene: 'cutscene_600', unlock: 'spaceshooter', requires: 'beaten_roxy', boss: 'ROXY',
+              alert: "UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SPACE SHOOTER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta." },
+            { at: 1500, key: 'ms_final', scene: 'cutscene_final', requires: 'beaten_conjugator', boss: 'CAPTAIN CONJUGATOR', afterGame: true,
+              alert: "Lopputaistelu avattu!<br>(Odottaa toteutusta)" }
+        ];
+
+        function lsGet(k) { return localStorage.getItem('vm2000_' + k); }
+        function lsSet(k, v) { localStorage.setItem('vm2000_' + k, v); }
+
         function getTotalScore() {
             const stored = localStorage.getItem('vm2000_totalscore');
             return isNaN(parseInt(stored)) ? 0 : parseInt(stored);
         }
+        function getBankedScore() { const v = parseInt(lsGet('banked')); return isNaN(v) ? 0 : v; }
+
+        // Seuraavan portin alapuolelle jäävä kokonaispisteiden katto (Infinity = ei porttia)
+        function getScoreCap() {
+            for (const m of STORY_MILESTONES) {
+                if (m.requires && !lsGet(m.requires)) return m.at - 1;
+            }
+            return Infinity;
+        }
+        function getGateMilestone() {
+            return STORY_MILESTONES.find(m => m.requires && !lsGet(m.requires)) || null;
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('total-score-display').textContent = getTotalScore();
+            const lockEl = document.getElementById('score-lock-display');
+            if (!lockEl) return;
+            const gate = getGateMilestone();
+            const banked = getBankedScore();
+            if (gate && getTotalScore() >= gate.at - 1) {
+                lockEl.innerHTML = `<i class="fa-solid fa-lock"></i> VOITA ${gate.boss}` + (banked > 0 ? ` (+${banked} odottaa)` : '');
+                lockEl.classList.remove('hidden');
+            } else {
+                lockEl.classList.add('hidden');
+            }
+        }
+
+        // Pieni ilmoitus pelin päällä, ei keskeytä pelaamista
+        function showStoryToast(html) {
+            const host = document.getElementById('game-stage') || document.body;
+            const el = document.createElement('div');
+            el.className = 'font-pixel text-xs text-yellow-300 jrpg-box bg-black p-3 text-center';
+            el.style.cssText = 'position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:60;max-width:90%;pointer-events:none;transition:opacity .5s;';
+            el.innerHTML = html;
+            host.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 600); }, 4500);
+        }
 
         function addTotalScore(amount) {
+            const cap = getScoreCap();
             let current = getTotalScore();
-            current += amount;
+            const add = Math.max(0, Math.min(amount, cap - current));
+            const over = amount - add;
+            if (over > 0) {
+                // portti kiinni: ylimenevät pisteet säästetään, kunnes henchman on voitettu
+                localStorage.setItem('vm2000_banked', getBankedScore() + over);
+                const gate = getGateMilestone();
+                if (gate && !lsGet('gatehint_' + gate.at)) {
+                    lsSet('gatehint_' + gate.at, 'true');
+                    showStoryToast(`<i class="fa-solid fa-lock"></i> PISTEET LUKOSSA!<br><span class="text-cyan-300">Voita ${gate.boss} päästäksesi eteenpäin.<br>Ylimenevät pisteet säästetään.</span>`);
+                }
+            }
+            current += add;
             localStorage.setItem('vm2000_totalscore', current);
-            document.getElementById('total-score-display').textContent = current;
-            
+            updateScoreDisplay();
             checkMilestones(current);
         }
-        
+
+        // Portti avautuu: säästetyt pisteet siirretään kokonaispisteisiin (seuraavaan porttiin asti)
+        function releaseBankedScore() {
+            const cap = getScoreCap();
+            const current = getTotalScore();
+            const bank = getBankedScore();
+            const add = Math.max(0, Math.min(bank, cap - current));
+            localStorage.setItem('vm2000_totalscore', current + add);
+            localStorage.setItem('vm2000_banked', bank - add);
+            updateScoreDisplay();
+        }
+
+        // Vanhat tallennukset: jos pisteet ovat lukitun portin yli, ylimenevä osa säästöön
+        function migrateStoryScores() {
+            const cap = getScoreCap();
+            const current = getTotalScore();
+            if (current > cap) {
+                localStorage.setItem('vm2000_totalscore', cap);
+                localStorage.setItem('vm2000_banked', getBankedScore() + (current - cap));
+            }
+            updateScoreDisplay();
+        }
+
         function resetTotalScore() {
             localStorage.setItem('vm2000_totalscore', 0);
-            document.getElementById('total-score-display').textContent = 0;
-            localStorage.removeItem('vm2000_ms_100');
-            localStorage.removeItem('vm2000_ms_300');
-            localStorage.removeItem('vm2000_unlocked_runner');
-            localStorage.removeItem('vm2000_ms_600');
-            localStorage.removeItem('vm2000_unlocked_spaceshooter');
+            localStorage.removeItem('vm2000_banked');
+            STORY_MILESTONES.forEach(m => {
+                localStorage.removeItem('vm2000_' + m.key);
+                localStorage.removeItem('vm2000_gatehint_' + m.at);
+                if (m.unlock) localStorage.removeItem('vm2000_unlocked_' + m.unlock);
+                if (m.requires) localStorage.removeItem('vm2000_' + m.requires);
+            });
             localStorage.removeItem('vm2000_ms_1000');
+            updateScoreDisplay();
             checkUnlockedModes();
         }
 
@@ -1404,32 +1506,68 @@ class ChiptuneEngine {
             if (prevBGM) audio.playBGM(prevBGM);
         }
 
-        function checkMilestones(currentTotal) {
-            if (window._deferMilestones) { window._pendingMilestone = currentTotal; return; }
-            if (currentTotal >= 100 && !localStorage.getItem('vm2000_ms_100')) {
-                localStorage.setItem('vm2000_ms_100', 'true');
-                pauseGameForCutscene('cutscene_100');
-            } else if (currentTotal >= 300 && !localStorage.getItem('vm2000_ms_300')) {
-                localStorage.setItem('vm2000_ms_300', 'true');
-                localStorage.setItem('vm2000_unlocked_runner', 'true');
-                checkUnlockedModes();
-                pauseGameForCutscene('cutscene_300', (prevBGM, resume) => {
-                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>ROOFTOP RIDER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", resume);
-                });
-            } else if (currentTotal >= 600 && !localStorage.getItem('vm2000_ms_600')) {
-                localStorage.setItem('vm2000_ms_600', 'true');
-                localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
-                checkUnlockedModes();
-                pauseGameForCutscene('cutscene_600', (prevBGM, resume) => {
-                    pixelAlert("UUSI PELIMOODI AVATTU:<br><span class='font-pixel text-sm text-neon-pink'>SPACE SHOOTER</span><br>Löydät sen ylävalikosta ja VALITSE PELI -ikkunasta.", resume);
-                });
-            } else if (currentTotal >= 1000 && !localStorage.getItem('vm2000_ms_1000')) {
-                localStorage.setItem('vm2000_ms_1000', 'true');
-                pauseGameForCutscene('cutscene_1000', (prevBGM, resume) => {
-                    pixelAlert("Lopputaistelu avattu!<br>(Odottaa toteutusta)", resume);
-                });
+        function nextDueMilestone() {
+            const total = getTotalScore();
+            for (const m of STORY_MILESTONES) {
+                if (total >= m.at && !lsGet(m.key)) return m;
             }
+            return null;
         }
+        function markMilestone(m) {
+            lsSet(m.key, 'true');
+            if (m.unlock) lsSet('unlocked_' + m.unlock, 'true');
+            checkUnlockedModes();
+        }
+
+        // Onko ruudulla tulosruutu (game over / voitto), eli peli on pelattu loppuun?
+        function resultScreenShowing() {
+            if (gameMode === 'runner' && (trGameState === 'GAMEOVER' || trGameState === 'VICTORY')) return true;
+            if (overlayPanel.classList.contains('hidden')) return false;
+            return /GAME OVER|VOITTO/.test(overlayContent.textContent);
+        }
+
+        // Pelin aikana: kohtaus keskeyttää pelin ja peli jatkuu sen jälkeen. Seuraava erääntynyt kohtaus tulee heti perään.
+        function checkMilestones() {
+            if (window._deferMilestones) return;
+            const m = nextDueMilestone();
+            if (!m) return;
+            if (m.afterGame && !resultScreenShowing()) { window._pendingAfterGame = true; return; }
+            markMilestone(m);
+            pauseGameForCutscene(m.scene, (prevBGM, resume) => {
+                const next = () => { resume(); setTimeout(() => checkMilestones(), 80); };
+                if (m.alert) pixelAlert(m.alert, next); else next();
+            });
+        }
+
+        // Pelin jälkeen (ei käynnissä olevaa peliä): soita kaikki erääntyneet kohtaukset peräkkäin, sitten done()
+        function playDueMilestones(done) {
+            const m = nextDueMilestone();
+            if (!m) { if (done) done(); return; }
+            markMilestone(m);
+            startCutscene(m.scene, () => {
+                gameCanvasWrapper.classList.remove('hidden');
+                resizeCanvas();
+                const next = () => playDueMilestones(done);
+                if (m.alert) pixelAlert(m.alert, next); else next();
+            });
+        }
+
+        // Henchman voitettu ensimmäistä kertaa: voittokohtaus, sitten mahdolliset erääntyneet pisterajakohtaukset
+        function playBossWinThenMilestones(scene, done) {
+            startCutscene(scene, () => {
+                gameCanvasWrapper.classList.remove('hidden');
+                resizeCanvas();
+                playDueMilestones(done);
+            });
+        }
+
+        // Lopputaistelun kohtaus odottaa pelin loppua: tarkistetaan tulosruutu ajoittain
+        setInterval(() => {
+            if (window._pendingAfterGame && !isCutsceneActive && resultScreenShowing()) {
+                window._pendingAfterGame = false;
+                checkMilestones();
+            }
+        }, 700);
 
         function checkUnlockedModes() {
             const tabRunner = document.getElementById('tab-runner');
@@ -1449,6 +1587,29 @@ class ChiptuneEngine {
             // "VALITSE PELI" -ikkunan painikkeet: lukittuna näkyvät himmeinä + vaadittu EXP
             setModeButtonLock('mode-btn-runner', localStorage.getItem('vm2000_unlocked_runner') === 'true');
             setModeButtonLock('mode-btn-spaceshooter', localStorage.getItem('vm2000_unlocked_spaceshooter') === 'true');
+
+            // BOSS-merkki: moodi on avattu, mutta sen henchman on vielä voittamatta
+            const bossRunner = localStorage.getItem('vm2000_unlocked_runner') === 'true' && !lsGet('beaten_roxy');
+            const bossSS = localStorage.getItem('vm2000_unlocked_spaceshooter') === 'true' && !lsGet('beaten_conjugator');
+            setBossBadge('tab-runner', bossRunner);
+            setBossBadge('mode-btn-runner', bossRunner);
+            setBossBadge('tab-spaceshooter', bossSS);
+            setBossBadge('mode-btn-spaceshooter', bossSS);
+            updateScoreDisplay();
+        }
+
+        function setBossBadge(id, show) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let badge = el.querySelector('.boss-badge');
+            if (show && !badge) {
+                badge = document.createElement('span');
+                badge.className = 'boss-badge text-[10px] font-pixel text-red-300 border border-red-400 px-1 ml-1';
+                badge.textContent = 'BOSS';
+                el.appendChild(badge);
+            } else if (!show && badge) {
+                badge.remove();
+            }
         }
 
         function setModeButtonLock(btnId, unlocked) {
@@ -2279,9 +2440,11 @@ class ChiptuneEngine {
         function ssVictoryContinue() {
             audio.playSelect();
             hideOverlay();
-            startCutscene('cutscene_ss_victory', () => {
-                ssShowModeSelect();
-            });
+            const first = window._ssFirstWin;
+            window._ssFirstWin = false;
+            // voittokohtaus vain ensimmäisellä kerralla; sen jälkeen erääntyneet pisterajakohtaukset heti perään
+            if (first) playBossWinThenMilestones('cutscene_ss_victory', ssShowModeSelect);
+            else playDueMilestones(ssShowModeSelect);
         }
 
         // Pysäyttää käynnissä olevan pelin logiikan, kun siirrytään valikoihin
@@ -2318,6 +2481,10 @@ class ChiptuneEngine {
             audio.stopBGM();
             
             if (win) {
+                // portti aukeaa ennen pisteitä, jotta voittopisteet eivät jää lukon taakse
+                window._ssFirstWin = !lsGet('beaten_conjugator');
+                lsSet('beaten_conjugator', 'true');
+                releaseBankedScore();
                 window._deferMilestones = true;
                 addScore(500);
                 window._deferMilestones = false;
@@ -2329,7 +2496,6 @@ class ChiptuneEngine {
                     </div>
                     <button onclick="ssVictoryContinue();" class="jrpg-btn jrpg-btn-primary px-6 py-4 w-full text-sm sm:text-base menu-active">Jatka</button>
                 `);
-                if (window._pendingMilestone != null) { const t = window._pendingMilestone; window._pendingMilestone = null; checkMilestones(t); }
             } else {
                 showOverlay(`
                     <h2 class="text-3xl sm:text-4xl font-pixel text-red-500 pixel-shadow mb-5">GAME OVER</h2>
@@ -2452,18 +2618,15 @@ class ChiptuneEngine {
                 if (newScore !== null && !isNaN(parseInt(newScore))) {
                     let val = parseInt(newScore);
                     localStorage.setItem('vm2000_totalscore', val);
-                    document.getElementById('total-score-display').textContent = val;
-                    
-                    if (val >= 100) localStorage.setItem('vm2000_ms_100', 'true');
-                    if (val >= 300) {
-                        localStorage.setItem('vm2000_ms_300', 'true');
-                        localStorage.setItem('vm2000_unlocked_runner', 'true');
-                    }
-                    if (val >= 600) {
-                        localStorage.setItem('vm2000_ms_600', 'true');
-                        localStorage.setItem('vm2000_unlocked_spaceshooter', 'true');
-                    }
-                    if (val >= 1000) localStorage.setItem('vm2000_ms_1000', 'true');
+                    localStorage.removeItem('vm2000_banked');
+                    // rajan ohittaminen merkitsee kohtauksen nähdyksi, moodin avatuksi ja portin auki
+                    STORY_MILESTONES.forEach(m => {
+                        const passed = val >= m.at;
+                        if (passed) lsSet(m.key, 'true'); else localStorage.removeItem('vm2000_' + m.key);
+                        if (m.unlock) { if (passed) lsSet('unlocked_' + m.unlock, 'true'); else localStorage.removeItem('vm2000_unlocked_' + m.unlock); }
+                        if (m.requires) { if (passed) lsSet(m.requires, 'true'); else localStorage.removeItem('vm2000_' + m.requires); }
+                    });
+                    updateScoreDisplay();
                     checkUnlockedModes();
                     
                     alert(`Kokonaispisteet asetettu arvoon: ${val}\nTarvittavat pelimoodit on avattu ja cutscenet ohitettu automaattisesti.`);
@@ -2764,7 +2927,7 @@ class ChiptuneEngine {
             populateDictionary(VERB_DATA);
             animationFrameId = requestAnimationFrame(gameLoop);
             
-            document.getElementById('total-score-display').textContent = getTotalScore();
+            migrateStoryScores();
         };
 
         function resizeCanvas() {
@@ -4906,6 +5069,7 @@ class ChiptuneEngine {
                         showTrMessage("VOITTO!", "ROXY BLAIZE ON LYÖTY!", 9999);
                         createTrParticles(80, trArenaY - 50, 120, '#ff007f', 3);
                         audio.playExplosion();
+                        trOnRoxyDefeated();
                     } else {
                         trRound++;
                         trChaseProgress = 0;
@@ -5213,6 +5377,19 @@ class ChiptuneEngine {
         }
 
         // Viimeinen osuma: Roxy sinkoutuu kauemmas ja takaa-ajo jatkuu
+        // Roxy voitettu: portti aukeaa ja säästetyt pisteet vapautuvat. Ensimmäisellä kerralla seuraa voittokohtaus.
+        function trOnRoxyDefeated() {
+            const first = !lsGet('beaten_roxy');
+            lsSet('beaten_roxy', 'true');
+            releaseBankedScore();
+            checkUnlockedModes();
+            setTimeout(() => {
+                if (trGameState !== 'VICTORY') return;   // pelaaja ehti jo aloittaa uuden pelin
+                if (first) playBossWinThenMilestones('cutscene_henchman1_beaten', ssShowModeSelect);
+                else playDueMilestones(() => { if (nextDueMilestone() === null) { /* jää tulosruutuun */ } });
+            }, 2500);
+        }
+
         function trStartKnockback() {
             trGameState = 'KNOCKBACK';
             trKnockTimer = 50;

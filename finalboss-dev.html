@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<title>Final Boss - kehittäjäsivu</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#111;color:#ddd;font-family:monospace}
+  body{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px;box-sizing:border-box}
+  #panel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+  #panel button{padding:6px 10px;cursor:pointer}
+  /* 3:2-näyttö, kuten pääpelissä */
+  #stage{position:relative;width:min(100vw - 16px,(100vh - 90px) * 1.5);aspect-ratio:3/2;background:#000;border:3px solid #ff2e97}
+  #log{font-size:12px;color:#7dff7d;min-height:1.4em}
+</style>
+</head>
+<body>
+<div id="panel">
+  <button onclick="run('p1')">Vaihe 1</button>
+  <button onclick="run('p2')">Vaihe 2</button>
+  <button onclick="run('finisher')">Finaali</button>
+  <label>Aikojen kerroin
+    <select id="ts"><option value="0.5">0.5x (tiukka)</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x (helppo)</option></select>
+  </label>
+  <label><input type="checkbox" id="inv"> Kuolematon</label>
+  <button onclick="FinalBoss.stop();log('Pysäytetty')">Pysäytä</button>
+</div>
+<div id="stage"></div>
+<div id="log">Valitse aloituskohta.</div>
+
+<script src="finalboss.js"></script>
+<script>
+  const log = t => document.getElementById('log').textContent = t;
+
+  // Tynkä pääpelin audio-oliolle: musiikki toistetaan, jos tiedosto löytyy (muuten hiljaa)
+  let bgm = null;
+  const audioStub = {
+    playBGM(url) { try { this.stopBGM(); bgm = new Audio(url); bgm.loop = true; bgm.play().catch(() => {}); } catch (e) {} },
+    stopBGM() { if (bgm) { bgm.pause(); bgm = null; } },
+    playCorrect() {}, playWrong() {}, playHit() {}, playExplosion() {}, playSelect() {}
+  };
+
+  // Tynkä pääpelin cutscene-järjestelmälle: kirjataan vain lokiin ja jatketaan
+  const cutsceneStub = (id, next) => { log('cutscene: ' + id); next(); };
+
+  function run(at) {
+    FinalBoss.start({
+      container: document.getElementById('stage'),
+      startAt: at,
+      audio: audioStub,
+      cutscene: cutsceneStub,
+      timeScale: parseFloat(document.getElementById('ts').value),
+      invincible: document.getElementById('inv').checked,
+      // music: { p1: 'boss1.mp3', p2: 'boss2.mp3', fin: 'finale.mp3' },
+      // verbs: VERB_DATA,   // pääpelissä annetaan oikea verbilista
+      onVictory: stats => log('VOITTO! ' + JSON.stringify(stats)),
+      onDefeat: () => log('Hävisit'),
+      onExit: () => log('Poistuttiin')
+    });
+  }
+</script>
+</body>
+</html>
