@@ -109,7 +109,7 @@
 .fb-btn{font:inherit;padding:.9em 1.4em;background:#ff2e97;color:#fff;border:.2em solid #fff;cursor:pointer}
 .fb-shake{animation:fbshake .35s}.fb-flash{animation:fbflash .5s}
 .fb-glitch{animation:fbglitch .25s steps(2) infinite}
-.fb-dissolve{animation:fbdis 2.2s steps(10) forwards}
+.fb-dissolve{animation:fbdis 3.6s steps(16) forwards}.fb-appear{animation:fbappear 2.4s}
 .fb-kneel{transform:translateY(12%) rotate(8deg);transition:transform 1.2s}
 .fb-noise:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 .2em,rgba(0,0,0,.4) .2em .5em);animation:fbglitch .12s steps(2) infinite;z-index:3}
 .fb-err{color:#ff4d4d;font-size:1.6em}
@@ -119,6 +119,7 @@
 @keyframes fbflash{0%{filter:brightness(4)}100%{filter:none}}
 @keyframes fbglitch{0%{transform:translate(0) skewX(0);filter:hue-rotate(0)}50%{transform:translate(-.5em,.2em) skewX(8deg);filter:hue-rotate(90deg)}100%{transform:translate(.5em,-.2em) skewX(-6deg);filter:hue-rotate(200deg)}}
 @keyframes fbdis{0%{opacity:1;filter:none}60%{opacity:.6;filter:contrast(3) blur(.3em)}100%{opacity:0;transform:scale(.2,1.6);filter:blur(1em)}}
+@keyframes fbappear{0%{opacity:0;filter:brightness(6) blur(.4em);transform:scale(1.4)}60%{opacity:1;filter:brightness(2)}100%{opacity:1;filter:none;transform:none}}
 @keyframes fbtarget{from{filter:drop-shadow(0 0 .1em #ff4d4d)}to{filter:drop-shadow(0 0 .9em #ff4d4d) brightness(1.3)}}
 @keyframes fbout{0%{transform:none;opacity:1}100%{transform:translate(-220%,-70%) rotate(-540deg);opacity:0;visibility:hidden}}
 @keyframes fbin{from{transform:translateX(-250%);opacity:0}to{transform:none;opacity:1}}
@@ -158,7 +159,7 @@
 
     // ---- Tila ----
     const mk = (name, slot, hp) => ({ name, slot, hp, max: hp, out: false });
-    const S = { phase: '', mode: null, party: {}, bHP: 0, shield: 0, core: 0, t: 0, tMax: 1, timerOn: false, locked: true,
+    const S = { warned: false, lastActed: null, menuCtx: null, second: [], phase: '', mode: null, party: {}, bHP: 0, shield: 0, core: 0, t: 0, tMax: 1, timerOn: false, locked: true,
       qn: null, cb: null, turn: 'defend', last: null, checkpoint: 'p1', fin: null, finStep: 0, plan: [], first: null, stage: 0,
       target: null, roxyActed: false, finaleDue: false, stats: { correct: 0, wrong: 0, missed: {} }, dead: false };
     const timeouts = new Set();
@@ -178,7 +179,7 @@
     }
 
     function msg(text, cls) { const m = q('fb-msg'); m.textContent = text; m.className = 'fb-msg ' + (cls || ''); }
-    function say(lines, done) { let t = 0; lines.forEach(l => { later(() => msg(l), t); t += 1700; }); later(done || (() => { }), t); }
+    function say(lines, done, ms) { let t = 0; lines.forEach(l => { later(() => msg(l), t); t += (ms || 1700); }); later(done || (() => { }), t); }
     function fx(el, cls, ms) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); if (ms) later(() => el.classList.remove(cls), ms); }
     const LEFT = { hero: '10%', roxy: '27%', cap: '43%' };
     function floatTxt(text, who, color) {
@@ -189,7 +190,7 @@
     function render() {
       Object.keys(S.party).forEach(k => {
         const m = S.party[k], t = q(m.slot).querySelector('.fb-pb'); if (!t) return;
-        t.firstChild.textContent = m.name + ' ' + m.hp; t.querySelector('i').style.width = Math.max(0, m.hp / m.max * 100) + '%';
+        t.firstChild.textContent = m.name; t.querySelector('i').style.width = Math.max(0, m.hp / m.max * 100) + '%';
       });
       const core = root.querySelector('.fb-bar.core'), sh = root.querySelector('.fb-bar.shield');
       if (S.phase === 'p1') core.firstChild.style.width = Math.max(0, S.bHP / C.p1BossHP * 100) + '%';
@@ -199,7 +200,7 @@
     function hurt(key, n) {
       const m = S.party[key]; if (!m || m.out) return;
       if (!o.invincible) m.hp = Math.max(0, m.hp - n);
-      fx(q(m.slot), 'fb-shake', 400); fx(root, 'fb-flash', 500); sfx('playWrong'); floatTxt('-' + n, key, '#ff4d4d'); render();
+      fx(q(m.slot), 'fb-shake', 400); fx(root, 'fb-flash', 500); sfx('playWrong'); floatTxt('HIT!', key, '#ff4d4d'); render();
       if (m.hp <= 0) {
         if (key === 'hero') defeat();
         else { m.out = true; q(m.slot).classList.add('fb-out'); msg(m.name + ' is exhausted!', 'red'); }
@@ -208,7 +209,7 @@
 
     // ---- Kysymysnäkymä ----
     function showQ(label, big, sub, mode, opts4) {
-      q('fb-label').textContent = label; q('fb-big').textContent = big; q('fb-sub').textContent = sub || '';
+      q('fb-big').style.color = ''; q('fb-label').textContent = label; q('fb-big').textContent = big; q('fb-sub').textContent = sub || '';
       const box = q('fb-opts'), inp = q('fb-input'); box.innerHTML = '';
       if (mode === 'choice') {
         inp.style.display = 'none'; box.style.display = 'grid';
@@ -229,11 +230,14 @@
     function miss(v) { S.stats.missed[v.base] = (S.stats.missed[v.base] || 0) + 1; S.stats.wrong++; }
 
     // ---- Vaihe 1: Katsuyoshi (monivalinta) ----
-    function beginP1() {
+    function setupP1() {
       S.phase = 'p1'; S.checkpoint = 'p1'; S.bHP = C.p1BossHP; S.turn = 'defend'; S.dead = false; S.mode = null; resetParty();
       root.querySelector('.fb-bar.shield').classList.add('hide'); q('fb-name').textContent = 'BOSS KATSUYOSHI';
       sprite('fb-boss', SP.boss1, 'KATSUYOSHI'); sprite('fb-hero', SP.hero, 'HERO', true); q('fb-roxy').classList.add('fb-gone'); q('fb-cap').classList.add('fb-gone');
       music('p1'); render(); stopTimer(); showQ('', '', '', 'choice', []);
+    }
+    function beginP1() {
+      setupP1();
       cut('boss_phase1', () => say(["Well, well, well...", "You've learned a few verbs, haven't you?", "Your little vocabulary trip ends here!", "Prepare to lose!"], p1Turn));
     }
     function p1Turn() {
@@ -255,7 +259,7 @@
       const n = S.qn;
       if (ok) {
         S.stats.correct++;
-        S.bHP = Math.max(0, S.bHP - C.p1Dmg); sfx('playCorrect'); sfx('playHit'); fx(q('fb-boss'), 'fb-shake', 400); floatTxt('-' + C.p1Dmg, 'boss');
+        S.bHP = Math.max(0, S.bHP - C.p1Dmg); sfx('playCorrect'); sfx('playHit'); fx(q('fb-boss'), 'fb-shake', 400); floatTxt('HIT!', 'boss');
         msg(S.turn === 'defend' ? 'Parried! ' + n.correct + '!' : 'Direct hit! ' + n.correct + '!', 'good');
       } else {
         miss(n.v); if (S.turn === 'defend') hurt('hero', C.p1BossDmg); else sfx('playWrong');
@@ -267,14 +271,16 @@
 
     // ---- Siirtymä: valekuolema ----
     function transition() {
-      S.phase = 'trans'; stopTimer(); try { A && A.stopBGM && A.stopBGM(); } catch (e) { }
+      S.phase = 'trans'; S.mode = null; stopTimer(); try { A && A.stopBGM && A.stopBGM(); } catch (e) { }
       const f = q('fb-field'), b = q('fb-boss');
       seq([
-        [0, () => { msg('...'); b.classList.add('fb-kneel'); }],
-        [1500, () => { f.classList.add('fb-noise'); fx(root, 'fb-glitch'); sfx('playExplosion'); }],
-        [2300, () => { root.classList.remove('fb-glitch'); fx(root, 'fb-flash', 500); root.style.background = '#600'; b.classList.add('fb-dissolve'); }],
-        [3500, () => { root.style.background = '#07011a'; showOverlayHtml('<div class="fb-err">ERROR:<br>ACTION NOT TERMINATED.</div>'); }],
-        [5200, () => { hideOverlay(); f.classList.remove('fb-noise'); b.classList.remove('fb-kneel', 'fb-dissolve'); beginP2(false); }]
+        [0, () => { msg('...'); b.classList.add('fb-kneel'); sfx('playHit'); }],
+        [2200, () => msg('KATSUYOSHI: No... This cannot be... I will not be... erased!')],
+        [5000, () => { f.classList.add('fb-noise'); fx(root, 'fb-glitch'); sfx('playExplosion'); msg('The screen crackles. Something is wrong...', 'red'); }],
+        [7000, () => { root.classList.remove('fb-glitch'); fx(root, 'fb-flash', 500); root.style.background = '#600'; b.classList.add('fb-dissolve'); sfx('playExplosion'); msg('Katsuyoshi dissolves into pixels...', 'red'); }],
+        [9500, () => { root.style.background = '#07011a'; msg('His code flows into the neon matrix, into the machine itself.'); }],
+        [12000, () => showOverlayHtml('<div class="fb-err">ERROR:<br>ACTION NOT TERMINATED.</div>')],
+        [15200, () => { hideOverlay(); f.classList.remove('fb-noise'); b.classList.remove('fb-kneel', 'fb-dissolve'); beginP2(false); }]
       ]);
     }
 
@@ -291,56 +297,76 @@
       setupP2();
       if (skipIntro) { showHelpers(); return later(newRound, 300); }
       q('fb-roxy').classList.add('fb-gone'); q('fb-cap').classList.add('fb-gone');
-      cut('boss_phase2', () => say(["You thought it would be this easy?", "I AM THE RULE! EXCEPTIONS WILL BE REGULARIZED."], () => {
-        showHelpers(); sfx('playSelect');
-        say(["Conjugation protocol overwritten. I choose my own forms now.", "I'm done riding for the boss. Let's ride!"], newRound);
-      }));
+      cut('boss_phase2', () => {
+        fx(q('fb-boss'), 'fb-appear', 2500); fx(root, 'fb-flash', 500); sfx('playExplosion'); msg('...');
+        later(() => say([
+          'The machine hums to life. The neon matrix pulses.',
+          'SYNTAX PRIME: Katsuyoshi is gone. I have become part of the machine!',
+          'SYNTAX PRIME: I am the rule. I am the system.',
+          'SYNTAX PRIME: Every action will be terminated. Every exception... REGULARIZED.'
+        ], () => later(() => {
+          msg('Alone against the machine, the hero stands ready...');
+          later(() => {
+            showHelpers(); sfx('playSelect');
+            say([
+              'CAPTAIN CONJUGATOR: Conjugation protocol overwritten. I choose my own forms now.',
+              'ROXY BLAIZE: I\'m done riding for the boss. Let\'s ride!',
+              'Choose who acts. Attack with the right verbs, and correct the machine\'s corrupted words!'
+            ], newRound, 2800);
+          }, 3000);
+        }, 1200), 2800), 2500);
+      });
     }
     function alive() { return ['hero', 'roxy', 'cap'].filter(k => !S.party[k].out); }
     function newRound() {
       if (S.phase !== 'p2') return;
-      S.roxyActed = false; S.plan = []; S.first = null; S.stage = 1;
+      S.roxyActed = false; S.first = null; S.lastActed = null; S.stage = 1;
       ['hero', 'roxy', 'cap'].forEach(k => q(slotOf(k)).classList.remove('fb-target'));
       S.target = pick(alive()); q(slotOf(S.target)).classList.add('fb-target');
-      msg('REGULARIZE: ' + S.party[S.target].name + '! Valitse toiminto.', 'red');
-      showMenu(alive(), 'VALITSE ENSIMMÄINEN TOIMINTO');
+      msg('Syntax Prime is eyeing ' + S.party[S.target].name + '. Who acts first?', 'red');
+      charMenu(alive(), 'VALITSE HAHMO', false);
     }
-    const DESC = { hero: () => '1 muoto, ' + C.heroDmg + ' vahinkoa', roxy: () => 'nopea: 2 verbiä, 2 x ' + C.roxyDmg + ', pidentää korjausaikaa', cap: () => 'kaikki 3 muotoa, jopa ' + (3 * C.capDmg) + ', hidas' };
-    function showMenu(ids, label, withEnd) {
+    // Valikot näyttävät vain nimet: hahmo -> HYÖKKÄÄ / TAKAISIN -> verbikysymys -> isku
+    function charMenu(ids, label, withEnd) {
+      S.menuCtx = { ids, label, withEnd };
+      showMenu(ids.map(k => ({ id: k, text: S.party[k].name })).concat(withEnd ? [{ id: 'end', text: 'LOPETA VUORO' }] : []), label);
+    }
+    function showMenu(items, label) {
       S.mode = 'menu'; S.locked = false; S.timerOn = false; showQ(label, '', '', 'choice', []);
       const box = q('fb-opts');
-      ids.forEach((k, i) => {
-        const b = document.createElement('button'); b.className = 'fb-opt';
-        b.textContent = (i + 1) + '  ' + S.party[k].name + ' (HP ' + S.party[k].hp + ') - ' + DESC[k](); b.onclick = () => menuPick(k); box.appendChild(b);
+      items.forEach((it, i) => {
+        const b = document.createElement('button'); b.className = 'fb-opt'; b.textContent = (i + 1) + '  ' + it.text; b.onclick = () => menuPick(it.id); box.appendChild(b);
       });
-      if (withEnd) { const b = document.createElement('button'); b.className = 'fb-opt'; b.textContent = (ids.length + 1) + '  LOPETA VUORO'; b.onclick = () => menuPick('end'); box.appendChild(b); }
     }
     function menuPick(id) {
       if (S.mode !== 'menu') return;
       sfx('playSelect');
-      if (S.stage === 1) {
-        S.first = id;
-        const second = ({ hero: ['roxy', 'cap'], roxy: ['hero', 'cap'], cap: [] })[id].filter(k => !S.party[k].out);
-        if (!second.length) return startPlan(id, null);
-        S.stage = 2; showMenu(second, 'VALITSE TOINEN TOIMINTO (tai lopeta vuoro)', true);
-      } else startPlan(S.first, id === 'end' ? null : id);
+      if (id === 'end') return primeThenEnd();
+      if (id === 'back') { const c = S.menuCtx; return charMenu(c.ids, c.label, c.withEnd); }
+      if (id === 'attack') return doAttack(S.pending);
+      S.pending = id;
+      showMenu([{ id: 'attack', text: 'HYÖKKÄÄ' }, { id: 'back', text: 'TAKAISIN' }], S.party[id].name);
     }
-    // Järjestys: Hero ja Roxy ennen Primea. Captain ensin: ennen Primea. Captain toisena: Primen jälkeen.
-    function startPlan(a, b) {
-      S.mode = null;
-      if (a === 'cap') S.plan = ['cap', 'prime'];
-      else if (!b) S.plan = [a, 'prime'];
-      else if (b === 'cap') S.plan = [a, 'prime', 'cap'];
-      else S.plan = [a, b, 'prime'];
-      runStep();
+    function doAttack(k) {
+      S.mode = null; S.lastActed = k;
+      if (S.stage === 1) S.first = k;
+      if (k === 'cap' && S.stage === 2) {      // Captain toisena: Syntax Prime ehtii ensin
+        msg('Captain is charging a mighty attack... but Syntax Prime strikes first!', 'red');
+        return later(() => primeAttack(() => { if (S.phase !== 'p2') return; if (S.party.cap.out) { msg('Captain is exhausted! The attack is cancelled.', 'red'); later(endRound, 1400); } else capAction(); }), 1900);
+      }
+      if (k === 'hero') heroAction(); else if (k === 'roxy') roxyAction(0); else capAction();
     }
-    function runStep() {
+    // Toiminnon jälkeen: Hero/Roxy voivat saada toisen toiminnon, Captain ensin -> heti Prime
+    function afterAction() {
       if (S.phase !== 'p2') return;
       if (S.finaleDue) return beginFinale();
-      const s = S.plan.shift(); if (!s) return endRound();
-      if (s !== 'prime' && S.party[s].out) { msg(S.party[s].name + ' is exhausted! The action is cancelled.', 'red'); return later(runStep, 1300); }
-      if (s === 'hero') heroAction(); else if (s === 'roxy') roxyAction(0); else if (s === 'cap') capAction(); else primeAttack();
+      if (S.stage === 2) return S.lastActed === 'cap' ? endRound() : primeThenEnd();
+      if (S.first === 'cap') return primeThenEnd();
+      const second = ({ hero: ['roxy', 'cap'], roxy: ['hero', 'cap'] })[S.first].filter(k => !S.party[k].out);
+      if (!second.length) return primeThenEnd();
+      S.stage = 2; msg('Who acts next? (or end the turn)'); charMenu(second, 'VALITSE TOINEN HAHMO', true);
     }
+    function primeThenEnd() { if (S.phase !== 'p2') return; S.mode = null; primeAttack(endRound); }
     function endRound() {
       if (S.phase !== 'p2') return;
       if (S.finaleDue) return beginFinale();
@@ -349,8 +375,8 @@
     // Vahinko Primelle: kilpi ensin, sitten ydin
     function strike(n, text) {
       fx(q('fb-boss'), 'fb-shake', 400); sfx('playHit');
-      if (S.shield > 0) { S.shield = Math.max(0, S.shield - n); floatTxt('SHIELD -' + n, 'boss'); msg(text + (S.shield <= 0 ? ' SHIELD BROKEN!' : ''), 'good'); }
-      else { S.core = Math.max(0, S.core - n); floatTxt('CORE -' + n, 'boss', '#ff2e97'); msg(text, 'good'); }
+      if (S.shield > 0) { S.shield = Math.max(0, S.shield - n); floatTxt('SHIELD HIT!', 'boss'); msg(text + (S.shield <= 0 ? ' SHIELD BROKEN!' : ''), 'good'); }
+      else { S.core = Math.max(0, S.core - n); floatTxt('CORE HIT!', 'boss', '#ff2e97'); msg(text, 'good'); }
       render();
       const thr = (S.party.roxy.out && S.party.cap.out) ? C.finisherAtSolo : C.finisherAt;
       if (S.shield <= 0 && S.core <= C.p2Core * thr) S.finaleDue = true;
@@ -370,7 +396,7 @@
       const v = weightedVerb(), kind = pick(['past', 'participle']);
       askOne(v, kind, C.heroTime, 'HERO: ' + kindLabel(kind), up(v.base), v.finnish, (ok, c) => {
         if (ok) strike(C.heroDmg, 'Hero strikes! ' + c + '!'); else msg('Hero missed! Oikea muoto: ' + c, 'red');
-        later(runStep, 1500);
+        later(afterAction, 1500);
       });
     }
     function roxyAction(i) {
@@ -378,7 +404,7 @@
       const v = weightedVerb(), kind = pick(['past', 'participle']);
       askOne(v, kind, C.roxyTime, 'ROXY ' + (i + 1) + '/2: ' + kindLabel(kind), up(v.base), v.finnish, (ok, c) => {
         if (ok) strike(C.roxyDmg, 'Roxy dashes! ' + c + '!'); else msg('Roxy missed! Oikea muoto: ' + c, 'red');
-        later(() => (i < 1 && !S.finaleDue) ? roxyAction(1) : runStep(), 1200);
+        later(() => (i < 1 && !S.finaleDue) ? roxyAction(1) : afterAction(), 1200);
       });
     }
     // Captain: yhden verbin kolme muotoa yhteisellä ajalla, osittainen pisteytys
@@ -396,21 +422,34 @@
     function comboEnd() {
       stopTimer(); const c = S.cb; S.mode = null;
       if (c.hits > 0) strike(c.hits * C.capDmg, 'Captain unleashes ' + c.hits + '/3 forms!'); else msg('Captain missed!', 'red');
-      later(runStep, 1500);
+      later(afterAction, 1500);
     }
-    // Syntax Primen hyökkäys: korjaa korruptoitunut sana tai kohde ottaa vahinkoa
-    function primeAttack() {
+    // Syntax Primen hyökkäys: ensin varoitus (ei aikapainetta), sitten korjattava sana
+    function primeAttack(done) {
+      if (S.phase !== 'p2') return;
+      const t = S.target, m = S.party[t];
+      if (!m || m.out) return done();
+      S.mode = 'warn'; stopTimer();
+      showQ('VAROITUS!', 'VALMISTAUDU TORJUMAAN!', '', 'choice', []); q('fb-big').style.color = '#ff4d4d';
+      fx(root, 'fb-flash', 500); sfx('playWrong');
+      const first = !S.warned; S.warned = true;
+      msg('WARNING! SYNTAX PRIME ATTACKS ' + m.name + '!', 'red');
+      later(() => msg(first ? 'Type the CORRECT irregular form of the corrupted word before time runs out!' : 'Correct the corrupted word to protect ' + m.name + '!', 'red'), 1300);
+      later(() => launchPrime(done), first ? 4600 : 3000);
+    }
+    function launchPrime(done) {
+      if (S.phase !== 'p2') return;
       const t = S.target, m = S.party[t];
       const v = weightedVerb(x => corruptOK(x, 'past') || corruptOK(x, 'participle'));
       const kind = pick(['past', 'participle'].filter(k => corruptOK(v, k))), bad = regular(v.base);
       const time = C.primeTime + (S.roxyActed ? C.roxyBonus : 0);
       const w = document.createElement('div'); w.className = 'fb-word'; w.textContent = bad; w.style.animationDuration = (time * tScale) + 's'; q('fb-field').appendChild(w);
-      msg('REGULARIZE: ' + m.name + '!' + (S.roxyActed ? ' (Roxy gave you +' + C.roxyBonus + ' s)' : ''), 'red');
+      msg('CORRUPTED CODE! Fix it!' + (S.roxyActed ? ' (Roxy bought you time!)' : ''), 'red');
       askOne(v, kind, time, 'KORJAA: ' + kindLabel(kind), bad, '(' + v.base + ' - ' + v.finnish + ')', (ok, c) => {
         q(m.slot).classList.remove('fb-target');
         if (ok) { sfx('playCorrect'); msg('Purified! ' + c + ' - ' + m.name + ' is safe.', 'good'); }
         else { msg('REGULARIZE hits ' + m.name + '! Oikea muoto: ' + c, 'red'); hurt(t, C.primeDmg); }
-        later(runStep, 1500);
+        later(done, 1500);
       }, w);
     }
 
@@ -531,7 +570,8 @@
     };
 
     const at = o.startAt || 'p1';
-    if (at === 'p2') beginP2(true);
+    if (at === 'transition') { setupP1(); S.bHP = 0; render(); transition(); }
+    else if (at === 'p2') beginP2(true);
     else if (at === 'finisher') { setupP2(); showHelpers(); S.shield = 0; S.core = Math.floor(C.p2Core * C.finisherAt); render(); beginFinale(); }
     else beginP1();
   }
