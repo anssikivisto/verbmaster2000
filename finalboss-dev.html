@@ -32,6 +32,117 @@
 <script>
   const log = t => document.getElementById('log').textContent = t;
 
+  // Kopio pääpelin verbilistasta (lopullisessa pelissä index.html antaa oman VERB_DATA:nsa)
+  const VERB_DATA = `be|was / were|been|olla
+beat|beat|beaten|päihittää, lyödä
+become|became|become|tulla joksikin
+begin|began|begun|alkaa
+bend|bent|bent|taivuttaa, taipua
+bet|bet|bet|lyödä vetoa
+bite|bit|bitten|purra
+bleed|bled|bled|vuotaa verta
+blow|blew|blown|puhaltaa, tuulla
+break|broke|broken|rikkoa, särkyä, murtaa
+bring|brought|brought|tuoda
+build|built|built|rakentaa
+buy|bought|bought|ostaa
+catch|caught|caught|saada / ottaa kiinni
+choose|chose|chosen|valita
+come|came|come|tulla
+cost|cost|cost|maksaa (olla hintana)
+cut|cut|cut|leikata
+deal|dealt|dealt|jakaa
+dive|dove|dived|sukeltaa
+do|did|done|tehdä
+dig|dug|dug|kaivaa
+draw|drew|drawn|vetää, piirtää
+dream|dreamt/dreamed|dreamt/dreamed|uneksia
+drink|drank|drunk|juoda
+drive|drove|driven|ajaa
+eat|ate|eaten|syödä
+fall|fell|fallen|pudota, kaatua
+feed|fed|fed|ruokkia, syöttää
+feel|felt|felt|tuntea
+flee|fled|fled|paeta
+fight|fought|fought|tapella, riidellä
+find|found|found|löytää
+fly|flew|flown|lentää
+forbid|forbade|forbidden|kieltää
+forget|forgot|forgotten|unohtaa
+forgive|forgave|forgiven|antaa anteeksi
+freeze|froze|frozen|jäätyä, paleltua
+get|got|got/gotten|saada
+give|gave|given|antaa
+go|went|gone|mennä
+grow|grew|grown|kasvaa, kasvattaa
+hang|hung|hung|riippua, ripustaa
+have|had|had|olla, omistaa
+hear|heard|heard|kuulla
+hide|hid|hidden|piilotella
+hit|hit|hit|lyödä
+hold|held|held|pitää (kiinni)
+hurt|hurt|hurt|loukata, sattua
+keep|kept|kept|pitää, säilyttää
+know|knew|known|tietää, tuntea
+lay|laid|laid|laittaa, asettaa
+lead|led|led|johtaa
+lean|leant/leaned|leant/leaned|nojata
+leave|left|left|lähteä, jättää
+lend|lent|lent|lainata
+let|let|let|antaa, sallia
+lie|lay|lain|maata, sijaita
+lose|lost|lost|kadottaa, hävitä
+make|made|made|tehdä, valmistaa
+mean|meant|meant|tarkoittaa
+meet|met|met|tavata
+misunderstand|misunderstood|misunderstood|ymmärtää väärin
+pay|paid|paid|maksaa
+put|put|put|panna, laittaa
+read|read|read|lukea
+ride|rode|ridden|ratsastaa, ajaa
+ring|rang|rung|soittaa, soida
+run|ran|run|juosta
+say|said|said|sanoa
+see|saw|seen|nähdä
+sell|sold|sold|myydä
+send|sent|sent|lähettää
+set|set|set|asettaa
+shake|shook|shaken|ravistaa
+shine|shone|shone|loistaa, paistaa
+shoot|shot|shot|ampua
+show|showed|shown|näyttää
+shrink|shrank/shrunk|shrunk/shrunken|kutistua
+shut|shut|shut|sulkea
+sing|sang|sung|laulaa
+sink|sank|sunk|upota
+sit|sat|sat|istua
+sleep|slept|slept|nukkua
+slide|slid|slid|liukua
+speak|spoke|spoken|puhua
+spell|spelt|spelt|tavata (sana)
+spend|spent|spent|viettää, kuluttaa
+split|split|split|halkaista
+spread|spread|spread|levittää
+spring|sprang|sprung|hypätä
+stand|stood|stood|seisoa
+steal|stole|stolen|varastaa
+stick|stuck|stuck|pistää, laittaa
+swear|swore|sworn|kiroilla, vannoa
+swim|swam|swum|uida
+take|took|taken|ottaa, viedä
+teach|taught|taught|opettaa
+tear|tore|torn|repiä
+tell|told|told|kertoa, käskeä
+think|thought|thought|ajatella, luulla
+throw|threw|thrown|heittää
+understand|understood|understood|ymmärtää
+wake (up)|woke (up)|woken (up)|herätä
+wear|wore|worn|pitää yllään
+weep|wept|wept|itkeä
+win|won|won|voittaa
+write|wrote|written|kirjoittaa`.split('\n').map(l => { const a = l.split('|'); return { base: a[0], past: a[1], participle: a[2], finnish: a[3] }; });
+
+
   // Tynkä pääpelin audio-oliolle: musiikki toistetaan, jos tiedosto löytyy (muuten hiljaa)
   let bgm = null;
   const audioStub = {
@@ -52,7 +163,7 @@
       timeScale: parseFloat(document.getElementById('ts').value),
       invincible: document.getElementById('inv').checked,
       // music: { p1: 'boss1.mp3', p2: 'boss2.mp3', fin: 'finale.mp3' },
-      // verbs: VERB_DATA,   // pääpelissä annetaan oikea verbilista
+      verbs: VERB_DATA,
       onVictory: stats => log('VOITTO! ' + JSON.stringify(stats)),
       onDefeat: () => log('Hävisit'),
       onExit: () => log('Poistuttiin')
